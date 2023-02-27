@@ -72,7 +72,7 @@ function selectPfp(e: Event) {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .user {
   display: flex;
   flex-direction: column;
@@ -89,12 +89,11 @@ function selectPfp(e: Event) {
   cursor: pointer;
   background-size: cover;
   margin: auto;
-}
-
-.pfp svg {
-  fill: white;
-  width: 80%;
-  height: 80%;
+  svg {
+    fill: white;
+    width: 80%;
+    height: 80%;
+  }
 }
 
 .username {

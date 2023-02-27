@@ -14,7 +14,7 @@ export default {
 
       showAccountMenu,
       mouseInAccountMenu,
-      
+
       methods: {
         quit() {
           ipcRenderer.send("window", ["QUIT"]);
@@ -55,7 +55,7 @@ export default {
     <div v-if="authStore.user" class="user-name">
       {{ authStore.user?.username }}
     </div>
-    <div class="header-buttons">
+    <div class="buttons">
       <div
         @mouseenter="mouseInAccountMenu = true"
         @mouseleave="mouseInAccountMenu = false"
@@ -83,7 +83,7 @@ export default {
   </header>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 header {
   padding: 3px;
   box-sizing: border-box;
@@ -97,48 +97,45 @@ header {
   height: var(--header-height);
   z-index: 100;
   position: relative;
+  .buttons {
+    display: flex;
+    gap: 2px;
+  }
+  .user-name {
+    flex-grow: 1;
+    text-align: left;
+    padding: var(--padding-medium);
+    padding-top: calc(var(--padding-medium) + 2px);
+    box-sizing: border-box;
+    font-size: 1.125rem;
+  }
+  button {
+    border: 2px solid white;
+    padding: 0;
+    margin: 0;
+    filter: opacity(0.666);
+    box-shadow: var(--shadow-medium);
+    transition: filter 100ms ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--border-radius-medium);
+    -webkit-app-region: no-drag;
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  button:hover {
+    border: 2px solid white;
+    filter: opacity(1);
+  }
+  .account-button svg {
+    width: 80%;
+    height: 80%;
+  }
+  .quit-button {
+    background: red;
+  }
 }
-.user-name {
-  flex-grow: 1;
-  text-align: left;
-  padding: var(--padding-medium);
-  padding-top: calc(var(--padding-medium) + 2px);
-  box-sizing: border-box;
-  font-size: 1.125rem;
-}
-.header-buttons {
-  display: flex;
-  gap: 2px;
-}
-header button {
-  border: 2px solid white;
-  padding: 0;
-  margin: 0;
-  filter: opacity(0.666);
-  box-shadow: var(--shadow-medium);
-  transition: filter 100ms ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--border-radius-medium);
-  -webkit-app-region: no-drag;
-}
-header button:hover {
-  border: 2px solid white;
-  filter: opacity(1);
-}
-.account-button svg {
-  width: 80%;
-  height: 80%;
-}
-.quit-button {
-  background: red;
-}
-header button {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
 .account-menu {
   display: flex;
   flex-direction: column;
@@ -150,32 +147,31 @@ header button {
   border-radius: var(--border-radius-medium);
   overflow: hidden;
   box-shadow: var(--shadow-medium);
-}
-.account-menu button {
-  padding: 0;
-  margin: 0;
-  border: none;
-  background: none;
-  border-radius: 0;
-  padding: 0 var(--padding-medium);
-  display: flex;
-  min-width: fit-content;
-  width: 100%;
-  justify-content: flex-end;
-  box-shadow: none;
-  font-size: 1rem;
-}
-.account-menu button,
-.account-menu button:hover {
-  border-bottom: 1px solid var(--base-light);
-}
-.account-menu button:last-of-type,
-.account-menu button:last-of-type:hover {
-  border-bottom: none;
-}
-.account-menu button:hover {
-  border: none;
-  border-bottom: 1px solid var(--base-light);
-  background: var(--foreground-hover);
+  button {
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    border-radius: 0;
+    padding: 0 var(--padding-medium);
+    display: flex;
+    min-width: fit-content;
+    width: 100%;
+    justify-content: flex-end;
+    box-shadow: none;
+    font-size: 1rem;
+  }
+  .button,
+  .button:hover {
+    border-bottom: 1px solid var(--base-light);
+  }
+  .button:last-of-type,
+  .button:last-of-type:hover {
+    border-bottom: none;
+  }
+  .button:hover {
+    border: none;
+    background: var(--foreground-hover);
+  }
 }
 </style>

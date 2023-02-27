@@ -24,7 +24,7 @@ export default {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 h1 {
   margin: 0;
   font-size: 2rem;
@@ -39,10 +39,10 @@ p {
   justify-content: center;
   width: 100%;
   gap: var(--padding-medium);
-}
-button {
-  margin: 0;
-  flex-grow: 1;
-  padding: 0 var(--padding-medium);
+  button {
+    margin: 0;
+    flex-grow: 1;
+    padding: 0 var(--padding-medium);
+  }
 }
 </style>

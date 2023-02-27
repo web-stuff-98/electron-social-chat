@@ -38,7 +38,7 @@ import { modalStore } from "../../../store/ModalStore";
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 p {
   margin: 0;
 }
@@ -46,9 +46,9 @@ p {
   display: flex;
   gap: var(--padding-medium);
   width: 100%;
-}
-.buttons button {
-  flex-grow: 1;
+  button {
+    flex-grow: 1;
+  }
 }
 .spinner {
   width: 2.5rem;

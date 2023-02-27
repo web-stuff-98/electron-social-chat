@@ -22,7 +22,10 @@ export default {
     <div class="modal">
       <button
         @click="modalStore.modalType = EModalType.WELCOME"
-        v-show="modalStore.modalType !== EModalType.WELCOME && modalStore.modalType !== EModalType.MESSAGE"
+        v-show="
+          modalStore.modalType !== EModalType.WELCOME &&
+          modalStore.modalType !== EModalType.MESSAGE
+        "
         class="close-button"
       >
         <v-icon name="io-close" />
@@ -35,7 +38,7 @@ export default {
   </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 .backdrop {
   width: 100%;
   height: 100%;
@@ -78,12 +81,12 @@ export default {
   filter: opacity(0.5);
   display: flex;
   transition: filter 100ms ease;
+  svg {
+    width: 100%;
+    height: 100%;
+  }
 }
 .close-button:hover {
   filter: opacity(1);
-}
-.close-button svg {
-  width: 100%;
-  height: 100%;
 }
 </style>

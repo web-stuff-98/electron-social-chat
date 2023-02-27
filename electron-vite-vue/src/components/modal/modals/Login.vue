@@ -29,18 +29,19 @@ export default {
   </form>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
 form {
   display: flex;
   flex-direction: column;
-}
-button {
-  margin-top: var(--padding);
-}
-input {
-  text-align: center;
-}
-label, input {
-  margin-bottom: var(--padding-medium);
+  button {
+    margin-top: var(--padding);
+  }
+  input {
+    text-align: center;
+  }
+  label,
+  input {
+    margin-bottom: var(--padding-medium);
+  }
 }
 </style>

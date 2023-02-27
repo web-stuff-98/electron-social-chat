@@ -15,14 +15,7 @@ defineProps<{ resMsg: IResMsg }>();
   </div>
 </template>
 
-<style scoped>
-p {
-  margin: 0;
-}
-.res-msg-err-icon {
-  width: 1.5rem;
-  height: 1.5rem;
-}
+<style lang="scss" scoped>
 .res-msg {
   display: flex;
   flex-direction: column;
@@ -33,9 +26,16 @@ p {
   min-width: 3rem;
   min-height: 3rem;
   filter: drop-shadow(var(--shadow-medium));
-}
-.res-msg-spinner {
-  width: 2.5rem;
-  height: 2.5rem;
+  p {
+    margin: 0;
+  }
+  .res-msg-err-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  .res-msg-spinner {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }
 </style>
