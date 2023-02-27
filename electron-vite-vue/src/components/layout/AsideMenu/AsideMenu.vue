@@ -1,30 +1,41 @@
-<script lang="ts">
+<script setup lang="ts">
 import { ref } from "vue";
-import DirectMessages from "./sections/DirectMessages.vue";
-import Profile from "./sections/Profile.vue";
 
-export default {
-  setup() {
-    const show = ref(false);
-    return {
-      show,
-    };
-  },
-  components: { Profile, DirectMessages },
-};
+import Profile from "./sections/Profile.vue";
+import CreateRoom from "./sections/CreateRoom.vue";
+import ExploreRooms from "./sections/ExploreRooms.vue";
+import DirectMessages from "./sections/DirectMessages.vue";
+
+enum EAsideSection {
+  "PROFILE" = "Profile",
+  "CREATE_ROOM" = "Create room",
+  "EXPLORE_ROOMS" = "Explore rooms",
+  "DIRECT_MESSAGES" = "Direct messages",
+}
+
+const show = ref(false);
+const section = ref<EAsideSection>(EAsideSection.PROFILE);
 </script>
 
 <template>
   <aside v-show="show">
     <div class="buttons">
-      <button>Direct messages</button>
-      <button>Explore rooms</button>
-      <button>Create room</button>
-      <button>Profile</button>
+      <button @click="section = EAsideSection.DIRECT_MESSAGES">
+        Direct messages
+        <span/>
+      </button>
+      <button @click="section = EAsideSection.EXPLORE_ROOMS">
+        Explore rooms
+      </button>
+      <button @click="section = EAsideSection.CREATE_ROOM">Create room</button>
+      <button @click="section = EAsideSection.PROFILE">Profile</button>
     </div>
     <div class="container">
       <div class="content">
-        <DirectMessages />
+        <DirectMessages v-if="section === EAsideSection.DIRECT_MESSAGES" />
+        <ExploreRooms v-if="section === EAsideSection.EXPLORE_ROOMS" />
+        <CreateRoom v-if="section === EAsideSection.CREATE_ROOM" />
+        <Profile v-if="section === EAsideSection.PROFILE" />
       </div>
       <button @click="show = false" class="close-button">
         <v-icon name="io-close" />
@@ -58,6 +69,14 @@ aside {
       border-bottom: 1px solid var(--base-light);
       box-shadow: none;
       font-size: 1rem;
+      position: relative;
+      span {
+        width: 2px;
+        height: 2px;
+        position: absolute;
+        top: 3px;
+        right: 3px;
+      }
     }
   }
   .close-button {
@@ -81,21 +100,21 @@ aside {
     outline: 1px solid white;
     filter: opacity(1);
   }
-  .aside-menu-button {
-    border: none;
-    background: none;
-    padding: 0;
-    position: fixed;
-    bottom: 3px;
-    left: 3px;
-  }
-  .aside-menu-icon {
-    width: 1.666rem;
-    height: 1.666rem;
-    z-index: 99;
-    border: 2px solid white;
-    border-radius: var(--border-radius-medium);
-  }
+}
+.aside-menu-button {
+  border: none;
+  background: none;
+  padding: 0;
+  position: fixed;
+  bottom: 3px;
+  left: 3px;
+}
+.aside-menu-icon {
+  width: 1.666rem;
+  height: 1.666rem;
+  z-index: 99;
+  border: 2px solid white;
+  border-radius: var(--border-radius-medium);
 }
 .container {
   padding: var(--padding-medium);

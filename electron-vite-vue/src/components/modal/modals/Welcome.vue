@@ -1,13 +1,5 @@
-<script lang="ts">
+<script setup lang="ts">
 import { modalStore, EModalType } from "../../../store/ModalStore";
-export default {
-  data() {
-    return {
-      modalStore,
-      EModalType,
-    };
-  },
-};
 </script>
 
 <template>

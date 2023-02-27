@@ -1,22 +1,10 @@
-<script lang="ts">
+<script setup lang="ts">
 import { ref } from "vue";
-import { modalStore } from "../../../store/ModalStore";
 import { authStore } from "../../../store/AuthStore";
 import ResMsg from "../../layout/ResMsg.vue";
 
-export default {
-  data() {
-    const username = ref("");
-    const password = ref("");
-    return {
-      modalStore,
-      authStore,
-      username,
-      password,
-    };
-  },
-  components: { ResMsg },
-};
+const username = ref("");
+const password = ref("");
 </script>
 
 <template>

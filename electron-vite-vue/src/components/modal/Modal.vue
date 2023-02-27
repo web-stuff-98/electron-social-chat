@@ -1,19 +1,9 @@
-<script lang="ts">
+<script setup lang="ts">
 import { EModalType, modalStore } from "../../store/ModalStore";
 import Welcome from "./modals/Welcome.vue";
 import Login from "./modals/Login.vue";
 import Register from "./modals/Register.vue";
 import Message from "./modals/Message.vue";
-
-export default {
-  data() {
-    return {
-      modalStore,
-      EModalType,
-    };
-  },
-  components: { Welcome, Login, Register, Message },
-};
 </script>
 
 <template>

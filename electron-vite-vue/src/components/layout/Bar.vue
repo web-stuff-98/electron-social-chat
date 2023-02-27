@@ -1,53 +1,44 @@
-<script lang="ts">
+<script setup lang="ts">
 import { ipcRenderer } from "electron";
 import { ref } from "vue";
 import { authStore } from "../../store/AuthStore";
 import { modalStore, EModalType } from "../../store/ModalStore";
 
-export default {
-  setup() {
-    const showAccountMenu = ref(false);
-    const mouseInAccountMenu = ref(false);
-    return {
-      authStore,
-      modalStore,
+import { onBeforeMount, onBeforeUnmount } from "vue";
 
-      showAccountMenu,
-      mouseInAccountMenu,
+const showAccountMenu = ref(false);
+const mouseInAccountMenu = ref(false);
 
-      methods: {
-        quit() {
-          ipcRenderer.send("window", ["QUIT"]);
-        },
-        minimize() {
-          ipcRenderer.send("window", ["MINIMIZE"]);
-        },
-        click() {
-          if (!mouseInAccountMenu.value) showAccountMenu.value = false;
-        },
-        deleteAccount() {
-          modalStore.modalType = EModalType.MESSAGE;
-          modalStore.messageModalProps = {
-            msg: "Are you sure you want to delete your account?",
-            err: false,
-            pen: false,
-            confirmationCallback: () => authStore.deleteAccount(),
-            cancellationCallback: () => {
-              modalStore.showModal = false;
-            },
-          };
-          modalStore.showModal = true;
-        },
-      },
-    };
-  },
-  mounted() {
-    window.document.addEventListener("click", this.methods.click);
-  },
-  beforeDestroy() {
-    window.document.removeEventListener("click", this.methods.click);
-  },
-};
+function quit() {
+  ipcRenderer.send("window", ["QUIT"]);
+}
+function minimize() {
+  ipcRenderer.send("window", ["MINIMIZE"]);
+}
+function click() {
+  if (!mouseInAccountMenu.value) showAccountMenu.value = false;
+}
+function deleteAccount() {
+  modalStore.modalType = EModalType.MESSAGE;
+  modalStore.messageModalProps = {
+    msg: "Are you sure you want to delete your account?",
+    err: false,
+    pen: false,
+    confirmationCallback: () => authStore.deleteAccount(),
+    cancellationCallback: () => {
+      modalStore.showModal = false;
+    },
+  };
+  modalStore.showModal = true;
+}
+
+onBeforeMount(() => {
+  window.document.addEventListener("click", click);
+});
+onBeforeUnmount(() => {
+  window.document.removeEventListener("click", click);
+});
+
 </script>
 
 <template>
@@ -62,7 +53,7 @@ export default {
         v-show="showAccountMenu && !modalStore.showModal"
         class="account-menu"
       >
-        <button @click="methods.deleteAccount">Delete account</button>
+        <button @click="deleteAccount">Delete account</button>
         <button @click="authStore.logout">Log out</button>
       </div>
       <button
@@ -73,10 +64,10 @@ export default {
       >
         <v-icon name="md-manageaccounts-sharp" />
       </button>
-      <button @click="methods.minimize" class="minimize-button">
+      <button @click="minimize" class="minimize-button">
         <v-icon name="fa-minus" />
       </button>
-      <button @click="methods.quit" class="quit-button">
+      <button @click="quit" class="quit-button">
         <v-icon name="io-close" />
       </button>
     </div>

@@ -19,7 +19,7 @@ input[type="file"] {
 
   color-scheme: light dark;
   color: white;
-  background-color: rgb(10, 10, 11);
+  background-color: rgb(14, 15, 16);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -27,7 +27,7 @@ input[type="file"] {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --foreground: rgb(10, 10, 11);
+  --foreground: rgb(14, 15, 16);
   --foreground-hover: rgb(15, 15, 18);
 
   --header: rgb(3, 3, 6);
