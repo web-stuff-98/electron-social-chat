@@ -31,7 +31,7 @@ input[type="file"] {
   --foreground-hover: rgb(15, 15, 18);
 
   --header: rgb(3, 3, 6);
-  --header-height: 2rem;
+  --header-height: 1.5rem;
 
   --shadow: 0px 1px 13px rgba(0, 0, 0, 0.5), 0px 2px 3px rgba(0, 0, 0, 0.5);
   --shadow-medium: 0px 2px 3px rgba(0, 0, 0, 0.5);

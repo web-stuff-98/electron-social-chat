@@ -22,13 +22,20 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
     <div class="buttons">
       <button @click="section = EAsideSection.DIRECT_MESSAGES">
         Direct messages
-        <span/>
+        <span v-if="section === EAsideSection.DIRECT_MESSAGES" />
       </button>
       <button @click="section = EAsideSection.EXPLORE_ROOMS">
         Explore rooms
+        <span v-if="section === EAsideSection.EXPLORE_ROOMS" />
       </button>
-      <button @click="section = EAsideSection.CREATE_ROOM">Create room</button>
-      <button @click="section = EAsideSection.PROFILE">Profile</button>
+      <button @click="section = EAsideSection.CREATE_ROOM">
+        Create room
+        <span v-if="section === EAsideSection.CREATE_ROOM" />
+      </button>
+      <button @click="section = EAsideSection.PROFILE">
+        Profile
+        <span v-if="section === EAsideSection.PROFILE" />
+      </button>
     </div>
     <div class="container">
       <div class="content">
@@ -53,7 +60,7 @@ aside {
   width: 10rem;
   height: 100%;
   max-height: calc(100% - var(--header-height));
-  border-right: 1px solid var(--base-light);
+  border-right: 2px solid var(--base);
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -66,7 +73,7 @@ aside {
       width: 100%;
       padding: var(--padding-medium);
       text-align: left;
-      border-bottom: 1px solid var(--base-light);
+      border-bottom: 2px solid var(--base-light);
       box-shadow: none;
       font-size: 1rem;
       position: relative;
@@ -76,6 +83,8 @@ aside {
         position: absolute;
         top: 3px;
         right: 3px;
+        background: white;
+        box-shadow: 0px 0px 3px white;
       }
     }
   }

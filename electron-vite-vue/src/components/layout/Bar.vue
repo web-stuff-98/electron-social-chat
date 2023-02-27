@@ -38,7 +38,6 @@ onBeforeMount(() => {
 onBeforeUnmount(() => {
   window.document.removeEventListener("click", click);
 });
-
 </script>
 
 <template>
@@ -57,6 +56,7 @@ onBeforeUnmount(() => {
         <button @click="authStore.logout">Log out</button>
       </div>
       <button
+        v-if="authStore.user"
         @mouseenter="mouseInAccountMenu = true"
         @mouseleave="mouseInAccountMenu = false"
         @click="showAccountMenu = !showAccountMenu"
@@ -76,14 +76,14 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 header {
-  padding: 3px;
+  padding: 2px;
   box-sizing: border-box;
   width: 100%;
   background: var(--header);
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  border-bottom: 1px solid var(--base);
+  border-bottom: 2px solid var(--base);
   -webkit-app-region: drag;
   height: var(--header-height);
   z-index: 100;
@@ -112,8 +112,8 @@ header {
     justify-content: center;
     border-radius: var(--border-radius-medium);
     -webkit-app-region: no-drag;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 1.066rem;
+    height: 1.066rem;
   }
   button:hover {
     border: 2px solid white;
@@ -125,6 +125,12 @@ header {
   }
   .quit-button {
     background: red;
+  }
+  .minimize-button {
+    svg {
+      width: 70%;
+      height: 70%;
+    }
   }
 }
 .account-menu {
