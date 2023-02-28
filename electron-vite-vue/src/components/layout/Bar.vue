@@ -98,7 +98,8 @@ header {
     padding: var(--padding-medium);
     padding-top: calc(var(--padding-medium) + 2px);
     box-sizing: border-box;
-    font-size: 1.125rem;
+    font-size: 0.866rem;
+    filter: opacity(0.5);
   }
   button {
     border: 2px solid white;

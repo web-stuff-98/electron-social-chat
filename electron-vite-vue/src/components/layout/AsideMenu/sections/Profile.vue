@@ -1,52 +1,38 @@
-<script setup lang="ts">
+<script lang="ts">
 import { authStore } from "../../../../store/AuthStore";
-import { EModalType, modalStore } from "../../../../store/ModalStore";
-
 import { ref } from "vue";
+import { IResMsg } from "../../../../interfaces/GeneralInterfaces";
+import ResMsg from "../../ResMsg.vue";
 
-const fileInputRef = ref<HTMLInputElement>();
-defineExpose({ fileInputRef });
-
-function clickPfpHiddenInput() {
-  fileInputRef.value?.click();
-}
-
-function selectPfp(e: Event) {
-  const target = e.target as HTMLInputElement;
-  if (!target.files || !target.files[0]) return;
-  const file = target.files[0];
-  modalStore.modalType = EModalType.MESSAGE;
-  modalStore.showModal = true;
-  modalStore.messageModalProps = {
-    msg: `Are you sure you want to use ${file.name} as your profile picture?`,
-    err: false,
-    pen: false,
-    confirmationCallback: async () => {
+export default {
+  setup() {
+    const fileInputRef = ref<HTMLCanvasElement | null>(null);
+    const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+    function clickPfpHiddenInput() {
+      fileInputRef.value?.click();
+    }
+    async function selectPfp(e: Event) {
+      const target = e.target as HTMLInputElement;
+      if (!target.files || !target.files[0]) return;
+      const file = target.files[0];
+      resMsg.value = { msg: "Uploading...", err: false, pen: true };
       try {
-        modalStore.messageModalProps = {
-          msg: "Uploading...",
-          err: false,
-          pen: true,
-          confirmationCallback: () => {},
-          cancellationCallback: () => {},
-        };
         await authStore.uploadPfp(file);
-        modalStore.showModal = false;
+        resMsg.value = { msg: "", err: false, pen: false };
       } catch (e) {
-        modalStore.messageModalProps = {
-          msg: `${e}`,
-          err: false,
-          pen: false,
-          confirmationCallback: () => (modalStore.showModal = false),
-          cancellationCallback: undefined,
-        };
+        resMsg.value = { msg: `${e}`, err: true, pen: false };
       }
-    },
-    cancellationCallback: () => {
-      modalStore.showModal = false;
-    },
-  };
-}
+    }
+    return {
+      fileInputRef,
+      selectPfp,
+      authStore,
+      clickPfpHiddenInput,
+      resMsg,
+    };
+  },
+  components: { ResMsg },
+};
 </script>
 
 <template>
@@ -68,7 +54,8 @@ function selectPfp(e: Event) {
     <div class="username">
       {{ authStore.user?.username }}
     </div>
-    <p>Click on your profile picture to select a new one</p>
+    <p v-if="!resMsg.pen">Click on your profile picture to select a new one</p>
+    <ResMsg :resMsg="resMsg" />
   </div>
 </template>
 

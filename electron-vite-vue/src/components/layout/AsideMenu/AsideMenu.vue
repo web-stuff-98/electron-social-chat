@@ -15,10 +15,13 @@ enum EAsideSection {
 
 const show = ref(false);
 const section = ref<EAsideSection>(EAsideSection.PROFILE);
+
 </script>
 
 <template>
-  <aside v-show="show">
+  <aside
+  :style="{ 'transform' : `translateX(${show ? '0%' : '-100%'})` }"
+  >
     <div class="buttons">
       <button @click="section = EAsideSection.DIRECT_MESSAGES">
         Direct messages
@@ -60,12 +63,13 @@ aside {
   width: 10rem;
   height: 100%;
   max-height: calc(100% - var(--header-height));
-  border-right: 2px solid var(--base);
+  border-right: 1px solid var(--base);
   display: flex;
   flex-direction: column;
   padding: 0;
   background: var(--foreground);
   box-shadow: 0px 0px 3px black;
+  transition: transform 50ms linear;
   .buttons {
     button {
       border: none;
@@ -100,6 +104,7 @@ aside {
     align-items: center;
     justify-content: center;
     border-radius: var(--border-radius-medium);
+    background: red;
     svg {
       width: 1rem;
       height: 1rem;

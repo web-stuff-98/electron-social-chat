@@ -74,9 +74,10 @@ onMounted(() => {
 <template>
   <Bar />
   <AsideMenu v-if="authStore.user" />
-  <Modal v-if="modalStore.showModal || !authStore.user" />
+  <Modal v-if="modalStore.showModal" />
   <div class="content">
-    <main></main>
+    <main>
+    </main>
   </div>
 </template>
 
