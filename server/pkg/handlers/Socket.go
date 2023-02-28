@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -35,27 +36,27 @@ func reader(conn *websocket.Conn, socketServer *socketserver.SocketServer, uid *
 				log.Println("Recovered from panic in WS reader loop : ", r)
 			}
 		}()
-		/*
-			_, p, err := conn.ReadMessage()
+
+		_, p, err := conn.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		var data map[string]interface{}
+		json.Unmarshal(p, &data)
+
+		eventType, eventTypeOk := data["event_type"]
+
+		if eventTypeOk {
+			err := HandleSocketEvent(eventType.(string), p, conn, *uid, socketServer, colls)
 			if err != nil {
-				log.Println(err)
-				return
-			}
-
-			var data map[string]interface{}
-			json.Unmarshal(p, &data)
-
-			eventType, eventTypeOk := data["event_type"]
-
-			if eventTypeOk {
-				err := HandleSocketEvent(eventType.(string), p, conn, *uid, socketServer, colls)
-				if err != nil {
-					sendErrorMessageThroughSocket(conn)
-				}
-			} else {
-				// eventType was not received. Send error.
 				sendErrorMessageThroughSocket(conn)
-			}*/
+			}
+		} else {
+			// eventType was not received. Send error.
+			sendErrorMessageThroughSocket(conn)
+		}
 	}
 }
 

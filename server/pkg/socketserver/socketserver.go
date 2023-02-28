@@ -139,6 +139,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 				}
 			}()
 			connData := <-socketServer.RegisterConn
+			log.Println("Connection registration")
 			if connData.Conn != nil {
 				socketServer.Connections.mutex.Lock()
 				socketServer.Connections.data[connData.Conn] = connData.Uid

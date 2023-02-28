@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
+	"github.com/web-stuff-98/electron-social-chat/pkg/changestreams"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/handlers"
 	rdb "github.com/web-stuff-98/electron-social-chat/pkg/redis"
@@ -53,6 +54,9 @@ func main() {
 	api.HandleFunc("/acc/pfp", h.UploadPfp).Methods(http.MethodPost)
 
 	api.HandleFunc("/ws", h.WebSocketEndpoint)
+
+	log.Println("Watching collections...")
+	changestreams.WatchCollections(DB, socketServer)
 
 	log.Println("API open on port", os.Getenv("PORT"))
 	log.Fatal(http.ListenAndServe(fmt.Sprint(":", os.Getenv("PORT")), c.Handler(router)))

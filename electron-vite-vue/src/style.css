@@ -28,7 +28,7 @@ input[type="file"] {
   -webkit-text-size-adjust: 100%;
 
   --foreground: rgb(14, 15, 16);
-  --foreground-hover: rgb(15, 15, 18);
+  --foreground-hover: rgb(18, 18, 22);
 
   --header: rgb(3, 3, 6);
   --header-height: 1.5rem;

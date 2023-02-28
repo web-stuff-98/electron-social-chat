@@ -15,25 +15,8 @@ import {
   instanceOfChangeData,
 } from "./utils/determineSocketEvent";
 
-/* ------- Connect socket when user assigned (resend cookie) ------- */
-watch(authStore, (_, newVal) => {
-  if (newVal.user) {
-    socketStore.socket = new WebSocket(
-      process.env.NODE_ENV === "development" ||
-      window.location.origin === "http://localhost:8080"
-        ? "ws://localhost:8080/api/ws"
-        : "wss://electron-social-chat-backend.herokuapp.com/api/ws"
-    );
-    socketStore.openSubscription(`user=${newVal.user.ID}`);
-  } else {
-    socketStore.socket = undefined;
-    socketStore.subscriptions = [];
-  }
-});
-
 /* ------- Update current user in authStore when socket event received ------- */
 const watchForCurrentUserChanges = (e: MessageEvent) => {
-  console.log("Message received:", e.data);
   const data = parseSocketEventData(e);
   if (!data) return;
   if (instanceOfChangeData(data)) {
@@ -45,6 +28,7 @@ const watchForCurrentUserChanges = (e: MessageEvent) => {
     }
   }
 };
+
 watch(socketStore, (_, newVal) => {
   if (newVal.socket) {
     socketStore.socket?.addEventListener("message", watchForCurrentUserChanges);

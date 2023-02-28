@@ -18,8 +18,8 @@ export function instanceOfChangeData(object: any): object is ChangeData {
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {
-  const inData = e.data;
-  const data = JSON.parse(inData);
+  let data = JSON.parse(e.data);
   if (!data["DATA"]) return;
   data["DATA"] = JSON.parse(data["DATA"]);
+  return data
 }

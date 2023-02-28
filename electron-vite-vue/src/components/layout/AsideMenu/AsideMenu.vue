@@ -84,7 +84,7 @@ aside {
         top: 3px;
         right: 3px;
         background: white;
-        box-shadow: 0px 0px 3px white;
+        box-shadow: 0px 0px 6px white, 0px 0px 2px white;
       }
     }
   }

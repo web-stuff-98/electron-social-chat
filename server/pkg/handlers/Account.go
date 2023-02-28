@@ -8,15 +8,12 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/nfnt/resize"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/helpers"
-	"github.com/web-stuff-98/electron-social-chat/pkg/socketmodels"
-	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/validation"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -272,30 +269,6 @@ func (h handler) UploadPfp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-
-	userBytes, err := json.Marshal(user)
-	if err != nil {
-		responseMessage(w, http.StatusInternalServerError, "Internal error")
-		return
-	}
-	outBytes, err := json.Marshal(socketmodels.OutChangeMessage{
-		Type:   "USER",
-		Method: "CHANGE",
-		Data:   string(userBytes),
-	})
-	if err != nil {
-		responseMessage(w, http.StatusInternalServerError, "Internal error")
-		return
-	}
-
-	log.Println("A")
-
-	h.SocketServer.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
-		Name: "user=" + user.ID.Hex(),
-		Data: outBytes,
-	}
-
-	log.Println("B")
 
 	responseMessage(w, http.StatusOK, "Pfp updated")
 }

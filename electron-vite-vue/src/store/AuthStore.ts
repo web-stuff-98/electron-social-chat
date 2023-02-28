@@ -2,6 +2,7 @@ import { reactive } from "vue";
 import { IResMsg } from "../interfaces/GeneralInterfaces";
 import { makeRequest } from "../services/makeRequest";
 import { EModalType, modalStore } from "./ModalStore";
+import { socketStore } from "./SocketStore";
 
 export interface IUser {
   ID: string;
@@ -35,6 +36,7 @@ export const authStore: IAuthStore = reactive({
       authStore.user = user;
       authStore.resMsg = { msg: "", err: false, pen: false };
       modalStore.showModal = false;
+      socketStore.connectSocket(user.ID);
     } catch (e) {
       authStore.resMsg = { msg: `${e}`, err: true, pen: false };
     }
@@ -50,6 +52,7 @@ export const authStore: IAuthStore = reactive({
       authStore.user = user;
       authStore.resMsg = { msg: "", err: false, pen: false };
       modalStore.showModal = false;
+      socketStore.connectSocket(user.ID);
     } catch (e) {
       authStore.resMsg = { msg: `${e}`, err: true, pen: false };
     }
