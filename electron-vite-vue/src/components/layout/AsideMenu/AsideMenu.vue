@@ -5,23 +5,22 @@ import Profile from "./sections/Profile.vue";
 import CreateRoom from "./sections/CreateRoom.vue";
 import ExploreRooms from "./sections/ExploreRooms.vue";
 import DirectMessages from "./sections/DirectMessages.vue";
+import FindUser from "./sections/FindUser.vue";
 
 enum EAsideSection {
   "PROFILE" = "Profile",
   "CREATE_ROOM" = "Create room",
   "EXPLORE_ROOMS" = "Explore rooms",
   "DIRECT_MESSAGES" = "Direct messages",
+  "FIND_USER" = "Find user",
 }
 
 const show = ref(false);
 const section = ref<EAsideSection>(EAsideSection.PROFILE);
-
 </script>
 
 <template>
-  <aside
-  :style="{ 'transform' : `translateX(${show ? '0%' : '-100%'})` }"
-  >
+  <aside :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }">
     <div class="buttons">
       <button @click="section = EAsideSection.DIRECT_MESSAGES">
         Direct messages
@@ -39,6 +38,10 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
         Profile
         <span v-if="section === EAsideSection.PROFILE" />
       </button>
+      <button @click="section = EAsideSection.FIND_USER">
+        Find user
+        <span v-if="section === EAsideSection.FIND_USER" />
+      </button>
     </div>
     <div class="container">
       <div class="content">
@@ -46,6 +49,7 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
         <ExploreRooms v-if="section === EAsideSection.EXPLORE_ROOMS" />
         <CreateRoom v-if="section === EAsideSection.CREATE_ROOM" />
         <Profile v-if="section === EAsideSection.PROFILE" />
+        <FindUser v-if="section === EAsideSection.FIND_USER" />
       </div>
       <button @click="show = false" class="close-button">
         <v-icon name="io-close" />
@@ -63,7 +67,7 @@ aside {
   width: 10rem;
   height: 100%;
   max-height: calc(100% - var(--header-height));
-  border-right: 1px solid var(--base);
+  border-right: 2px solid var(--base);
   display: flex;
   flex-direction: column;
   padding: 0;

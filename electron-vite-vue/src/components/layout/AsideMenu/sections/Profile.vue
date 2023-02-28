@@ -25,10 +25,10 @@ export default {
     }
     return {
       fileInputRef,
-      selectPfp,
       authStore,
-      clickPfpHiddenInput,
       resMsg,
+      selectPfp,
+      clickPfpHiddenInput,
     };
   },
   components: { ResMsg },

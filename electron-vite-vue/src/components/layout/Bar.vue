@@ -159,15 +159,15 @@ header {
     box-shadow: none;
     font-size: 1rem;
   }
-  .button,
-  .button:hover {
+  button,
+  button:hover {
     border-bottom: 1px solid var(--base-light);
   }
-  .button:last-of-type,
-  .button:last-of-type:hover {
+  button:last-of-type,
+  button:last-of-type:hover {
     border-bottom: none;
   }
-  .button:hover {
+  button:hover {
     border: none;
     background: var(--foreground-hover);
   }
