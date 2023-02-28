@@ -15,8 +15,8 @@ export default {
       const target = e.target as HTMLInputElement;
       if (!target.files || !target.files[0]) return;
       const file = target.files[0];
-      resMsg.value = { msg: "Uploading...", err: false, pen: true };
       try {
+        resMsg.value = { msg: "Uploading...", err: false, pen: true };
         await authStore.uploadPfp(file);
         resMsg.value = { msg: "", err: false, pen: false };
       } catch (e) {
