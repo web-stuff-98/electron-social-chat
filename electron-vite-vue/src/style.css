@@ -24,16 +24,16 @@ svg {
 
   color-scheme: light dark;
   color: white;
-  background-color: rgb(24, 25, 26);
+  background-color: rgb(15, 15, 15);
 
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  text-rendering: optimizeSpeed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --foreground: rgb(24, 25, 26);
-  --foreground-hover: rgb(24, 25, 32);
+  --foreground: rgb(15, 15, 15);
+  --foreground-hover: rgb(20, 20, 20);
 
   --header: rgb(3, 3, 6);
   --header-height: 1.5rem;
@@ -44,7 +44,7 @@ svg {
   --border-radius-medium: 0.333rem;
 
   --base: rgba(255, 255, 255, 0.15);
-  --base-light: rgba(255, 255, 255, 0.05);
+  --base-light: rgba(255, 255, 255, 0.075);
 
   --padding: 0.5rem;
   --padding-medium: 0.25rem;
@@ -117,6 +117,15 @@ code {
   margin: 0 auto;
   text-align: center;
   max-height: 100vh;
+}
+
+.input-label {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
+  gap:var(--padding-medium);
 }
 
 @media (prefers-color-scheme: light) {

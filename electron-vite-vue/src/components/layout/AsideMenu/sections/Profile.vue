@@ -1,38 +1,27 @@
-<script lang="ts">
+<script lang="ts" setup>
 import { authStore } from "../../../../store/AuthStore";
 import { ref } from "vue";
 import { IResMsg } from "../../../../interfaces/GeneralInterfaces";
 import ResMsg from "../../ResMsg.vue";
 
-export default {
-  setup() {
-    const fileInputRef = ref<HTMLCanvasElement | null>(null);
-    const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
-    function clickPfpHiddenInput() {
-      fileInputRef.value?.click();
-    }
-    async function selectPfp(e: Event) {
-      const target = e.target as HTMLInputElement;
-      if (!target.files || !target.files[0]) return;
-      const file = target.files[0];
-      try {
-        resMsg.value = { msg: "Uploading...", err: false, pen: true };
-        await authStore.uploadPfp(file);
-        resMsg.value = { msg: "", err: false, pen: false };
-      } catch (e) {
-        resMsg.value = { msg: `${e}`, err: true, pen: false };
-      }
-    }
-    return {
-      fileInputRef,
-      authStore,
-      resMsg,
-      selectPfp,
-      clickPfpHiddenInput,
-    };
-  },
-  components: { ResMsg },
-};
+const fileInputRef = ref<HTMLCanvasElement | null>(null);
+const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+
+function clickPfpHiddenInput() {
+  fileInputRef.value?.click();
+}
+async function selectPfp(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (!target.files || !target.files[0]) return;
+  const file = target.files[0];
+  try {
+    resMsg.value = { msg: "Uploading...", err: false, pen: true };
+    await authStore.uploadPfp(file);
+    resMsg.value = { msg: "", err: false, pen: false };
+  } catch (e) {
+    resMsg.value = { msg: `${e}`, err: true, pen: false };
+  }
+}
 </script>
 
 <template>

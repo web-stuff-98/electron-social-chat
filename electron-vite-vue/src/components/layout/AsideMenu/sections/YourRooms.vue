@@ -1,0 +1,3 @@
+<template>
+    Your rooms
+</template>

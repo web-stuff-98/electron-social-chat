@@ -1,12 +1,17 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"github.com/nfnt/resize"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/helpers"
 	"github.com/web-stuff-98/electron-social-chat/pkg/validation"
@@ -187,4 +192,91 @@ func (h handler) DeleteRoom(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseMessage(w, http.StatusOK, "Room deleted")
+}
+
+func (h handler) UploadRoomImage(w http.ResponseWriter, r *http.Request) {
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&room); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	if room.Author != user.ID {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	r.ParseMultipartForm(32 << 20) // binary shift maximum 20mb in bytes
+	file, handler, err := r.FormFile("file")
+	defer file.Close()
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	if handler.Size > 20*1024*1024 {
+		responseMessage(w, http.StatusRequestEntityTooLarge, "File too large. Max 20mb")
+		return
+	}
+
+	src, err := handler.Open()
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+	}
+
+	var isJPEG, isPNG bool
+	isJPEG = handler.Header.Get("Content-Type") == "image/jpeg"
+	isPNG = handler.Header.Get("Content-Type") == "image/png"
+	if !isJPEG && !isPNG {
+		responseMessage(w, http.StatusBadRequest, "Unrecognized file format")
+		return
+	}
+
+	var img image.Image
+	var blurImg image.Image
+	var decodeErr error
+	if isJPEG {
+		img, decodeErr = jpeg.Decode(src)
+	} else {
+		img, decodeErr = png.Decode(src)
+	}
+	if decodeErr != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+	blurImg = img
+	buf := &bytes.Buffer{}
+	blurBuf := &bytes.Buffer{}
+	width := img.Bounds().Dx()
+	if width > 350 {
+		img = resize.Resize(350, 0, img, resize.Lanczos2)
+	} else {
+		img = resize.Resize(uint(width), 0, img, resize.Lanczos2)
+	}
+	blurImg = resize.Resize(10, 0, img, resize.Bilinear)
+	if err := jpeg.Encode(buf, img, nil); err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+	if err := jpeg.Encode(blurBuf, blurImg, nil); err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+
 }

@@ -6,11 +6,13 @@ import CreateRoom from "./sections/CreateRoom.vue";
 import ExploreRooms from "./sections/ExploreRooms.vue";
 import DirectMessages from "./sections/DirectMessages.vue";
 import FindUser from "./sections/FindUser.vue";
+import YourRooms from "./sections/YourRooms.vue";
 
 enum EAsideSection {
   "PROFILE" = "Profile",
   "CREATE_ROOM" = "Create room",
   "EXPLORE_ROOMS" = "Explore rooms",
+  "YOUR_ROOMS" = "Your rooms",
   "DIRECT_MESSAGES" = "Direct messages",
   "FIND_USER" = "Find user",
 }
@@ -21,8 +23,9 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
 
 <template>
   <aside
-  v-if="show"
-   :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }">
+    v-if="show"
+    :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }"
+  >
     <div class="buttons">
       <button @click="section = EAsideSection.DIRECT_MESSAGES">
         Direct messages
@@ -31,6 +34,10 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
       <button @click="section = EAsideSection.EXPLORE_ROOMS">
         Explore rooms
         <span v-if="section === EAsideSection.EXPLORE_ROOMS" />
+      </button>
+      <button @click="section = EAsideSection.YOUR_ROOMS">
+        Your rooms
+        <span v-if="section === EAsideSection.YOUR_ROOMS" />
       </button>
       <button @click="section = EAsideSection.CREATE_ROOM">
         Create room
@@ -52,6 +59,7 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
         <CreateRoom v-if="section === EAsideSection.CREATE_ROOM" />
         <Profile v-if="section === EAsideSection.PROFILE" />
         <FindUser v-if="section === EAsideSection.FIND_USER" />
+        <YourRooms v-if="section === EAsideSection.YOUR_ROOMS" />
       </div>
       <button @click="show = false" class="close-button">
         <v-icon name="io-close" />

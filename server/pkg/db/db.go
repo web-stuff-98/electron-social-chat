@@ -18,6 +18,7 @@ type Collections struct {
 	RoomCollection             *mongo.Collection
 	RoomInternalDataCollection *mongo.Collection
 	RoomExternalDataCollection *mongo.Collection
+	RoomImageCollection        *mongo.Collection
 }
 
 func Init() (*mongo.Database, *Collections) {
@@ -41,6 +42,7 @@ func Init() (*mongo.Database, *Collections) {
 		RoomCollection:             DB.Collection("rooms"),
 		RoomInternalDataCollection: DB.Collection("room_internal_data"),
 		RoomExternalDataCollection: DB.Collection("room_external_data"),
+		RoomImageCollection:        DB.Collection("room_image"),
 	}
 
 	colls.UserCollection.Indexes().CreateOne(context.Background(), mongo.IndexModel{

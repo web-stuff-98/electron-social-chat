@@ -13,6 +13,7 @@ import {
   parseSocketEventData,
   instanceOfChangeData,
 } from "./utils/determineSocketEvent";
+import Toggle from "./components/shared/Toggle.vue";
 
 /* ------- Update current user in authStore when socket event received ------- */
 const watchForCurrentUserChanges = (e: MessageEvent) => {
@@ -75,7 +76,8 @@ onMounted(() => {
   <AsideMenu v-if="authStore.user" />
   <WelcomeModal v-else/>
   <div class="content">
-    <main></main>
+    <main>
+    </main>
   </div>
 </template>
 

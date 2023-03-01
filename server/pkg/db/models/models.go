@@ -42,7 +42,12 @@ type Room struct {
 	Author primitive.ObjectID `bson:"author" json:"author"`
 }
 
-// Potentially heavier data that should be loaded after the room is opened
+type RoomImage struct {
+	ID     primitive.ObjectID `bson:"_id,omitempty"`
+	Binary primitive.Binary   `bson:"binary"`
+}
+
+// Potentially heavier data (room might have a lot of messages) that should be loaded after the room is entered
 type RoomInternalData struct {
 	ID primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	// Channels also contain all the messages, so potentially heavy.

@@ -7,7 +7,7 @@ type Credentials struct {
 
 type Room struct {
 	Name    string `json:"name" validate:"required,min=2,max=16"`
-	Private bool   `json:"private"`
+	Private bool   `json:"is_private"`
 }
 
 type UserSearch struct {

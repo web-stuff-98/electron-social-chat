@@ -55,6 +55,10 @@ func main() {
 
 	api.HandleFunc("/user/search", h.SearchUsers).Methods(http.MethodPost)
 
+	api.HandleFunc("/room/create", h.CreateRoom).Methods(http.MethodPost)
+	api.HandleFunc("/room/update", h.UpdateRoom).Methods(http.MethodPatch)
+	api.HandleFunc("/room/delete", h.DeleteRoom).Methods(http.MethodDelete)
+
 	api.HandleFunc("/ws", h.WebSocketEndpoint)
 
 	log.Println("Watching collections...")
