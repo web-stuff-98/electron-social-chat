@@ -93,11 +93,12 @@ header {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  border-bottom: 2px solid var(--base);
+  border-bottom: 2px solid var(--base-light);
   -webkit-app-region: drag;
   height: var(--header-height);
   z-index: 100;
   position: relative;
+  box-shadow: var(--shadow-medium);
   .buttons {
     display: flex;
     gap: 1px;
@@ -125,6 +126,7 @@ header {
     -webkit-app-region: no-drag;
     width: 1.3rem;
     height: 1.3rem;
+    background: rgb(38, 38, 38);
   }
   button:hover {
     border: 2px solid white;
@@ -137,8 +139,8 @@ header {
   .quit-button {
     background: red;
     svg {
-      width:135%;
-      height:135%;
+      width: 135%;
+      height: 135%;
     }
   }
   .minimize-button {

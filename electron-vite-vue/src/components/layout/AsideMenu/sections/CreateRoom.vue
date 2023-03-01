@@ -59,7 +59,9 @@ async function handleSubmit() {
     <button @click="clickHiddenImageInput" type="button">Select image</button>
     <button type="submit">Create room</button>
     <img v-if="roomImageURL" :src="roomImageURL" />
-    <ResMsg :resMsg="resMsg" />
+    <div class="resMsg-container">
+      <ResMsg :resMsg="resMsg" />
+    </div>
   </form>
 </template>
 
@@ -72,6 +74,7 @@ async function handleSubmit() {
   justify-content: center;
   gap: var(--padding-medium);
   padding: var(--padding-medium);
+  box-sizing: border-box;
   input {
     width: 100%;
     text-align: center;
@@ -84,6 +87,13 @@ async function handleSubmit() {
     object-position: center;
     object-fit: contain;
     max-height: 5rem;
+  }
+  .resMsg-container {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>

@@ -432,24 +432,26 @@ func (h handler) GetRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, oi := range roomExternalData.Banned {
-		if oi == user.ID {
-			responseMessage(w, http.StatusUnauthorized, "You are banned from this room")
-			return
-		}
-	}
-
-	if roomExternalData.Private {
-		isMember := false
-		for _, oi := range roomExternalData.Members {
+	if room.Author != user.ID {
+		for _, oi := range roomExternalData.Banned {
 			if oi == user.ID {
-				isMember = true
-				break
+				responseMessage(w, http.StatusUnauthorized, "You are banned from this room")
+				return
 			}
 		}
-		if !isMember {
-			responseMessage(w, http.StatusForbidden, "You are not a member of this room")
-			return
+
+		if roomExternalData.Private {
+			isMember := false
+			for _, oi := range roomExternalData.Members {
+				if oi == user.ID {
+					isMember = true
+					break
+				}
+			}
+			if !isMember {
+				responseMessage(w, http.StatusForbidden, "You are not a member of this room")
+				return
+			}
 		}
 	}
 
@@ -484,6 +486,15 @@ func (h handler) GetRoomImage(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&room); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
 
 	for _, oi := range roomExternalData.Banned {
 		if oi == user.ID {
@@ -492,7 +503,7 @@ func (h handler) GetRoomImage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if roomExternalData.Private {
+	if roomExternalData.Private && room.Author != user.ID {
 		isMember := false
 		for _, oi := range roomExternalData.Members {
 			if oi == user.ID {

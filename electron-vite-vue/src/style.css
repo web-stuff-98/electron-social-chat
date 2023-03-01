@@ -1,10 +1,10 @@
 @font-face {
-  font-family: "Coolvetica";
-  src: url(coolvetica.rg-regular.otf);
+  font-family: "Monofonto";
+  src: url(monofonto.regular.otf);
 }
 
 * {
-  font-family: "Coolvetica";
+  font-family: "Monofonto";
   color: white;
 }
 
@@ -18,13 +18,13 @@ svg {
 }
 
 :root {
-  font-family: "Coolvetica";
+  font-family: "Monofonto";
   line-height: 1;
   font-weight: 300;
 
   color-scheme: light dark;
   color: white;
-  background-color: rgb(12, 12, 12);
+  background-color: rgb(23, 23, 23);
 
   font-synthesis: none;
   text-rendering: optimizeSpeed;
@@ -32,10 +32,10 @@ svg {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --foreground: rgb(12, 12, 12);
-  --foreground-hover: rgb(24, 24, 24);
+  --foreground: rgb(23, 23, 23);
+  --foreground-hover: rgb(27, 27, 27);
 
-  --header: rgb(8, 8, 8);
+  --header: rgb(27, 27, 27);
   --header-height: 1.65rem;
 
   --shadow: 0px 1px 13px rgba(0, 0, 0, 0.5), 0px 2px 3px rgba(0, 0, 0, 0.5);
@@ -43,8 +43,8 @@ svg {
 
   --border-radius-medium: 0.333rem;
 
-  --base: rgba(255, 255, 255, 0.15);
-  --base-light: rgba(255, 255, 255, 0.0375);
+  --base: rgba(255, 255, 255, 0.2);
+  --base-light: rgba(255, 255, 255, 0.0485);
 
   --padding: 0.5rem;
   --padding-medium: 0.25rem;
