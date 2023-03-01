@@ -91,7 +91,7 @@ func (h handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var credentialsInput validation.Credentials
-	if json.Unmarshal(body, &credentialsInput); err != nil {
+	if err := json.Unmarshal(body, &credentialsInput); err != nil {
 		responseMessage(w, http.StatusBadRequest, "Bad request")
 		return
 	}

@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
         @click="showAccountMenu = !showAccountMenu"
         class="account-button"
       >
-        <v-icon name="md-manageaccounts-sharp" />
+        <v-icon name="bi-gear-fill" />
       </button>
       <button @click="minimize" class="minimize-button">
         <v-icon name="fa-minus" />
@@ -146,12 +146,11 @@ header {
   overflow: hidden;
   box-shadow: var(--shadow-medium);
   button {
-    padding: 0;
     margin: 0;
     border: none;
     background: none;
     border-radius: 0;
-    padding: 0 var(--padding-medium);
+    padding: var(--padding-medium);
     display: flex;
     min-width: fit-content;
     width: 100%;

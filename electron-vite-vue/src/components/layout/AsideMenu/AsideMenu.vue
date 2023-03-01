@@ -20,7 +20,9 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
 </script>
 
 <template>
-  <aside :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }">
+  <aside
+  v-if="show"
+   :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }">
     <div class="buttons">
       <button @click="section = EAsideSection.DIRECT_MESSAGES">
         Direct messages
@@ -70,7 +72,6 @@ aside {
   border-right: 2px solid var(--base);
   display: flex;
   flex-direction: column;
-  padding: 0;
   background: var(--foreground);
   box-shadow: 0px 0px 3px black;
   transition: transform 50ms linear;
@@ -99,7 +100,7 @@ aside {
   .close-button {
     border: 1px solid white;
     padding: 0;
-    margin: 0;
+    margin: var(--padding-medium);
     filter: opacity(0.666);
     width: fit-content;
     box-shadow: var(--shadow-medium);
@@ -136,14 +137,15 @@ aside {
 }
 .container {
   padding: var(--padding-medium);
+  padding-left: calc(1px + var(--padding-medium));
   align-items: flex-end;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  padding: var(--padding-medium);
   box-sizing: border-box;
   .content {
+    box-sizing: border-box;
     flex-grow: 1;
     width: 100%;
     height: 100%;

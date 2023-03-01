@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -41,6 +42,13 @@ func Init() (*mongo.Database, *Collections) {
 		RoomInternalDataCollection: DB.Collection("room_internal_data"),
 		RoomExternalDataCollection: DB.Collection("room_external_data"),
 	}
+
+	colls.UserCollection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+		Keys: bson.M{
+			"username": "text",
+		},
+		Options: options.Index().SetName("username_text"),
+	})
 
 	log.Println("Connected to MongoDB")
 

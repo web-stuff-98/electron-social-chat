@@ -7,21 +7,23 @@ import { OhVueIcon, addIcons } from "oh-vue-icons";
 import {
   IoClose,
   FaMinus,
-  MdManageaccountsSharp,
+  BiGearFill,
   CoMenu,
   PrSpinner,
   MdErrorRound,
-  LaUser
+  LaUser,
+  HiSearch,
 } from "oh-vue-icons/icons";
 
 addIcons(
   IoClose,
   FaMinus,
-  MdManageaccountsSharp,
+  BiGearFill,
   CoMenu,
   PrSpinner,
   MdErrorRound,
-  LaUser
+  LaUser,
+  HiSearch
 );
 
 createApp(App)

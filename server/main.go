@@ -53,6 +53,8 @@ func main() {
 	api.HandleFunc("/acc/delete", h.DeleteAccount).Methods(http.MethodDelete)
 	api.HandleFunc("/acc/pfp", h.UploadPfp).Methods(http.MethodPost)
 
+	api.HandleFunc("/user/search", h.SearchUsers).Methods(http.MethodPost)
+
 	api.HandleFunc("/ws", h.WebSocketEndpoint)
 
 	log.Println("Watching collections...")

@@ -1,6 +1,6 @@
 # Unfinished group video/voip chat app using Vue, Electron & Go
 
-## I dont like Vue
+## I dont like Vue. 
 
 ## The serverside code is pretty much the same as my last project
 
