@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import Modal from "./components/modal/Modal.vue";
+import WelcomeModal from "./components/welcomeModal/WelcomeModal.vue";
 import Bar from "./components/layout/Bar.vue";
 import AsideMenu from "./components/layout/asideMenu/AsideMenu.vue";
 
 import { authStore, IUser } from "./store/AuthStore";
-import { modalStore } from "./store/ModalStore";
 import { socketStore } from "./store/SocketStore";
 import { userStore } from "./store/UserStore";
 
@@ -74,10 +73,9 @@ onMounted(() => {
 <template>
   <Bar />
   <AsideMenu v-if="authStore.user" />
-  <Modal v-if="modalStore.showModal" />
+  <WelcomeModal v-else/>
   <div class="content">
-    <main>
-    </main>
+    <main></main>
   </div>
 </template>
 

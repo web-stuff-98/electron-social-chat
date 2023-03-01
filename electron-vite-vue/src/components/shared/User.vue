@@ -37,10 +37,13 @@ const user = useUser(uid.value);
     background-size: cover;
     border-radius: 50%;
     box-shadow: var(--shadow-medium);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     svg {
       fill: white;
-      width: 80%;
-      height: 80%;
+      width: 60%;
+      height: 60%;
     }
   }
 }

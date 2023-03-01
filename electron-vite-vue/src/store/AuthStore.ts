@@ -1,7 +1,7 @@
 import { reactive } from "vue";
 import { IResMsg } from "../interfaces/GeneralInterfaces";
 import { makeRequest } from "../services/makeRequest";
-import { EModalType, modalStore } from "./ModalStore";
+import { EWelcomeModalType, welcomeModalStore } from "./WelcomeModalStore";
 import { socketStore } from "./SocketStore";
 
 export interface IUser {
@@ -35,7 +35,7 @@ export const authStore: IAuthStore = reactive({
       });
       authStore.user = user;
       authStore.resMsg = { msg: "", err: false, pen: false };
-      modalStore.showModal = false;
+      welcomeModalStore.showModal = false;
       socketStore.connectSocket(user.ID);
     } catch (e) {
       authStore.resMsg = { msg: `${e}`, err: true, pen: false };
@@ -51,7 +51,7 @@ export const authStore: IAuthStore = reactive({
       });
       authStore.user = user;
       authStore.resMsg = { msg: "", err: false, pen: false };
-      modalStore.showModal = false;
+      welcomeModalStore.showModal = false;
       socketStore.connectSocket(user.ID);
     } catch (e) {
       authStore.resMsg = { msg: `${e}`, err: true, pen: false };
@@ -66,8 +66,8 @@ export const authStore: IAuthStore = reactive({
       });
       authStore.user = undefined;
       authStore.resMsg = { msg: "", err: false, pen: false };
-      modalStore.modalType = EModalType.WELCOME;
-      modalStore.showModal = true;
+      welcomeModalStore.modalType = EWelcomeModalType.WELCOME;
+      welcomeModalStore.showModal = true;
     } catch (e) {
       authStore.resMsg = { msg: `${e}`, err: true, pen: false };
     }
@@ -81,8 +81,8 @@ export const authStore: IAuthStore = reactive({
       });
       authStore.user = undefined;
       authStore.resMsg = { msg: "", err: false, pen: false };
-      modalStore.modalType = EModalType.WELCOME;
-      modalStore.showModal = true;
+      welcomeModalStore.modalType = EWelcomeModalType.WELCOME;
+      welcomeModalStore.showModal = true;
     } catch (e) {
       authStore.resMsg = { msg: `${e}`, err: true, pen: false };
     }

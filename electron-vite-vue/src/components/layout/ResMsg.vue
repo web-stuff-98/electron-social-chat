@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { IResMsg } from "../../interfaces/GeneralInterfaces";
-defineProps<{ resMsg: IResMsg }>();
+defineProps<{ resMsg: IResMsg; showAnyway?: boolean }>();
 </script>
 
 <template>
-  <div v-show="resMsg.pen || resMsg.err || resMsg.err" class="res-msg">
+  <div
+    v-show="resMsg.pen || resMsg.err || resMsg.err || showAnyway"
+    class="res-msg"
+  >
     <v-icon v-if="resMsg.err" class="res-msg-err-icon" name="md-error-round" />
     <p v-if="resMsg.msg">{{ resMsg.msg }}</p>
     <v-icon

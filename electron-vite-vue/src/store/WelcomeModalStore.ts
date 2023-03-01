@@ -1,8 +1,7 @@
 import { reactive } from "vue";
 import { IResMsg } from "../interfaces/GeneralInterfaces";
 
-export enum EModalType {
-  MESSAGE = "Message",
+export enum EWelcomeModalType {
   LOGIN = "Login",
   REGISTER = "Register",
   WELCOME = "Welcome",
@@ -16,13 +15,13 @@ interface IMessageModalProps extends IResMsg {
 
 interface IModalStore {
   showModal: boolean;
-  modalType: EModalType;
+  modalType: EWelcomeModalType;
   messageModalProps: IMessageModalProps;
 }
 
-export const modalStore: IModalStore = reactive({
+export const welcomeModalStore: IModalStore = reactive({
   showModal: true,
-  modalType: EModalType.WELCOME,
+  modalType: EWelcomeModalType.WELCOME,
   messageModalProps: {
     msg: "",
     err: false,

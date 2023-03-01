@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { modalStore, EModalType } from "../../../store/ModalStore";
+import {
+  welcomeModalStore,
+  EWelcomeModalType,
+} from "../../../store/WelcomeModalStore";
 </script>
 
 <template>
@@ -9,8 +12,10 @@ import { modalStore, EModalType } from "../../../store/ModalStore";
     existing example account or register a new one.
   </p>
   <div class="buttons">
-    <button @click="modalStore.modalType = EModalType.LOGIN">Login</button>
-    <button @click="modalStore.modalType = EModalType.REGISTER">
+    <button @click="welcomeModalStore.modalType = EWelcomeModalType.LOGIN">
+      Login
+    </button>
+    <button @click="welcomeModalStore.modalType = EWelcomeModalType.REGISTER">
       Register
     </button>
   </div>

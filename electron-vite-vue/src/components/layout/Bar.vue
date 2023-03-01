@@ -2,12 +2,18 @@
 import { ipcRenderer } from "electron";
 import { ref } from "vue";
 import { authStore } from "../../store/AuthStore";
-import { modalStore, EModalType } from "../../store/ModalStore";
 
 import { onBeforeMount, onBeforeUnmount } from "vue";
+import MessageModal from "../messageModal/MessageModal.vue";
+import { IResMsg } from "../../interfaces/GeneralInterfaces";
 
 const showAccountMenu = ref(false);
 const mouseInAccountMenu = ref(false);
+
+const modalConfirmation = ref(() => {});
+const modalCancellation = ref(() => {});
+const showModal = ref(false);
+const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 function quit() {
   ipcRenderer.send("window", ["QUIT"]);
@@ -19,17 +25,14 @@ function click() {
   if (!mouseInAccountMenu.value) showAccountMenu.value = false;
 }
 function deleteAccount() {
-  modalStore.modalType = EModalType.MESSAGE;
-  modalStore.messageModalProps = {
+  modalMsg.value = {
     msg: "Are you sure you want to delete your account?",
     err: false,
     pen: false,
-    confirmationCallback: () => authStore.deleteAccount(),
-    cancellationCallback: () => {
-      modalStore.showModal = false;
-    },
   };
-  modalStore.showModal = true;
+  showModal.value = true;
+  modalConfirmation.value = authStore.deleteAccount;
+  modalCancellation.value = () => (showModal.value = false);
 }
 
 onBeforeMount(() => {
@@ -41,6 +44,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+  <MessageModal
+    :msg="modalMsg"
+    :show="showModal"
+    :confirmationCallback="modalConfirmation"
+    :cancellationCallback="modalCancellation"
+  />
   <header>
     <div v-if="authStore.user" class="user-name">
       {{ authStore.user?.username }}
@@ -49,7 +58,7 @@ onBeforeUnmount(() => {
       <div
         @mouseenter="mouseInAccountMenu = true"
         @mouseleave="mouseInAccountMenu = false"
-        v-show="showAccountMenu && !modalStore.showModal"
+        v-show="showAccountMenu && !showModal"
         class="account-menu"
       >
         <button @click="deleteAccount">Delete account</button>
