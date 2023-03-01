@@ -52,6 +52,8 @@ func Init() (*mongo.Database, *Collections) {
 		Options: options.Index().SetName("username_text"),
 	})
 
+	DB.Drop(context.Background())
+
 	log.Println("Connected to MongoDB")
 
 	return DB, colls

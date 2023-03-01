@@ -40,6 +40,8 @@ type Room struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	Name   string             `bson:"name" json:"name,maxlength=16"`
 	Author primitive.ObjectID `bson:"author" json:"author"`
+	// blur will not be present if the room has no image
+	Blur primitive.Binary `bson:"blur" json:"blur"`
 }
 
 type RoomImage struct {
@@ -47,7 +49,7 @@ type RoomImage struct {
 	Binary primitive.Binary   `bson:"binary"`
 }
 
-// Potentially heavier data (room might have a lot of messages) that should be loaded after the room is entered
+// Potentially heavier data (room could have a lot of messages) that should be loaded after the room is entered
 type RoomInternalData struct {
 	ID primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	// Channels also contain all the messages, so potentially heavy.

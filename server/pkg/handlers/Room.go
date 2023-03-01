@@ -279,4 +279,48 @@ func (h handler) UploadRoomImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if _, err := h.Collections.RoomCollection.UpdateByID(r.Context(), id, bson.M{
+		"$set": bson.M{
+			"blur": blurBuf.Bytes(),
+		},
+	}); err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+
+	foundImage := false
+	res := h.Collections.RoomImageCollection.FindOne(r.Context(), bson.M{"_id": id})
+	if res.Err() != nil {
+		if res.Err() != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+	} else {
+		foundImage = true
+	}
+
+	if foundImage {
+		if _, err := h.Collections.RoomImageCollection.UpdateByID(r.Context(), id, bson.M{
+			"$set": bson.M{
+				"binary": buf.Bytes(),
+			},
+		}); err != nil {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+	} else {
+		if _, err := h.Collections.RoomImageCollection.InsertOne(r.Context(), models.RoomImage{
+			ID:     id,
+			Binary: primitive.Binary{Data: buf.Bytes()},
+		}); err != nil {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+	}
+
+	if foundImage {
+		responseMessage(w, http.StatusOK, "Image updated")
+	} else {
+		responseMessage(w, http.StatusCreated, "Image created")
+	}
 }
