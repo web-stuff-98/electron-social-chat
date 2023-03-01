@@ -41,7 +41,12 @@ type Room struct {
 	Name   string             `bson:"name" json:"name,maxlength=16"`
 	Author primitive.ObjectID `bson:"author" json:"author"`
 	// blur will not be present if the room has no image
-	Blur primitive.Binary `bson:"blur" json:"blur"`
+	Blur string `bson:"blur" json:"blur"`
+
+	// The RoomExternalData. Not stored in RoomCollection. This stuff will be nil for get room page request
+	Private bool                 `bson:"-" json:"private"`
+	Members []primitive.ObjectID `bson:"-" json:"members"`
+	Banned  []primitive.ObjectID `bson:"-" json:"banned"`
 }
 
 type RoomImage struct {

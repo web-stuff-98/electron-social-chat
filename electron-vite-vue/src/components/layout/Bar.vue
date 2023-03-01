@@ -71,7 +71,7 @@ onBeforeUnmount(() => {
         @click="showAccountMenu = !showAccountMenu"
         class="account-button"
       >
-        <v-icon name="bi-gear-fill" />
+        <v-icon name="bi-shield-fill" />
       </button>
       <button @click="minimize" class="minimize-button">
         <v-icon name="fa-minus" />
@@ -85,7 +85,8 @@ onBeforeUnmount(() => {
 
 <style lang="scss" scoped>
 header {
-  padding: 2px;
+  padding: 3px;
+  padding-right: 2px;
   box-sizing: border-box;
   width: 100%;
   background: var(--header);
@@ -99,7 +100,7 @@ header {
   position: relative;
   .buttons {
     display: flex;
-    gap: 2px;
+    gap: 1px;
   }
   .user-name {
     flex-grow: 1;
@@ -111,7 +112,7 @@ header {
     filter: opacity(0.5);
   }
   button {
-    border: 2px solid white;
+    border: 2px solid lightgray;
     padding: 0;
     margin: 0;
     filter: opacity(0.666);
@@ -120,26 +121,30 @@ header {
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--border-radius-medium);
+    border-radius: 33.33%;
     -webkit-app-region: no-drag;
-    width: 1.066rem;
-    height: 1.066rem;
+    width: 1.3rem;
+    height: 1.3rem;
   }
   button:hover {
     border: 2px solid white;
     filter: opacity(1);
   }
   .account-button svg {
-    width: 80%;
-    height: 80%;
+    width: 90%;
+    height: 90%;
   }
   .quit-button {
     background: red;
+    svg {
+      width:135%;
+      height:135%;
+    }
   }
   .minimize-button {
     svg {
-      width: 70%;
-      height: 70%;
+      width: 90%;
+      height: 90%;
     }
   }
 }
@@ -148,9 +153,10 @@ header {
   flex-direction: column;
   position: fixed;
   top: calc(var(--header-height) + 1px);
+  padding: 2px;
   right: 2px;
   background: var(--foreground);
-  border: 2px solid var(--base);
+  border: 1px solid var(--base-light);
   border-radius: var(--border-radius-medium);
   overflow: hidden;
   box-shadow: var(--shadow-medium);
@@ -167,17 +173,10 @@ header {
     box-shadow: none;
     font-size: 1rem;
   }
-  button,
-  button:hover {
-    border-bottom: 1px solid var(--base-light);
-  }
-  button:last-of-type,
-  button:last-of-type:hover {
-    border-bottom: none;
-  }
   button:hover {
     border: none;
     background: var(--foreground-hover);
+    border-radius: 3px;
   }
 }
 </style>

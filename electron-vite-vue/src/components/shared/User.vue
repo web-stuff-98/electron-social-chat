@@ -1,13 +1,31 @@
 <script lang="ts" setup>
-import { toRefs } from "vue";
+import { toRefs, onMounted, ref, onBeforeUnmount } from "vue";
+import { userStore } from "../../store/UserStore";
 import useUser from "../../composables/useUser";
 const props = defineProps<{ uid: string }>();
 const { uid } = toRefs(props);
 const user = useUser(uid.value);
+
+const containerRef = ref<HTMLCanvasElement | null>(null);
+
+const observer = new IntersectionObserver(([entry]) => {
+  if (entry.isIntersecting) {
+    userStore.userEnteredView(uid.value);
+  } else {
+    userStore.userLeftView(uid.value);
+  }
+});
+
+onMounted(() => {
+  observer.observe(containerRef.value!);
+});
+onBeforeUnmount(() => {
+  observer.disconnect();
+});
 </script>
 
 <template>
-  <div class="user">
+  <div ref="containerRef" class="user">
     <div
       v-bind:style="{ backgroundImage: `url(${user?.base64pfp})` }"
       class="pfp"

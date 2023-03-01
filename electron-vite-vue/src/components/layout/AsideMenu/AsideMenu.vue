@@ -22,10 +22,7 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
 </script>
 
 <template>
-  <aside
-    v-if="show"
-    :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }"
-  >
+  <aside :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }">
     <div class="buttons">
       <button @click="section = EAsideSection.DIRECT_MESSAGES">
         Direct messages
@@ -77,31 +74,36 @@ aside {
   width: 10rem;
   height: 100%;
   max-height: calc(100% - var(--header-height));
-  border-right: 2px solid var(--base);
+  border-right: 2px solid var(--base-light);
   display: flex;
   flex-direction: column;
   background: var(--foreground);
   box-shadow: 0px 0px 3px black;
   transition: transform 50ms linear;
   .buttons {
+    display: flex;
+    flex-direction: column;
+    padding: var(--padding-medium);
+    padding-bottom: 0;
+    padding-left: calc(var(--padding-medium) + 2px);
+    padding-top: calc(var(--padding-medium) + 1px);
+    gap: var(--padding-medium);
     button {
-      border: none;
-      border-radius: 0;
       width: 100%;
+      border: 2px solid var(--base-light);
       padding: var(--padding-medium);
       text-align: left;
-      border-bottom: 2px solid var(--base-light);
-      box-shadow: none;
       font-size: 1rem;
       position: relative;
       span {
-        width: 2px;
-        height: 2px;
+        width: 3px;
+        height: 3px;
         position: absolute;
         top: 3px;
+        border-radius: 50%;
         right: 3px;
         background: white;
-        box-shadow: 0px 0px 6px white, 0px 0px 2px white;
+        box-shadow: 0px 0px 3px white, 0px 0px 8px white;
       }
     }
   }
@@ -144,8 +146,8 @@ aside {
   border-radius: var(--border-radius-medium);
 }
 .container {
-  padding: var(--padding-medium);
-  padding-left: calc(1px + var(--padding-medium));
+  padding: calc(var(--padding-medium) - 2px);
+  padding-left: calc(var(--padding-medium) - 1px);
   align-items: flex-end;
   box-sizing: border-box;
   display: flex;

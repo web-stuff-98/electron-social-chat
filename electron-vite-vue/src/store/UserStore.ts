@@ -36,6 +36,7 @@ export const userStore: IUserStore = reactive({
       (u) => u.uid !== uid
     );
     userStore.visibleUsers = [...userStore.visibleUsers, uid];
+    userStore.cacheUserData(uid);
   },
   userLeftView: (uid: string) => {
     const i = userStore.visibleUsers.findIndex((u) => u === uid);

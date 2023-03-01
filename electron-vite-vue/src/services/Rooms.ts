@@ -19,3 +19,18 @@ export const deleteRoom = () =>
     method: "DELETE",
     withCredentials: true,
   });
+
+export const uploadRoomImage = (file: File, id: string) => {
+  const data = new FormData();
+  data.append("file", file);
+  return makeRequest(`/api/room/image/${id}`, {
+    method: "POST",
+    withCredentials: true,
+    data,
+  });
+};
+
+export const getRooms = () =>
+  makeRequest("/api/rooms", {
+    withCredentials: true,
+  });

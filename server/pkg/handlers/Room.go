@@ -2,12 +2,15 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -109,7 +112,9 @@ func (h handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	responseMessage(w, http.StatusCreated, "Room created")
+	w.WriteHeader(http.StatusCreated)
+	w.Header().Add("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(inserted.InsertedID.(primitive.ObjectID).Hex())
 }
 
 func (h handler) UpdateRoom(w http.ResponseWriter, r *http.Request) {
@@ -281,7 +286,7 @@ func (h handler) UploadRoomImage(w http.ResponseWriter, r *http.Request) {
 
 	if _, err := h.Collections.RoomCollection.UpdateByID(r.Context(), id, bson.M{
 		"$set": bson.M{
-			"blur": blurBuf.Bytes(),
+			"blur": "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(blurBuf.Bytes()),
 		},
 	}); err != nil {
 		responseMessage(w, http.StatusInternalServerError, "Internal error")
@@ -322,5 +327,198 @@ func (h handler) UploadRoomImage(w http.ResponseWriter, r *http.Request) {
 		responseMessage(w, http.StatusOK, "Image updated")
 	} else {
 		responseMessage(w, http.StatusCreated, "Image created")
+	}
+}
+
+func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	rooms := []models.Room{}
+	if cursor, err := h.Collections.RoomCollection.Find(r.Context(), bson.M{}); err != nil {
+		cursor.Close(r.Context())
+		if err == mongo.ErrNoDocuments {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(rooms)
+		} else {
+			log.Println("A:", err)
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	} else {
+		for cursor.Next(r.Context()) {
+			room := &models.Room{}
+			err := cursor.Decode(&room)
+			if err != nil {
+				cursor.Close(r.Context())
+				log.Println("B:", err)
+				responseMessage(w, http.StatusInternalServerError, "Internal error")
+				return
+			}
+			rooms = append(rooms, *room)
+		}
+		cursor.Close(r.Context())
+	}
+
+	outRooms := []models.Room{}
+	for _, room := range rooms {
+		var roomExternalData models.RoomExternalData
+		if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": room.ID}).Decode(&roomExternalData); err != nil {
+			log.Println("C:", err)
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+		addRoom := true
+		// If user is banned from a room don't add it to the response
+		for _, oi := range roomExternalData.Banned {
+			if oi == user.ID {
+				addRoom = false
+				break
+			}
+		}
+		isMember := false
+		// If user is not a member, and the room is private, don't add it to the response
+		for _, oi := range roomExternalData.Members {
+			if oi == user.ID {
+				isMember = true
+				break
+			}
+		}
+		if !addRoom || roomExternalData.Private && !isMember {
+			continue
+		}
+		outRooms = append(outRooms, room)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(outRooms)
+}
+
+func (h handler) GetRoom(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&room); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		}
+		return
+	}
+
+	roomExternalData := &models.RoomExternalData{}
+	if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&roomExternalData); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		}
+		return
+	}
+
+	for _, oi := range roomExternalData.Banned {
+		if oi == user.ID {
+			responseMessage(w, http.StatusUnauthorized, "You are banned from this room")
+			return
+		}
+	}
+
+	if roomExternalData.Private {
+		isMember := false
+		for _, oi := range roomExternalData.Members {
+			if oi == user.ID {
+				isMember = true
+				break
+			}
+		}
+		if !isMember {
+			responseMessage(w, http.StatusForbidden, "You are not a member of this room")
+			return
+		}
+	}
+
+	room.Private = roomExternalData.Private
+	room.Members = roomExternalData.Members
+	room.Banned = roomExternalData.Banned
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(room)
+}
+
+func (h handler) GetRoomImage(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	roomExternalData := &models.RoomExternalData{}
+	if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&roomExternalData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	for _, oi := range roomExternalData.Banned {
+		if oi == user.ID {
+			responseMessage(w, http.StatusUnauthorized, "You are banned from this room")
+			return
+		}
+	}
+
+	if roomExternalData.Private {
+		isMember := false
+		for _, oi := range roomExternalData.Members {
+			if oi == user.ID {
+				isMember = true
+				break
+			}
+		}
+		if !isMember {
+			responseMessage(w, http.StatusForbidden, "You are not a member of this room")
+			return
+		}
+	}
+
+	roomImage := &models.RoomImage{}
+	if err := h.Collections.RoomImageCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&roomImage); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/jpeg")
+	w.Header().Set("Content-Length", strconv.Itoa(len(roomImage.Binary.Data)))
+	if _, err := w.Write(roomImage.Binary.Data); err != nil {
+		log.Println("Unable to write image to response")
 	}
 }

@@ -11,7 +11,7 @@ export interface IUser {
   online: boolean;
 }
 
-export interface IAuthStore {
+interface IAuthStore {
   user?: IUser;
   login: (username: string, password: string) => void;
   register: (username: string, password: string) => void;

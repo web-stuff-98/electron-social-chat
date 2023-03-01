@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import Toggle from "../../../shared/Toggle.vue";
 import ResMsg from "../../ResMsg.vue";
-import { createRoom } from "../../../../services/Rooms";
+import { createRoom, uploadRoomImage } from "../../../../services/Rooms";
 import { ref } from "vue";
 import { IResMsg } from "../../../../interfaces/GeneralInterfaces";
 
@@ -28,7 +28,10 @@ function selectImage(e: Event) {
 async function handleSubmit() {
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    await createRoom(roomName.value, roomPrivate.value);
+    const id = await createRoom(roomName.value, roomPrivate.value);
+    if (roomImage.value) {
+      await uploadRoomImage(roomImage.value, id);
+    }
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
@@ -65,7 +68,10 @@ async function handleSubmit() {
   max-width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: var(--padding-medium);
+  padding: var(--padding-medium);
   input {
     width: 100%;
     text-align: center;

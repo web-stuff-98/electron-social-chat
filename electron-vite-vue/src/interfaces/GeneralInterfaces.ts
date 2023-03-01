@@ -3,6 +3,9 @@ export interface IResMsg {
   err: boolean;
   pen: boolean;
 }
-export interface IInputFileEvent extends Event {
-  target: HTMLInputElement;
+export interface IRoomCard {
+  ID: string;
+  name: string;
+  blur: string;
+  author: string;
 }
