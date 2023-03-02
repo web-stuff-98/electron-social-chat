@@ -41,6 +41,11 @@ async function handleSubmit() {
 
 <template>
   <form @submit.prevent="handleSubmit" class="container">
+    <Toggle
+      name="Private"
+      :on="roomPrivate"
+      :toggleFunc="() => (roomPrivate = !roomPrivate)"
+    />
     <div class="input-label">
       <label for="name">Room name</label>
       <input v-model="roomName" id="name" type="text" />
@@ -50,11 +55,6 @@ async function handleSubmit() {
       ref="fileInputRef"
       type="file"
       @change="selectImage"
-    />
-    <Toggle
-      name="Private"
-      :on="roomPrivate"
-      :toggleFunc="() => (roomPrivate = !roomPrivate)"
     />
     <button @click="clickHiddenImageInput" type="button">Select image</button>
     <button type="submit">Create room</button>
@@ -66,15 +66,17 @@ async function handleSubmit() {
 </template>
 
 <style lang="scss" scoped>
-.container {
+form {
   max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: var(--padding-medium);
-  padding: var(--padding-medium);
+  padding: calc(var(--padding) * 2);
   box-sizing: border-box;
+  height: fit-content;
+  margin: auto;
   input {
     width: calc(var(--aside-width) - var(--padding-medium) * 2 - 4px);
     flex-grow: 1;
@@ -91,7 +93,7 @@ async function handleSubmit() {
     max-height: 5rem;
   }
   .resMsg-container {
-    margin: 0;
+    margin: auto;
     padding: 0;
     display: flex;
     align-items: center;

@@ -399,12 +399,14 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-		isMember := false
-		// If user is not a member, and the room is private, don't add it to the response
-		for _, oi := range roomExternalData.Members {
-			if oi == user.ID {
-				isMember = true
-				break
+		isMember := room.Author == user.ID
+		if !isMember {
+			// If user is not a member, and the room is private, don't add it to the response
+			for _, oi := range roomExternalData.Members {
+				if oi == user.ID {
+					isMember = true
+					break
+				}
 			}
 		}
 		if !addRoom || roomExternalData.Private && !isMember {

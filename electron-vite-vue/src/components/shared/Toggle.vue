@@ -25,7 +25,7 @@ defineProps<{ on: boolean; toggleFunc: Function; name: string }>();
   justify-content: center;
   flex-direction: column;
   width: 100%;
-  height: 1rem;
+  height: 1.5rem;
   gap: var(--padding);
   padding: var(--padding-medium) 0;
   margin-bottom: var(--padding-medium);

@@ -1,11 +1,10 @@
 <script lang="ts" setup>
-import { ref } from "vue";
 import { IResMsg } from "../../interfaces/GeneralInterfaces";
-const msg = ref<IResMsg>({ msg: "", err: false, pen: false });
 defineProps<{
   confirmationCallback: Function;
-  cancellationCallback: Function;
+  cancellationCallback?: Function;
   show: boolean;
+  msg: IResMsg;
 }>();
 </script>
 
@@ -13,17 +12,26 @@ defineProps<{
   <div v-if="show" class="modal-backdrop" />
   <div v-if="show" class="modal-container">
     <div class="modal">
-      <div v-show="msg.pen || msg.err || msg.err" class="msg">
-        <v-icon v-if="msg.err" class="msg-err-icon" name="md-error-round" />
-        <p v-if="msg.msg">{{ msg.msg }}</p>
+      <div v-show="msg.pen || msg.err || msg.err" class="icons">
+        <v-icon
+          v-if="msg.err"
+          class="icons-err-icon"
+          name="icons-error-round"
+        />
         <v-icon
           v-if="msg.pen"
           name="pr-spinner"
-          class="msg-spinner anim-spin"
+          class="icons-spinner anim-spin"
         />
       </div>
+      <p v-if="msg.msg">{{ msg.msg }}</p>
       <div v-if="!msg.pen" class="buttons">
-        <button @click="() => cancellationCallback()">Cancel</button>
+        <button
+          v-if="cancellationCallback"
+          @click="() => cancellationCallback!()"
+        >
+          Cancel
+        </button>
         <button @click="() => confirmationCallback()">Confirm</button>
       </div>
     </div>
@@ -40,7 +48,11 @@ defineProps<{
     flex-grow: 1;
   }
 }
-.msg {
+p {
+  margin: 0;
+  text-align: center;
+}
+.icons {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -50,14 +62,11 @@ defineProps<{
   min-width: 3rem;
   min-height: 3rem;
   filter: drop-shadow(var(--shadow-medium));
-  p {
-    margin: 0;
-  }
-  .msg-err-icon {
+  .icons-err-icon {
     width: 1.5rem;
     height: 1.5rem;
   }
-  .msg-spinner {
+  .icons-spinner {
     width: 2.5rem;
     height: 2.5rem;
   }

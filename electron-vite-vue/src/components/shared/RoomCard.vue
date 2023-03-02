@@ -43,17 +43,17 @@ function promptDeleteRoom() {
 </script>
 
 <template>
-  <MessageModal
-    :msg="modalMsg"
-    :show="showModal"
-    :confirmationCallback="modalConfirmation"
-    :cancellationCallback="modalCancellation"
-  />
   <div
     :style="room?.blur ? { 'background-image': `url(${room.blur})` } : {}"
     class="container"
   >
     <div class="inner">
+      <MessageModal
+        :msg="modalMsg"
+        :show="showModal"
+        :confirmationCallback="modalConfirmation"
+        :cancellationCallback="modalCancellation"
+      />
       <div class="name">
         {{ room?.name }}
       </div>
@@ -88,7 +88,6 @@ function promptDeleteRoom() {
     }
     .buttons {
       background: rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(2px);
       border: 1px solid var(--base);
       display: flex;
       align-items: center;

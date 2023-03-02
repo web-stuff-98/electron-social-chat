@@ -11,7 +11,7 @@ const showAccountMenu = ref(false);
 const mouseInAccountMenu = ref(false);
 
 const modalConfirmation = ref(() => {});
-const modalCancellation = ref(() => {});
+const modalCancellation = ref<Function | undefined>(() => {});
 const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
@@ -98,7 +98,7 @@ header {
   height: var(--header-height);
   z-index: 100;
   position: fixed;
-  top:0;
+  top: 0;
   .buttons {
     display: flex;
     gap: 1px;

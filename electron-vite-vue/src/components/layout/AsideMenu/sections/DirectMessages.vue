@@ -1,22 +1,25 @@
 <template>
-  <div class="message">
-    <p>
-      <b>Username: </b>
-      Lorem ipsum dolor sit amet consectetur adipisicing elit. Iusto vitae
-      commodi adipisci corporis, doloribus aperiam odit possimus aspernatur
-      saepe eaque.
-    </p>
+  <div class="messages">
+    <div class="message">
+      <p>
+        <b>Username: </b>
+        Lorem ipsum dolor sit amet consectetur adipisicing elit. Iusto vitae
+        commodi adipisci corporis, doloribus aperiam odit possimus aspernatur
+        saepe eaque.
+      </p>
+    </div>
   </div>
 </template>
 <style scoped>
-.container {
+.messages {
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-  position: absolute;
   padding: var(--padding-medium);
   box-sizing: border-box;
+  top:0;
+  left:0;
 }
 .message {
   width: 100%;
@@ -29,6 +32,6 @@ p {
 }
 b {
   filter: opacity(0.5);
-  margin:0;
+  margin: 0;
 }
 </style>
