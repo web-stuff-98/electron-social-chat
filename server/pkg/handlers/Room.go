@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -178,6 +179,164 @@ func (h handler) UpdateRoom(w http.ResponseWriter, r *http.Request) {
 	} else {
 		responseMessage(w, http.StatusOK, "Room updated")
 	}
+}
+
+// One API route for updating/inserting/deleting room channel data... maybe not best practice?
+func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "StatusUnauthorized")
+		return
+	}
+
+	roomId, err := primitive.ObjectIDFromHex(mux.Vars(r)["roomId"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	var roomInternalData models.RoomInternalData
+	if err := h.Collections.RoomInternalDataCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&roomInternalData); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		}
+		return
+	}
+
+	var room models.Room
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&room); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+	}
+	if room.Author != user.ID {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	defer r.Body.Close()
+	body, err := ioutil.ReadAll(r.Body)
+	var updateRoomChannelsData validation.UpdateRoomChannelsData
+	if json.Unmarshal(body, &updateRoomChannelsData); err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+		return
+	}
+	validate := validator.New()
+	if err := validate.Struct(updateRoomChannelsData); err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	// Update room channel names
+	for _, urcd := range updateRoomChannelsData.UpdateData {
+		for _, hex := range updateRoomChannelsData.Delete {
+			id, err := primitive.ObjectIDFromHex(urcd.ID)
+			if err != nil {
+				responseMessage(w, http.StatusBadRequest, "Invalid ID")
+				return
+			}
+			oid, err := primitive.ObjectIDFromHex(hex)
+			if err != nil {
+				responseMessage(w, http.StatusBadRequest, "Invalid ID")
+				return
+			}
+			// Don't bother updating channels that are going to be deleted in the next step
+			if oid == id {
+				continue
+			}
+		}
+		res, err := h.Collections.RoomChannelCollection.UpdateOne(r.Context(), bson.M{"_id": urcd.ID, "room_id": roomId}, bson.M{
+			"$set": bson.M{
+				"name": strings.TrimSpace(urcd.Name),
+			},
+		})
+		if err != nil {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+		if res.MatchedCount == 0 {
+			responseMessage(w, http.StatusBadRequest, "Bad request")
+			return
+		}
+	}
+
+	// Insert room channels. The user can create multiple channels with the same name, but it doesn't really matter
+	for _, name := range updateRoomChannelsData.InsertData {
+		res, err := h.Collections.RoomChannelCollection.InsertOne(r.Context(), models.RoomChannel{
+			ID:     primitive.NewObjectID(),
+			RoomID: roomId,
+			Name:   strings.TrimSpace(name),
+		})
+		if err != nil {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		} else {
+			if _, err := h.Collections.RoomChannelMessagesCollection.InsertOne(r.Context(), models.RoomChannelMessages{
+				ID:       res.InsertedID.(primitive.ObjectID),
+				Messages: []models.RoomChannelMessage{},
+			}); err != nil {
+				responseMessage(w, http.StatusInternalServerError, "Internal error")
+				return
+			}
+		}
+		if _, err := h.Collections.RoomInternalDataCollection.UpdateByID(r.Context(), roomId, bson.M{
+			"$push": bson.M{
+				"channels": res.InsertedID.(primitive.ObjectID),
+			},
+		}); err != nil {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+	}
+
+	// Delete room channels
+	if int64(len(updateRoomChannelsData.Delete)) != 0 {
+		res, err := h.Collections.RoomChannelCollection.DeleteMany(r.Context(), bson.M{
+			"_id": bson.M{
+				"$in": updateRoomChannelsData.Delete,
+			},
+			"room_id": roomId,
+		})
+		if err != nil {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+		if res.DeletedCount != int64(len(updateRoomChannelsData.Delete)) {
+			responseMessage(w, http.StatusBadRequest, "Bad request")
+			return
+		}
+	}
+
+	// Promote room channel to main
+	promoteToMain, err := primitive.ObjectIDFromHex(updateRoomChannelsData.PromoteToMain)
+	if err == nil {
+		if promoteToMain != primitive.NilObjectID {
+			found := false
+			oid := &primitive.ObjectID{}
+			for _, oi := range roomInternalData.Channels {
+				if oi == promoteToMain {
+					oid = &oi
+					found = true
+					break
+				}
+			}
+			if found {
+				if _, err := h.Collections.RoomInternalDataCollection.UpdateByID(r.Context(), roomId, bson.M{
+					"$set": bson.M{
+						"main_channel": oid,
+					},
+				}); err != nil {
+					responseMessage(w, http.StatusInternalServerError, "Internal error")
+					return
+				}
+			}
+		}
+	}
+
+	responseMessage(w, http.StatusOK, "Room channels data updated")
 }
 
 func (h handler) DeleteRoom(w http.ResponseWriter, r *http.Request) {

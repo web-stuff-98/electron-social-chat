@@ -52,3 +52,21 @@ export const getRoomChannelData = (id: string, roomId: string) =>
     method: "GET",
     withCredentials: true,
   });
+
+export const updateRoomChannelsData = (
+  roomId: string,
+  nameUpdates: { ID: string; name: string }[],
+  insertUpdates: string[],
+  deleteChannels: string[],
+  promoteToMain?: string
+) =>
+  makeRequest(`/api/room/channels/update/${roomId}`, {
+    withCredentials: true,
+    method: "PATCH",
+    data: {
+      update_data: nameUpdates,
+      insert_data: insertUpdates,
+      delete_ids: deleteChannels,
+      promote_to_main: promoteToMain,
+    },
+  });

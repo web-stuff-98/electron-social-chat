@@ -58,6 +58,7 @@ func main() {
 	api.HandleFunc("/room/create", h.CreateRoom).Methods(http.MethodPost)
 	api.HandleFunc("/room/update", h.UpdateRoom).Methods(http.MethodPatch)
 	api.HandleFunc("/room/channels/{id}", h.GetRoomChannelsData).Methods(http.MethodGet)
+	api.HandleFunc("/room/channels/update/{roomId}", h.UpdateRoomChannelsData).Methods(http.MethodPatch)
 	api.HandleFunc("/room/channel/{roomId}/{id}", h.GetRoomChannel).Methods(http.MethodGet)
 	api.HandleFunc("/room/delete/{id}", h.DeleteRoom).Methods(http.MethodDelete)
 	api.HandleFunc("/room/{id}", h.GetRoom).Methods(http.MethodGet)
