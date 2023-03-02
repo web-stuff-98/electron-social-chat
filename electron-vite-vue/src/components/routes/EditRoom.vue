@@ -62,6 +62,7 @@ function handeAddChannelClicked() {
     name: addChannelInput.value,
     promoteToMain: false,
   });
+  addChannelInput.value = ""
 }
 </script>
 

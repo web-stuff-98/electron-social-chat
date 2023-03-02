@@ -5,6 +5,11 @@ import useRoomChannel from "../../composables/useRoomChannel";
 import MessageModal from "../messageModal/MessageModal.vue";
 import { editRoomChannelsData } from "../../store/EditRoomChannelsData";
 import { roomStore } from "../../store/RoomStore";
+
+/**
+ * Weird complicated looking if checks
+ */
+
 const props = defineProps<{
   id: string;
   name?: string;
@@ -124,10 +129,12 @@ function promoteToMainClicked() {
       (c) => c.name === channel?.name
     );
     if (!editRoomChannelsData.insertData[i].promoteToMain) {
-      editRoomChannelsData.insertData.map((c) => ({
-        ...c,
-        promoteToMain: false,
-      }));
+      editRoomChannelsData.insertData = editRoomChannelsData.insertData.map(
+        (c) => ({
+          ...c,
+          promoteToMain: false,
+        })
+      );
       editRoomChannelsData.insertData[i].promoteToMain = true;
     } else {
       editRoomChannelsData.insertData[i].promoteToMain = false;
