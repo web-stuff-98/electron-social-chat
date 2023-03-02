@@ -138,6 +138,15 @@ function promoteToMainClicked() {
       editRoomChannelsData.insertData[i].promoteToMain = true;
     } else {
       editRoomChannelsData.insertData[i].promoteToMain = false;
+      const room = roomStore.rooms.find((r) => r.ID === roomStore.currentRoom);
+      if (
+        editRoomChannelsData.flaggedForDeletion.includes(room?.main_channel!)
+      ) {
+        editRoomChannelsData.flaggedForDeletion =
+          editRoomChannelsData.flaggedForDeletion.filter(
+            (c) => c !== room?.main_channel
+          );
+      }
     }
   }
 }

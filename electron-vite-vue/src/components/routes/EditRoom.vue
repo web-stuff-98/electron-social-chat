@@ -30,6 +30,10 @@ const room = ref<IRoom>({
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 onMounted(async () => {
+  editRoomChannelsData.flaggedForDeletion = [];
+  editRoomChannelsData.insertData = [];
+  editRoomChannelsData.promoteToMain = "";
+  editRoomChannelsData.updateData = [];
   try {
     resMsg.value = { msg: "", err: false, pen: true };
     const data: IRoom = await getRoom(route.params.id as string);
@@ -58,11 +62,13 @@ function handleAddChannelInput(e: Event) {
 }
 
 function handeAddChannelClicked() {
+  if (addChannelInput.value.trim() === "" || addChannelInput.value.length > 24)
+    return;
   editRoomChannelsData.insertData.push({
     name: addChannelInput.value,
     promoteToMain: false,
   });
-  addChannelInput.value = ""
+  addChannelInput.value = "";
 }
 </script>
 
