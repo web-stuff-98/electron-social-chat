@@ -3,7 +3,7 @@ defineProps<{ on: boolean; toggleFunc: Function; name: string }>();
 </script>
 
 <template>
-  <div class="container">
+  <div class="toggle-container">
     <label :for="name">{{ name }}</label>
     <button
     type="button"
@@ -19,7 +19,7 @@ defineProps<{ on: boolean; toggleFunc: Function; name: string }>();
 </template>
 
 <style lang="scss" scoped>
-.container {
+.toggle-container {
   display: flex;
   align-items: center;
   justify-content: center;

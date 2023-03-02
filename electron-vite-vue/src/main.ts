@@ -4,6 +4,7 @@ import "./style.css";
 import App from "./App.vue";
 import Home from "./components/routes/Home.vue";
 import Room from "./components/routes/Room.vue";
+import EditRoom from "./components/routes/EditRoom.vue";
 import "./samples/node-api";
 
 import { OhVueIcon, addIcons } from "oh-vue-icons";
@@ -20,6 +21,8 @@ import {
   BiDoorClosedFill,
   RiEditBoxFill,
   MdSend,
+  BiCaretUpFill,
+  BiCaretDownFill,
 } from "oh-vue-icons/icons";
 
 addIcons(
@@ -34,12 +37,15 @@ addIcons(
   MdDeleteSharp,
   BiDoorClosedFill,
   RiEditBoxFill,
-  MdSend
+  MdSend,
+  BiCaretUpFill,
+  BiCaretDownFill
 );
 
 const routes = [
   { path: "/", component: Home, name: "home" },
   { path: "/room/:id", component: Room, name: "room" },
+  { path: "/room/edit/:id", component: EditRoom, name: "edit_room" },
 ];
 
 const router = createRouter({

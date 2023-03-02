@@ -64,7 +64,9 @@ function promptDeleteRoom() {
         <router-link :to="`/room/${room!.ID}`">
           <button><v-icon name="bi-door-closed-fill" /></button>
         </router-link>
-        <button><v-icon name="ri-edit-box-fill" /></button>
+        <router-link :to="`/room/edit/${room!.ID}`">
+          <button><v-icon name="ri-edit-box-fill" /></button>
+        </router-link>
       </div>
     </div>
   </div>

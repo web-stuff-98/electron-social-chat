@@ -89,7 +89,7 @@ input:focus {
 button {
   border-radius: 8px;
   border: 1px solid transparent;
-  padding: 0 var(--padding-medium);
+  padding: 0 var(--padding);
   font-size: 1.25rem;
   font-family: inherit;
   background-color: var(--foreground);

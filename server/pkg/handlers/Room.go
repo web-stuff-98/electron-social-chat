@@ -364,7 +364,6 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(rooms)
 		} else {
-			log.Println("A:", err)
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 		}
 		return
@@ -374,7 +373,6 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 			err := cursor.Decode(&room)
 			if err != nil {
 				cursor.Close(r.Context())
-				log.Println("B:", err)
 				responseMessage(w, http.StatusInternalServerError, "Internal error")
 				return
 			}
@@ -387,7 +385,6 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 	for _, room := range rooms {
 		var roomExternalData models.RoomExternalData
 		if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": room.ID}).Decode(&roomExternalData); err != nil {
-			log.Println("C:", err)
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 			return
 		}
@@ -564,4 +561,192 @@ func (h handler) GetRoomImage(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(roomImage.Binary.Data); err != nil {
 		log.Println("Unable to write image to response")
 	}
+}
+
+func (h handler) GetRoomChannelsData(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	roomId, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid room ID")
+		return
+	}
+
+	roomExternalData := &models.RoomExternalData{}
+	if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&roomExternalData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+	roomInternalData := &models.RoomInternalData{}
+	if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&roomInternalData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&room); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	for _, oi := range roomExternalData.Banned {
+		if oi == user.ID {
+			responseMessage(w, http.StatusUnauthorized, "You are banned from this room")
+			return
+		}
+	}
+
+	if roomExternalData.Private && room.Author != user.ID {
+		isMember := false
+		for _, oi := range roomExternalData.Members {
+			if oi == user.ID {
+				isMember = true
+				break
+			}
+		}
+		if !isMember {
+			responseMessage(w, http.StatusForbidden, "You are not a member of this room")
+			return
+		}
+	}
+
+	channels := []models.RoomChannel{}
+	if cursor, err := h.Collections.RoomChannelCollection.Find(r.Context(), bson.M{
+		"_id": bson.M{
+			"$in": roomInternalData.Channels,
+		},
+		"room_id": roomId,
+	}); err != nil {
+		cursor.Close(r.Context())
+		if err == mongo.ErrNoDocuments {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(channels)
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	} else {
+		for cursor.Next(r.Context()) {
+			channel := &models.RoomChannel{}
+			err := cursor.Decode(&channel)
+			if err != nil {
+				cursor.Close(r.Context())
+				responseMessage(w, http.StatusInternalServerError, "Internal error")
+				return
+			}
+			channels = append(channels, *channel)
+		}
+		cursor.Close(r.Context())
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(channels)
+}
+
+func (h handler) GetRoomChannel(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+		return
+	}
+	roomId, err := primitive.ObjectIDFromHex(mux.Vars(r)["roomId"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&room); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	roomExternalData := &models.RoomExternalData{}
+	if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&roomExternalData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	for _, oi := range roomExternalData.Banned {
+		if oi == user.ID {
+			responseMessage(w, http.StatusUnauthorized, "You are banned from this room")
+			return
+		}
+	}
+
+	if roomExternalData.Private && room.Author != user.ID {
+		isMember := false
+		for _, oi := range roomExternalData.Members {
+			if oi == user.ID {
+				isMember = true
+				break
+			}
+		}
+		if !isMember {
+			responseMessage(w, http.StatusForbidden, "You are not a member of this room")
+			return
+		}
+	}
+
+	roomChannel := &models.RoomChannel{}
+	if err := h.Collections.RoomChannelCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&roomChannel); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Channel not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	if roomChannel.RoomID != roomId {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	roomChannelMessages := &models.RoomChannelMessages{}
+	if err := h.Collections.RoomChannelMessagesCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&roomChannelMessages); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Channel not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	roomChannel.Messages = roomChannelMessages.Messages
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(roomChannel)
 }

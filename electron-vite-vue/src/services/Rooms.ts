@@ -40,3 +40,15 @@ export const getRoom = (id: string) =>
     method: "GET",
     withCredentials: true,
   });
+
+export const getRoomChannelsDisplayData = (id: string) =>
+  makeRequest(`/api/room/channels/${id}`, {
+    method: "GET",
+    withCredentials: true,
+  });
+
+export const getRoomChannelData = (id: string, roomId: string) =>
+  makeRequest(`/api/room/channel/${roomId}/${id}`, {
+    method: "GET",
+    withCredentials: true,
+  });

@@ -47,7 +47,7 @@ type Room struct {
 	Blur string `bson:"blur" json:"blur"`
 
 	// The RoomExternalData. Not stored in RoomCollection
-	Private bool                 `bson:"-" json:"private"`
+	Private bool                 `bson:"-" json:"is_private"`
 	Members []primitive.ObjectID `bson:"-" json:"members"`
 	Banned  []primitive.ObjectID `bson:"-" json:"banned"`
 	// The RoomInternalData. Not stored in RoomCollection

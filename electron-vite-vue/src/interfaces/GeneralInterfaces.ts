@@ -22,6 +22,7 @@ export interface IRoomChannel {
   name: string;
 }
 export interface IRoom extends IRoomCard {
-  channels: IRoomChannel;
+  channels: string[];
   main_channel: string;
+  is_private: boolean;
 }

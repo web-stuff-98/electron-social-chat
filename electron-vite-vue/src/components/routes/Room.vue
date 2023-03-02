@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useRoute } from "vue-router";
 import { IRoom, IResMsg } from "../../interfaces/GeneralInterfaces";
+import ResMsg from "../layout/ResMsg.vue";
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { getRoom } from "../../services/Rooms";
 
@@ -24,13 +25,31 @@ onBeforeUnmount(async () => {});
 
 <template>
   <div class="container">
-    <div class="content">
-      <div class="header">{{ room?.name }}</div>
+    <div
+      v-if="!resMsg.pen && !resMsg.err && !resMsg.msg"
+      class="channels-container"
+    >
+      <div class="channels">
+        <div class="channel-container" v-for="channelId in room?.channels">
+          <button
+            :style="channelId === room?.main_channel ? {} : { 'font-weight': 300 }"
+            class="channel"
+          >
+            # {{ channelId }}
+          </button>
+        </div>
+      </div>
     </div>
-    <form>
-      <input type="text" />
-      <v-icon name="md-send" />
-    </form>
+    <div class="messaging-container">
+      <ResMsg :resMsg="resMsg" />
+      <div v-if="!resMsg.pen && !resMsg.err && !resMsg.msg" class="content">
+        <div class="header">{{ room?.name }}</div>
+      </div>
+      <form v-if="!resMsg.pen && !resMsg.err && !resMsg.msg">
+        <input type="text" />
+        <v-icon name="md-send" />
+      </form>
+    </div>
   </div>
 </template>
 
@@ -38,45 +57,82 @@ onBeforeUnmount(async () => {});
 .container {
   width: 100%;
   height: 100%;
-  padding: calc(var(--padding-medium) + 1px);
-  box-sizing: border-box;
   display: flex;
-  gap: var(--padding-medium);
-  flex-direction: column;
-  .content {
-    position: relative;
-    flex-grow: 1;
-    border: 1px solid var(--base-light);
-    box-shadow: var(--shadow-medium);
-    border-radius: var(--border-radius-medium);
-    overflow: hidden;
-    .header {
-      position: absolute;
-      top: 0;
+  .channels-container {
+    width: fit-content;
+    box-sizing: border-box;
+    padding-left: calc(1px + var(--padding-medium));
+    padding-top: calc(1px + var(--padding-medium));
+    padding-bottom: calc(var(--padding-medium) * 2 - 1px);
+    .channels {
+      box-sizing: border-box;
+      border: 1px solid var(--base-light);
+      border-radius: var(--border-radius-medium);
+      box-shadow: var(--shadow-medium);
+      height: 100%;
       width: 100%;
-      height: 1.75rem;
+      background: var(--foreground);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      border-bottom: 1px solid var(--base-light);
-      background: rgba(0, 0, 0, 0.166);
+      flex-direction: column;
+      padding: var(--padding-medium);
+      .channel {
+        white-space: nowrap;
+        font-size: 0.833rem;
+        padding: 2px var(--padding-medium);
+      }
     }
   }
-  form {
+  .messaging-container {
     width: 100%;
-    display: flex;
-    gap: var(--padding-medium);
-    align-items: center;
+    height: 100%;
+    padding: calc(var(--padding-medium) + 1px);
+    padding-bottom: var(--padding-medium);
+    padding-right: calc(var(--padding-medium) + 2px);
     box-sizing: border-box;
-    input {
-      flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--padding-medium);
+    flex-direction: column;
+    .content {
+      position: relative;
       box-sizing: border-box;
+      flex-grow: 1;
+      width: 100%;
+      border: 1px solid var(--base-light);
+      box-shadow: var(--shadow-medium);
+      border-radius: var(--border-radius-medium);
+      overflow: hidden;
+      background: var(--foreground);
+      .header {
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border-bottom: 1px solid var(--base-light);
+        background: rgba(0, 0, 0, 0.166);
+      }
     }
-    svg {
-      height: 2rem;
-      widows: 2rem;
-      filter: drop-shadow(var(--shadow-medium));
+    form {
+      width: 100%;
+      display: flex;
+      gap: var(--padding-medium);
+      align-items: center;
+      box-sizing: border-box;
+      input {
+        flex-grow: 1;
+        box-sizing: border-box;
+        background: var(--foreground);
+      }
+      svg {
+        height: 2rem;
+        widows: 2rem;
+        filter: drop-shadow(var(--shadow-medium));
+      }
     }
   }
 }

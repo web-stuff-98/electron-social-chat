@@ -18,8 +18,8 @@
   width: 100%;
   padding: var(--padding-medium);
   box-sizing: border-box;
-  top:0;
-  left:0;
+  top: 0;
+  left: 0;
 }
 .message {
   width: 100%;
