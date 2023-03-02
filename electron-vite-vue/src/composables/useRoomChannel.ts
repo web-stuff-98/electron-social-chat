@@ -1,4 +1,19 @@
 import { roomChannelStore } from "../store/RoomChannelStore";
-const useRoomChannel = (id: string) =>
-  roomChannelStore.channels.find((c) => c.ID === id);
+import { editRoomChannelsData } from "../store/EditRoomChannelsData";
+
+/**
+ * If using isEditPage, name must be defined
+ */
+
+const useRoomChannel = (
+  identifier: string,
+  isEditPage?: boolean,
+  name?: string
+) => {
+  const found = roomChannelStore.channels.find((c) => c.ID === identifier);
+  if (found && identifier) return found;
+  if (!found && isEditPage) {
+    return editRoomChannelsData.insertData.find((c) => c.name === name);
+  }
+};
 export default useRoomChannel;

@@ -17,12 +17,7 @@ export const roomChannelStore: IRoomChannelStore = reactive({
   channels: [],
   getDisplayDataForChannels: async (roomId: string) => {
     const data: IRoomChannel[] = await getRoomChannelsDisplayData(roomId);
-    roomChannelStore.channels = [
-      ...roomChannelStore.channels.filter((c) =>
-        data.find((d) => d.ID === c.ID) ? false : true
-      ),
-      ...data,
-    ];
+    roomChannelStore.channels = data;
   },
   getFullDataForChannel: async (id: string, roomId: string) => {
     const data: IRoomChannel = await getRoomChannelData(id, roomId);

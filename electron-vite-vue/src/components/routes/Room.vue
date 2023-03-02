@@ -3,6 +3,7 @@ import { useRoute } from "vue-router";
 import { IRoom, IResMsg } from "../../interfaces/GeneralInterfaces";
 import ResMsg from "../layout/ResMsg.vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
+import { roomStore } from "../../store/RoomStore";
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { getRoom } from "../../services/Rooms";
 
@@ -13,16 +14,23 @@ const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 onMounted(async () => {
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const data = await getRoom(route.params.id as string);
+    const data: IRoom = await getRoom(route.params.id as string);
     room.value = data;
     await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
+    roomStore.rooms = [
+      ...roomStore.rooms.filter((r) => r.ID !== data.ID),
+      data,
+    ];
+    roomStore.currentRoom = data.ID;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
 });
 
-onBeforeUnmount(async () => {});
+onBeforeUnmount(async () => {
+  roomStore.currentRoom = "";
+});
 </script>
 
 <template>

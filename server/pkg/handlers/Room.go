@@ -263,12 +263,14 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
+	insertedNewMainChannel := false
+
 	// Insert room channels. The user can create multiple channels with the same name, but it doesn't really matter
-	for _, name := range updateRoomChannelsData.InsertData {
+	for _, insertData := range updateRoomChannelsData.InsertData {
 		res, err := h.Collections.RoomChannelCollection.InsertOne(r.Context(), models.RoomChannel{
 			ID:     primitive.NewObjectID(),
 			RoomID: roomId,
-			Name:   strings.TrimSpace(name),
+			Name:   strings.TrimSpace(insertData.Name),
 		})
 		if err != nil {
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
@@ -290,6 +292,19 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 			return
 		}
+		if insertData.PromoteToMain {
+			insertedNewMainChannel = true
+		}
+		if insertData.PromoteToMain {
+			if _, err := h.Collections.RoomInternalDataCollection.UpdateByID(r.Context(), roomId, bson.M{
+				"$set": bson.M{
+					"main_channel": res.InsertedID.(primitive.ObjectID),
+				},
+			}); err != nil {
+				responseMessage(w, http.StatusInternalServerError, "Internal error")
+				return
+			}
+		}
 	}
 
 	// Delete room channels
@@ -310,27 +325,29 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	// Promote room channel to main
-	promoteToMain, err := primitive.ObjectIDFromHex(updateRoomChannelsData.PromoteToMain)
-	if err == nil {
-		if promoteToMain != primitive.NilObjectID {
-			found := false
-			oid := &primitive.ObjectID{}
-			for _, oi := range roomInternalData.Channels {
-				if oi == promoteToMain {
-					oid = &oi
-					found = true
-					break
+	// Promote pre-existing room channel to main (step will be skipped if a new main channel was already created)
+	if !insertedNewMainChannel {
+		promoteToMain, err := primitive.ObjectIDFromHex(updateRoomChannelsData.PromoteToMain)
+		if err == nil {
+			if promoteToMain != primitive.NilObjectID {
+				found := false
+				oid := &primitive.ObjectID{}
+				for _, oi := range roomInternalData.Channels {
+					if oi == promoteToMain {
+						oid = &oi
+						found = true
+						break
+					}
 				}
-			}
-			if found {
-				if _, err := h.Collections.RoomInternalDataCollection.UpdateByID(r.Context(), roomId, bson.M{
-					"$set": bson.M{
-						"main_channel": oid,
-					},
-				}); err != nil {
-					responseMessage(w, http.StatusInternalServerError, "Internal error")
-					return
+				if found {
+					if _, err := h.Collections.RoomInternalDataCollection.UpdateByID(r.Context(), roomId, bson.M{
+						"$set": bson.M{
+							"main_channel": oid,
+						},
+					}); err != nil {
+						responseMessage(w, http.StatusInternalServerError, "Internal error")
+						return
+					}
 				}
 			}
 		}
@@ -338,6 +355,89 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 
 	responseMessage(w, http.StatusOK, "Room channels data updated")
 }
+
+/*func (h handler) DeleteRoomChannel(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	roomId, err := primitive.ObjectIDFromHex(mux.Vars(r)["roomId"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&room); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		}
+		return
+	}
+
+	if room.Author != user.ID {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	roomInternalData := &models.RoomInternalData{}
+	if err := h.Collections.RoomInternalDataCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&roomInternalData); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		}
+		return
+	}
+
+	found := false
+	for _, oi := range roomInternalData.Channels {
+		if oi == id {
+			found = true
+			break
+		}
+	}
+	if id == roomInternalData.MainChannel {
+		responseMessage(w, http.StatusBadRequest, "You cannot delete the main channel. Promote another channel to the main channel first.")
+		return
+	}
+
+	if !found {
+		responseMessage(w, http.StatusNotFound, "Room channel not found")
+		return
+	}
+
+	roomChannel := &models.Room{}
+	if err := h.Collections.RoomChannelCollection.FindOne(r.Context(), bson.M{"room_id": roomId, "_id": id}).Decode(&roomChannel); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room channel not found, or it does not belong to you")
+		}
+		return
+	}
+
+	if res, err := h.Collections.RoomChannelCollection.DeleteOne(r.Context(), bson.M{"_id": id}); err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	} else {
+		if res.DeletedCount == 0 {
+			responseMessage(w, http.StatusInternalServerError, "Internal error. Channel was not deleted")
+			return
+		} else {
+			responseMessage(w, http.StatusOK, "Channel deleted")
+		}
+	}
+}*/
 
 func (h handler) DeleteRoom(w http.ResponseWriter, r *http.Request) {
 	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)

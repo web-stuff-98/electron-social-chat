@@ -6,7 +6,9 @@ import Toggle from "../shared/Toggle.vue";
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { getRoom } from "../../services/Rooms";
 import EditRoomChannelCard from "../layout/EditRoomChannelCard.vue";
+import { roomStore } from "../../store/RoomStore";
 import { roomChannelStore } from "../../store/RoomChannelStore";
+import { editRoomChannelsData } from "../../store/EditRoomChannelsData";
 
 enum EEditRoomSection {
   "BASIC" = "Basic room settings",
@@ -33,13 +35,34 @@ onMounted(async () => {
     const data: IRoom = await getRoom(route.params.id as string);
     room.value = data;
     await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
+    roomStore.rooms = [
+      ...roomStore.rooms.filter((r) => r.ID !== data.ID),
+      data,
+    ];
+    roomStore.currentRoom = data.ID;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
 });
 
-onBeforeUnmount(async () => {});
+onBeforeUnmount(async () => {
+  roomStore.currentRoom = "";
+});
+
+const addChannelInput = ref("");
+function handleAddChannelInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (target.value.length > 24) return;
+  addChannelInput.value = target.value;
+}
+
+function handeAddChannelClicked() {
+  editRoomChannelsData.insertData.push({
+    name: addChannelInput.value,
+    promoteToMain: false,
+  });
+}
 </script>
 
 <template>
@@ -68,10 +91,34 @@ onBeforeUnmount(async () => {});
               :id="channelId"
             />
           </div>
+          <div
+            v-if="editRoomChannelsData.insertData.length !== 0"
+            class="channel-container"
+            v-for="channel in editRoomChannelsData.insertData"
+          >
+            <EditRoomChannelCard
+              :mainChannelId="room.main_channel"
+              :id="''"
+              :name="channel.name"
+            />
+          </div>
+          <div class="add-channel-container">
+            <input
+              maxlength="24"
+              :value="addChannelInput"
+              @input="handleAddChannelInput"
+              type="text"
+            />
+            <v-icon
+              @click="handeAddChannelClicked"
+              class="add-channel-icon"
+              name="io-add-circle-sharp"
+            />
+          </div>
         </div>
       </span>
       <!-- Users section -->
-      <span v-if="section === EEditRoomSection.USERS">users section</span>
+      <span v-if="section === EEditRoomSection.USERS"> </span>
       <button
         @click="section = EEditRoomSection.BASIC"
         v-if="section !== EEditRoomSection.BASIC"
@@ -145,6 +192,23 @@ onBeforeUnmount(async () => {});
       border: 1px solid var(--base-light);
       .channel-container {
         width: 100%;
+      }
+      .add-channel-container {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px;
+        padding-right: 0;
+        input {
+          flex-grow: 1;
+          text-align: left;
+        }
+        .add-channel-icon {
+          width: 2rem;
+          height: 2rem;
+          cursor: pointer;
+          padding: 4px;
+        }
       }
     }
     .header {

@@ -18,10 +18,13 @@ type UpdateRoomChannelData struct {
 	ID   string `json:"ID"`
 	Name string `json:"name"`
 }
-
+type InsertRoomChannelData struct {
+	Name          string `json:"name" validate:"required,max=24"`
+	PromoteToMain bool   `json:"promote_to_main"`
+}
 type UpdateRoomChannelsData struct {
 	UpdateData    []UpdateRoomChannelData `bson:"update_data"`
-	InsertData    []string                `bson:"insert_data"`
+	InsertData    []InsertRoomChannelData `bson:"insert_data"`
 	Delete        []string                `bson:"delete_ids"`
 	PromoteToMain string                  `bson:"promote_to_main"`
 }

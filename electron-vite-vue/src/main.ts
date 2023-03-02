@@ -23,6 +23,7 @@ import {
   MdSend,
   BiCaretUpFill,
   BiCaretDownFill,
+  IoAddCircleSharp,
 } from "oh-vue-icons/icons";
 
 addIcons(
@@ -39,7 +40,8 @@ addIcons(
   RiEditBoxFill,
   MdSend,
   BiCaretUpFill,
-  BiCaretDownFill
+  BiCaretDownFill,
+  IoAddCircleSharp
 );
 
 const routes = [
