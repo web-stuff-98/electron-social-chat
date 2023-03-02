@@ -11,6 +11,7 @@ in certain cases.
 
 /*---------------- User structs (session in redis) ----------------*/
 
+// Users cannot change their names (there is no reason for this, could add this)
 type User struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	Username  string             `bson:"username,maxlength=16" json:"username"`
