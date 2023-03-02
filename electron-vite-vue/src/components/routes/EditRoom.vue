@@ -32,6 +32,7 @@ onMounted(async () => {
     resMsg.value = { msg: "", err: false, pen: true };
     const data: IRoom = await getRoom(route.params.id as string);
     room.value = data;
+    await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };

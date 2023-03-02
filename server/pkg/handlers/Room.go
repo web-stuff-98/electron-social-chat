@@ -586,7 +586,7 @@ func (h handler) GetRoomChannelsData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	roomInternalData := &models.RoomInternalData{}
-	if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&roomInternalData); err != nil {
+	if err := h.Collections.RoomInternalDataCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&roomInternalData); err != nil {
 		if err == mongo.ErrNoDocuments {
 			responseMessage(w, http.StatusNotFound, "Not found")
 		} else {
@@ -632,6 +632,7 @@ func (h handler) GetRoomChannelsData(w http.ResponseWriter, r *http.Request) {
 		},
 		"room_id": roomId,
 	}); err != nil {
+		log.Println(err)
 		cursor.Close(r.Context())
 		if err == mongo.ErrNoDocuments {
 			w.Header().Add("Content-Type", "application/json")

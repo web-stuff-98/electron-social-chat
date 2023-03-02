@@ -1,6 +1,9 @@
 import { reactive } from "vue";
 import { IRoomChannel } from "../interfaces/GeneralInterfaces";
-import { getRoomChannelsDisplayData } from "../services/Rooms";
+import {
+  getRoomChannelData,
+  getRoomChannelsDisplayData,
+} from "../services/Rooms";
 
 interface IRoomChannelStore {
   channels: IRoomChannel[];
@@ -22,6 +25,10 @@ export const roomChannelStore: IRoomChannelStore = reactive({
     ];
   },
   getFullDataForChannel: async (id: string, roomId: string) => {
-    
+    const data: IRoomChannel = await getRoomChannelData(id, roomId);
+    roomChannelStore.channels = [
+      ...roomChannelStore.channels.filter((r) => r.ID !== id),
+      data,
+    ];
   },
 });
