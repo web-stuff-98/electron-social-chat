@@ -53,35 +53,33 @@ async function selectPfp(e: Event) {
   display: flex;
   flex-direction: column;
   gap: var(--padding-medium);
-}
-
-.pfp {
-  width: 3rem;
-  height: 3rem;
-  background: var(--foreground);
-  outline: 2px solid var(--base);
-  border-radius: 50%;
-  box-shadow: var(--shadow-medium);
-  cursor: pointer;
-  background-size: cover;
-  margin: auto;
-  svg {
-    fill: white;
-    width: 80%;
-    height: 80%;
+  margin: var(--padding);
+  .username {
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-align: center;
+    margin-top: var(--padding-medium);
   }
-}
-
-.username {
-  font-weight: 600;
-  font-size: 1.1rem;
-  text-align: center;
-  margin-top: var(--padding-medium);
-}
-
-p {
-  margin: 0;
-  text-align: center;
-  font-size: 0.866rem;
+  p {
+    margin: 0;
+    text-align: center;
+    font-size: 0.866rem;
+  }
+  .pfp {
+    width: 3rem;
+    height: 3rem;
+    background: var(--foreground);
+    outline: 2px solid var(--base);
+    border-radius: 50%;
+    box-shadow: var(--shadow-medium);
+    cursor: pointer;
+    background-size: cover;
+    margin: auto;
+    svg {
+      fill: white;
+      width: 80%;
+      height: 80%;
+    }
+  }
 }
 </style>

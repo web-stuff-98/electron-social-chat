@@ -97,8 +97,8 @@ header {
   -webkit-app-region: drag;
   height: var(--header-height);
   z-index: 100;
-  position: relative;
-  box-shadow: var(--shadow-medium);
+  position: fixed;
+  top:0;
   .buttons {
     display: flex;
     gap: 1px;
@@ -107,7 +107,7 @@ header {
     flex-grow: 1;
     text-align: left;
     padding: var(--padding-medium);
-    padding-top: calc(var(--padding-medium) + 2px);
+    padding-top: calc(var(--padding-medium) + 4px);
     box-sizing: border-box;
     font-size: 0.866rem;
     filter: opacity(0.5);

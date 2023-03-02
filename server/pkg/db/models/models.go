@@ -28,12 +28,15 @@ type RoomChannelMessage struct {
 }
 
 type RoomChannelMessages struct {
+	ID       primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
 	Messages []RoomChannelMessage `bson:"messages" json:"messages"`
 }
 
 type RoomChannel struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
-	Name string             `bson:"name" json:"name"`
+	ID       primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
+	RoomID   primitive.ObjectID   `bson:"room_id" json:"-"`
+	Name     string               `bson:"name" json:"name"`
+	Messages []RoomChannelMessage `bson:"-" json:"messages"`
 }
 
 type Room struct {
@@ -43,10 +46,13 @@ type Room struct {
 	// blur will not be present if the room has no image
 	Blur string `bson:"blur" json:"blur"`
 
-	// The RoomExternalData. Not stored in RoomCollection. This stuff will be nil for get room page request
+	// The RoomExternalData. Not stored in RoomCollection
 	Private bool                 `bson:"-" json:"private"`
 	Members []primitive.ObjectID `bson:"-" json:"members"`
 	Banned  []primitive.ObjectID `bson:"-" json:"banned"`
+	// The RoomInternalData. Not stored in RoomCollection
+	Channels    []primitive.ObjectID `bson:"-" json:"channels"`
+	MainChannel primitive.ObjectID   `bson:"-" json:"main_channel"`
 }
 
 type RoomImage struct {
@@ -54,12 +60,12 @@ type RoomImage struct {
 	Binary primitive.Binary   `bson:"binary"`
 }
 
-// Potentially heavier data (room could have a lot of messages) that should be loaded after the room is entered
+// Will only be accessed when a client opens the room
 type RoomInternalData struct {
 	ID primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	// Channels also contain all the messages, so potentially heavy.
-	Channels    []RoomChannel      `bson:"channels" json:"channel"`
-	MainChannel primitive.ObjectID `bson:"main_channel" json:"main_channel"`
+	Channels    []primitive.ObjectID `bson:"channels" json:"channel"`
+	MainChannel primitive.ObjectID   `bson:"main_channel" json:"main_channel"`
 }
 
 // Lighter data that will be loaded before the room is opened

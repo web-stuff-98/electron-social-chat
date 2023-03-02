@@ -89,12 +89,13 @@ func (h handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mainChannel := models.RoomChannel{
-		ID:   primitive.NewObjectID(),
-		Name: "Main channel",
+		ID:     primitive.NewObjectID(),
+		RoomID: inserted.InsertedID.(primitive.ObjectID),
+		Name:   "Main channel",
 	}
 	if _, err := h.Collections.RoomInternalDataCollection.InsertOne(r.Context(), models.RoomInternalData{
 		ID:          inserted.InsertedID.(primitive.ObjectID),
-		Channels:    []models.RoomChannel{mainChannel},
+		Channels:    []primitive.ObjectID{mainChannel.ID},
 		MainChannel: mainChannel.ID,
 	}); err != nil {
 		h.Collections.RoomCollection.DeleteOne(r.Context(), bson.M{"_id": inserted.InsertedID.(primitive.ObjectID)})
@@ -106,6 +107,19 @@ func (h handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		Private: roomInput.Private,
 		Members: []primitive.ObjectID{},
 		Banned:  []primitive.ObjectID{},
+	}); err != nil {
+		h.Collections.RoomCollection.DeleteOne(r.Context(), bson.M{"_id": inserted.InsertedID.(primitive.ObjectID)})
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+	if _, err := h.Collections.RoomChannelCollection.InsertOne(r.Context(), mainChannel); err != nil {
+		h.Collections.RoomCollection.DeleteOne(r.Context(), bson.M{"_id": inserted.InsertedID.(primitive.ObjectID)})
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+	if _, err := h.Collections.RoomChannelMessagesCollection.InsertOne(r.Context(), models.RoomChannelMessages{
+		ID:       mainChannel.ID,
+		Messages: []models.RoomChannelMessage{},
 	}); err != nil {
 		h.Collections.RoomCollection.DeleteOne(r.Context(), bson.M{"_id": inserted.InsertedID.(primitive.ObjectID)})
 		responseMessage(w, http.StatusInternalServerError, "Internal error")
@@ -337,8 +351,13 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	filter := bson.M{}
+	if r.URL.Query().Has("own") {
+		filter = bson.M{"author": user.ID}
+	}
+
 	rooms := []models.Room{}
-	if cursor, err := h.Collections.RoomCollection.Find(r.Context(), bson.M{}); err != nil {
+	if cursor, err := h.Collections.RoomCollection.Find(r.Context(), filter); err != nil {
 		cursor.Close(r.Context())
 		if err == mongo.ErrNoDocuments {
 			w.Header().Add("Content-Type", "application/json")
@@ -432,6 +451,16 @@ func (h handler) GetRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	roomInternalData := &models.RoomInternalData{}
+	if err := h.Collections.RoomInternalDataCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&roomInternalData); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		}
+		return
+	}
+
 	if room.Author != user.ID {
 		for _, oi := range roomExternalData.Banned {
 			if oi == user.ID {
@@ -439,7 +468,6 @@ func (h handler) GetRoom(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-
 		if roomExternalData.Private {
 			isMember := false
 			for _, oi := range roomExternalData.Members {
@@ -458,6 +486,8 @@ func (h handler) GetRoom(w http.ResponseWriter, r *http.Request) {
 	room.Private = roomExternalData.Private
 	room.Members = roomExternalData.Members
 	room.Banned = roomExternalData.Banned
+	room.Channels = roomInternalData.Channels
+	room.MainChannel = roomInternalData.MainChannel
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

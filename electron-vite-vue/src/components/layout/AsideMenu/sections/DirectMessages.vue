@@ -15,6 +15,8 @@
   height: 100%;
   width: 100%;
   position: absolute;
+  padding: var(--padding-medium);
+  box-sizing: border-box;
 }
 .message {
   width: 100%;

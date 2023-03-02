@@ -6,7 +6,7 @@ import {
 </script>
 
 <template>
-  <h1>Welcome</h1>
+  <h1>Electron Social Chat</h1>
   <p>
     This is my electron, Vue & Golang social app. You may log in using an
     existing example account or register a new one.
@@ -24,7 +24,7 @@ import {
 <style lang="scss" scoped>
 h1 {
   margin: 0;
-  font-size: 2rem;
+  font-size: 1.5rem;
 }
 p {
   margin: 0;

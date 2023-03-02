@@ -24,7 +24,7 @@ svg {
 
   color-scheme: light dark;
   color: white;
-  background-color: rgb(23, 23, 23);
+  background-color: hsl(0, 2%, 9%);
 
   font-synthesis: none;
   text-rendering: optimizeSpeed;
@@ -32,19 +32,21 @@ svg {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --foreground: rgb(23, 23, 23);
-  --foreground-hover: rgb(27, 27, 27);
+  --foreground: hsl(0, 2%, 9%);
+  --foreground-hover: rgb(29, 27, 27);
 
-  --header: rgb(27, 27, 27);
+  --header: rgb(29, 27, 27);
   --header-height: 1.65rem;
+
+  --aside-width: 13.666rem;
 
   --shadow: 0px 1px 13px rgba(0, 0, 0, 0.5), 0px 2px 3px rgba(0, 0, 0, 0.5);
   --shadow-medium: 0px 2px 3px rgba(0, 0, 0, 0.5);
 
   --border-radius-medium: 0.333rem;
 
-  --base: rgba(255, 255, 255, 0.2);
-  --base-light: rgba(255, 255, 255, 0.0485);
+  --base: rgba(255, 255, 255, 0.25);
+  --base-light: rgba(255, 255, 255, 0.05);
 
   --padding: 0.5rem;
   --padding-medium: 0.25rem;

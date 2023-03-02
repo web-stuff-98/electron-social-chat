@@ -1,13 +1,54 @@
 <script lang="ts" setup>
-import { toRefs } from "vue";
-import useRoom from "../../composables/useRoom";
-import { IRoomCard } from "../../interfaces/GeneralInterfaces";
+import { IResMsg } from "../../interfaces/GeneralInterfaces";
+import MessageModal from "../messageModal/MessageModal.vue";
+import { toRefs, ref } from "vue";
+import useRoomCard from "../../composables/useRoomCard";
+import { deleteRoom } from "../../services/Rooms";
+
 const props = defineProps<{ id: string }>();
 const { id } = toRefs(props);
-const room = useRoom(id.value);
+const room = useRoomCard(id.value);
+
+const modalConfirmation = ref(() => {});
+const modalCancellation = ref(() => {});
+const showModal = ref(false);
+const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+
+function promptDeleteRoom() {
+  modalMsg.value = {
+    msg: "Are you sure you want to delete this room?",
+    err: false,
+    pen: false,
+  };
+  showModal.value = true;
+  modalConfirmation.value = async () => {
+    try {
+      modalMsg.value = {
+        msg: "Deleting room...",
+        err: false,
+        pen: true,
+      };
+      await deleteRoom(id.value);
+      showModal.value = false;
+    } catch (e) {
+      modalMsg.value = {
+        msg: `${e}`,
+        err: true,
+        pen: false,
+      };
+    }
+  };
+  modalCancellation.value = () => (showModal.value = false);
+}
 </script>
 
 <template>
+  <MessageModal
+    :msg="modalMsg"
+    :show="showModal"
+    :confirmationCallback="modalConfirmation"
+    :cancellationCallback="modalCancellation"
+  />
   <div
     :style="room?.blur ? { 'background-image': `url(${room.blur})` } : {}"
     class="container"
@@ -17,9 +58,13 @@ const room = useRoom(id.value);
         {{ room?.name }}
       </div>
       <div class="buttons">
-        <button><v-icon name="md-delete-sharp"/></button>
-        <button><v-icon name="bi-door-closed-fill"/></button>
-        <button><v-icon name="ri-edit-box-fill"/></button>
+        <button @click="promptDeleteRoom">
+          <v-icon name="md-delete-sharp" />
+        </button>
+        <router-link :to="`/room/${room!.ID}`">
+          <button><v-icon name="bi-door-closed-fill" /></button>
+        </router-link>
+        <button><v-icon name="ri-edit-box-fill" /></button>
       </div>
     </div>
   </div>
@@ -49,7 +94,7 @@ const room = useRoom(id.value);
       align-items: center;
       padding: 1px;
       border-radius: var(--border-radius-medium);
-      gap:1px;
+      gap: 1px;
       button {
         border: 1px solid var(--base);
         padding: 0;
@@ -59,8 +104,8 @@ const room = useRoom(id.value);
         padding: 1px;
         border-radius: 4px;
         svg {
-            width: 1rem;
-            height: 1rem;
+          width: 1rem;
+          height: 1rem;
         }
       }
     }

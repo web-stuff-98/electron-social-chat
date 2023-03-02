@@ -14,8 +14,8 @@ export const updateRoom = (name: string, isPrivate: boolean) =>
     data: { name, is_private: isPrivate },
   });
 
-export const deleteRoom = () =>
-  makeRequest("/api/room/delete", {
+export const deleteRoom = (id: string) =>
+  makeRequest(`/api/room/delete/${id}`, {
     method: "DELETE",
     withCredentials: true,
   });
@@ -30,7 +30,13 @@ export const uploadRoomImage = (file: File, id: string) => {
   });
 };
 
-export const getRooms = () =>
-  makeRequest("/api/rooms", {
+export const getRooms = (own: boolean) =>
+  makeRequest("/api/rooms" + (own ? "?own" : ""), {
+    withCredentials: true,
+  });
+
+export const getRoom = (id: string) =>
+  makeRequest(`/api/room/${id}`, {
+    method: "GET",
     withCredentials: true,
   });

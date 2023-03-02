@@ -3,16 +3,20 @@ import { getRooms } from "../../../../services/Rooms";
 import { roomStore } from "../../../../store/RoomStore";
 import { IRoomCard, IResMsg } from "../../../../interfaces/GeneralInterfaces";
 import Room from "../../../shared/RoomCard.vue";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, toRefs } from "vue";
 import ResMsg from "../../ResMsg.vue";
 
 const roomsResult = ref<string[]>([]);
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
+const props = defineProps<{ own: boolean }>();
+
+const { own } = toRefs(props);
+
 onMounted(async () => {
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const rooms: IRoomCard[] = await getRooms();
+    const rooms: IRoomCard[] = await getRooms(own.value);
     roomsResult.value = rooms.map((r) => r.ID);
     roomStore.rooms = rooms;
     resMsg.value = { msg: "", err: false, pen: false };
@@ -70,7 +74,7 @@ onMounted(async () => {
       align-items: flex-start;
     }
     .room-container {
-        width:100%;
+      width: 100%;
     }
   }
 }

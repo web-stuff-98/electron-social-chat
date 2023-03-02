@@ -15,10 +15,12 @@ type Collections struct {
 	UserCollection *mongo.Collection
 	PfpCollection  *mongo.Collection
 
-	RoomCollection             *mongo.Collection
-	RoomInternalDataCollection *mongo.Collection
-	RoomExternalDataCollection *mongo.Collection
-	RoomImageCollection        *mongo.Collection
+	RoomCollection                *mongo.Collection
+	RoomInternalDataCollection    *mongo.Collection
+	RoomExternalDataCollection    *mongo.Collection
+	RoomImageCollection           *mongo.Collection
+	RoomChannelCollection         *mongo.Collection
+	RoomChannelMessagesCollection *mongo.Collection
 }
 
 func Init() (*mongo.Database, *Collections) {
@@ -39,10 +41,12 @@ func Init() (*mongo.Database, *Collections) {
 		UserCollection: DB.Collection("users"),
 		PfpCollection:  DB.Collection("pfps"),
 
-		RoomCollection:             DB.Collection("rooms"),
-		RoomInternalDataCollection: DB.Collection("room_internal_data"),
-		RoomExternalDataCollection: DB.Collection("room_external_data"),
-		RoomImageCollection:        DB.Collection("room_image"),
+		RoomCollection:                DB.Collection("rooms"),
+		RoomInternalDataCollection:    DB.Collection("room_internal_data"),
+		RoomExternalDataCollection:    DB.Collection("room_external_data"),
+		RoomImageCollection:           DB.Collection("room_image"),
+		RoomChannelCollection:         DB.Collection("room_channels"),
+		RoomChannelMessagesCollection: DB.Collection("room_channel_messages"),
 	}
 
 	colls.UserCollection.Indexes().CreateOne(context.Background(), mongo.IndexModel{

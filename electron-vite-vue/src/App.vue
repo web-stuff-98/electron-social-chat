@@ -13,7 +13,8 @@ import {
   parseSocketEventData,
   instanceOfChangeData,
 } from "./utils/determineSocketEvent";
-import Toggle from "./components/shared/Toggle.vue";
+
+const showAside = ref(false);
 
 /* ------- Update current user in authStore when socket event received ------- */
 const watchForCurrentUserChanges = (e: MessageEvent) => {
@@ -72,19 +73,34 @@ onMounted(() => {
 </script>
 
 <template>
-  <Bar />
-  <AsideMenu v-if="authStore.user" />
-  <WelcomeModal v-else/>
-  <div class="content">
-    <main>
+  <div class="root">
+    <Bar />
+    <AsideMenu
+      :toggleShowAside="() => (showAside = !showAside)"
+      :showAside="showAside"
+      v-if="authStore.user"
+    />
+    <WelcomeModal v-else />
+    <main :style="showAside ? { 'padding-left': 'var(--aside-width)' } : {}">
+      <router-view />
     </main>
   </div>
 </template>
 
-<style>
-.content {
+<style scoped lang="scss">
+.root {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 100%;
+  padding-top: var(--header-height);
+  box-sizing: border-box;
+  main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    flex-grow: 1;
+    flex-direction: column;
+  }
 }
 </style>

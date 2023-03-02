@@ -17,12 +17,17 @@ enum EAsideSection {
   "FIND_USER" = "Find user",
 }
 
-const show = ref(false);
 const section = ref<EAsideSection>(EAsideSection.PROFILE);
+defineProps<{ showAside: boolean; toggleShowAside: Function }>();
 </script>
 
 <template>
-  <aside :style="{ transform: `translateX(${show ? '0%' : '-100%'})` }">
+  <aside
+    :style="{
+      transform: `translateX(${showAside ? '0%' : '-100%'})`,
+      ...(showAside ? {} : { transition: 'none' }),
+    }"
+  >
     <div class="buttons">
       <button @click="section = EAsideSection.DIRECT_MESSAGES">
         Direct messages
@@ -52,18 +57,25 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
     <div class="container">
       <div class="content">
         <DirectMessages v-if="section === EAsideSection.DIRECT_MESSAGES" />
-        <ExploreRooms v-if="section === EAsideSection.EXPLORE_ROOMS" />
+        <ExploreRooms
+          :own="false"
+          v-if="section === EAsideSection.EXPLORE_ROOMS"
+        />
         <CreateRoom v-if="section === EAsideSection.CREATE_ROOM" />
         <Profile v-if="section === EAsideSection.PROFILE" />
         <FindUser v-if="section === EAsideSection.FIND_USER" />
-        <YourRooms v-if="section === EAsideSection.YOUR_ROOMS" />
+        <ExploreRooms :own="true" v-if="section === EAsideSection.YOUR_ROOMS" />
       </div>
-      <button @click="show = false" class="close-button">
+      <button @click="() => toggleShowAside()" class="close-button">
         <v-icon name="io-close" />
       </button>
     </div>
   </aside>
-  <button v-if="!show" @click="show = true" class="aside-menu-button">
+  <button
+    v-if="!showAside"
+    @click="() => toggleShowAside()"
+    class="aside-menu-button"
+  >
     <v-icon class="aside-menu-icon" name="co-menu" />
   </button>
 </template>
@@ -71,15 +83,17 @@ const section = ref<EAsideSection>(EAsideSection.PROFILE);
 <style lang="scss" scoped>
 aside {
   box-sizing: border-box;
-  width: 10rem;
-  height: 100%;
-  max-height: calc(100% - var(--header-height));
+  min-width: var(--aside-width);
+  width: var(--aside-width);
+  height: calc(100% - var(--header-height));
   border-right: 2px solid var(--base-light);
   display: flex;
   flex-direction: column;
   background: var(--foreground);
   box-shadow: 0px 0px 3px black;
   transition: transform 50ms linear;
+  position: fixed;
+  left: 0;
   .buttons {
     display: flex;
     flex-direction: column;
@@ -111,6 +125,7 @@ aside {
     border: 1px solid white;
     padding: 0;
     margin: var(--padding-medium);
+    margin-bottom: calc(var(--padding-medium) + 1px);
     filter: opacity(0.666);
     width: fit-content;
     box-shadow: var(--shadow-medium);
@@ -154,11 +169,15 @@ aside {
   flex-direction: column;
   flex-grow: 1;
   box-sizing: border-box;
+  height: 100%;
   .content {
     box-sizing: border-box;
     flex-grow: 1;
     width: 100%;
     height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
 </style>
