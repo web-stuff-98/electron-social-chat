@@ -42,6 +42,7 @@ type RoomChannelMessages struct {
 
 // Changes to room channel docs triggers changestream events
 type RoomChannel struct {
+	// ID for the corresponding RoomChannelMessages doc will be the same
 	ID       primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
 	RoomID   primitive.ObjectID   `bson:"room_id" json:"-"`
 	Name     string               `bson:"name" json:"name"`
