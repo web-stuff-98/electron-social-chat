@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { authStore } from "../../../../store/AuthStore";
-import { ref } from "vue";
+import { userStore } from "../../../../store/UserStore";
+import { ref, onMounted } from "vue";
 import { IResMsg } from "../../../../interfaces/GeneralInterfaces";
 import ResMsg from "../../ResMsg.vue";
 
@@ -22,6 +23,10 @@ async function selectPfp(e: Event) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
 }
+
+onMounted(() => {
+  userStore.cacheUserData(authStore.user?.ID);
+});
 </script>
 
 <template>
