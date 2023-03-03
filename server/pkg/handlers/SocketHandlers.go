@@ -34,13 +34,13 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		err := exitRoomChannel(data, conn, uid, ss, colls)
 		return err
 	case "ROOM_MESSAGE":
-		err := roomMessage(data, conn, uid, colls)
+		err := roomMessage(data, conn, uid, ss, colls)
 		return err
 	case "ROOM_MESSAGE_UPDATE":
-		err := roomMessageUpdate(data, conn, uid, colls)
+		err := roomMessageUpdate(data, conn, uid, ss, colls)
 		return err
 	case "ROOM_MESSAGE_DELETE":
-		err := roomMessageDelete(data, conn, uid, colls)
+		err := roomMessageDelete(data, conn, uid, ss, colls)
 		return err
 	}
 
@@ -51,6 +51,9 @@ func openSubscription(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 	var data socketmodels.OpenCloseSubscription
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
+	}
+	if strings.HasPrefix(data.Name, "channel:") {
+		return fmt.Errorf("Unauthorized")
 	}
 	ss.RegisterSubscriptionConn <- socketserver.SubscriptionConnectionInfo{
 		Name: data.Name,
@@ -79,6 +82,9 @@ func openSubscriptions(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 		return err
 	}
 	for _, name := range data.Names {
+		if strings.HasPrefix(name, "channel:") {
+			continue
+		}
 		ss.RegisterSubscriptionConn <- socketserver.SubscriptionConnectionInfo{
 			Name: name,
 			Uid:  uid,
@@ -164,7 +170,7 @@ func exitRoomChannel(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss 
 	return nil
 }
 
-func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, colls *db.Collections) error {
+func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
 	var data socketmodels.RoomMessage
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -209,10 +215,12 @@ func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, colls *
 		}
 	}
 
+	msgId := primitive.NewObjectID()
+
 	if _, err := colls.RoomChannelMessagesCollection.UpdateByID(context.Background(), bson.M{"_id": channel.ID}, bson.M{
 		"messages": bson.M{
 			"$push": models.RoomChannelMessage{
-				ID:        primitive.NewObjectID(),
+				ID:        msgId,
 				Content:   data.Content,
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -223,10 +231,22 @@ func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, colls *
 		return err
 	}
 
+	outBytes, err := json.Marshal(socketmodels.OutRoomMessage{
+		Type:    "OUT_ROOM_MESSAGE",
+		Content: data.Content,
+		ID:      msgId.Hex(),
+		Author:  uid.Hex(),
+	})
+
+	ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+		Name: "channel:" + channelId.Hex(),
+		Data: outBytes,
+	}
+
 	return nil
 }
 
-func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, colls *db.Collections) error {
+func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
 	var data socketmodels.RoomMessageUpdate
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -289,10 +309,21 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, c
 		return fmt.Errorf("Updated failed")
 	}
 
+	outBytes, err := json.Marshal(socketmodels.OutRoomMessageUpdate{
+		Type:    "OUT_ROOM_MESSAGE_UPDATE",
+		Content: data.Content,
+		ID:      msgId.Hex(),
+	})
+
+	ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+		Name: "channel:" + channelId.Hex(),
+		Data: outBytes,
+	}
+
 	return nil
 }
 
-func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, colls *db.Collections) error {
+func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
 	var data socketmodels.RoomMessageDelete
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -347,6 +378,16 @@ func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, c
 		return err
 	} else if res.MatchedCount == 0 {
 		return fmt.Errorf("Delete failed")
+	}
+
+	outBytes, err := json.Marshal(socketmodels.OutRoomMessageDelete{
+		Type: "OUT_ROOM_MESSAGE_DELETE",
+		ID:   msgId.Hex(),
+	})
+
+	ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+		Name: "channel:" + channelId.Hex(),
+		Data: outBytes,
 	}
 
 	return nil

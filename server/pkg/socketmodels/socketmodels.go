@@ -47,6 +47,27 @@ type RoomMessageDelete struct {
 	ID      string `json:"ID"`
 }
 
+// TYPE: OUT_ROOM_MESSAGE
+type OutRoomMessage struct {
+	Type    string `json:"TYPE"`
+	Content string `json:"content"`
+	ID      string `json:"id"`
+	Author  string `json:"author"`
+}
+
+// TYPE: OUT_ROOM_MESSAGE_UPDATE
+type OutRoomMessageUpdate struct {
+	Type    string `json:"TYPE"`
+	Content string `json:"content"`
+	ID      string `json:"ID"`
+}
+
+// TYPE: OUT_ROOM_MESSAGE_DELETE
+type OutRoomMessageDelete struct {
+	Type string `json:"TYPE"`
+	ID   string `json:"ID"`
+}
+
 // TYPE: CHANGE
 type OutChangeMessage struct {
 	Type   string `json:"TYPE"`
