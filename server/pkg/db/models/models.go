@@ -49,7 +49,7 @@ type RoomChannel struct {
 	Name     string               `bson:"name" json:"name"`
 	Messages []RoomChannelMessage `bson:"-" json:"messages"`
 	// Need to use this because changeStream delete events dont return full document
-	ToBeDeleted bool `bson:"to_be_deleted" json:"to_be_deleted"`
+	ToBeDeleted bool `bson:"to_be_deleted" json:"-"`
 }
 
 // Changes to room docs triggers changestream events
