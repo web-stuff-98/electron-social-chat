@@ -167,7 +167,7 @@ func watchRoomDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 			cursor.Close(context.Background())
 		}
 		db.Collection("room_channels").DeleteMany(context.Background(), bson.M{"room_id": id})
-		db.Collection("room_channel_messages").DeleteMany(context.Background(), bson.M{"room_id": id})
+		db.Collection("room_channel_messages").DeleteMany(context.Background(), bson.M{"_id": bson.M{"$in": channelIds}})
 	}
 }
 
