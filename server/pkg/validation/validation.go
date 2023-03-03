@@ -23,8 +23,8 @@ type InsertRoomChannelData struct {
 	PromoteToMain bool   `json:"promote_to_main"`
 }
 type UpdateRoomChannelsData struct {
-	UpdateData    []UpdateRoomChannelData `bson:"update_data"`
-	InsertData    []InsertRoomChannelData `bson:"insert_data"`
-	Delete        []string                `bson:"delete_ids"`
-	PromoteToMain string                  `bson:"promote_to_main"`
+	UpdateData    []UpdateRoomChannelData `json:"update_data"`
+	InsertData    []InsertRoomChannelData `json:"insert_data"`
+	Delete        []string                `json:"delete_ids"`
+	PromoteToMain string                  `json:"promote_to_main"`
 }

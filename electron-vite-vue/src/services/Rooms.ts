@@ -7,8 +7,8 @@ export const createRoom = (name: string, isPrivate: boolean) =>
     data: { name, is_private: isPrivate },
   });
 
-export const updateRoom = (name: string, isPrivate: boolean) =>
-  makeRequest("/api/room/update", {
+export const updateRoom = (id: string, name: string, isPrivate: boolean) =>
+  makeRequest(`/api/room/update/${id}`, {
     method: "PATCH",
     withCredentials: true,
     data: { name, is_private: isPrivate },
@@ -56,9 +56,9 @@ export const getRoomChannelData = (id: string, roomId: string) =>
 export const updateRoomChannelsData = (
   roomId: string,
   nameUpdates: { ID: string; name: string }[],
-  insertUpdates: string[],
+  insertUpdates: { name: string; promote_to_main: boolean }[],
   deleteChannels: string[],
-  promoteToMain?: string
+  promote_to_main?: string
 ) =>
   makeRequest(`/api/room/channels/update/${roomId}`, {
     withCredentials: true,
@@ -67,6 +67,6 @@ export const updateRoomChannelsData = (
       update_data: nameUpdates,
       insert_data: insertUpdates,
       delete_ids: deleteChannels,
-      promote_to_main: promoteToMain,
+      promote_to_main: promote_to_main,
     },
   });

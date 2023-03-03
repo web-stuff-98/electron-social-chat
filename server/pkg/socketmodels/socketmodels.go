@@ -19,10 +19,32 @@ type OpenCloseSubscriptions struct {
 	Names []string `json:"names"`
 }
 
-// TYPE: ROOM_MESSAGE/ROOM_MESSAGE_DELETE/ROOM_MESSAGE_UPDATE/PRIVATE_MESSAGE/PRIVATE_MESSAGE_DELETE/PRIVATE_MESSAGE_UPDATE/PRIVATE_MESSAGE_INVITE_RESPONDED/POST_VOTE/POST_COMMENT_VOTE/ATTACHMENT_PROGRESS/ATTACHMENT_COMPLETE/RESPONSE_MESSAGE/NOTIFICATIONS
-type OutMessage struct {
-	Type string `json:"TYPE"`
-	Data string `json:"DATA"`
+// TYPE: ROOM_OPEN_CHANNEL
+type RoomOpenExitChannel struct {
+	Type    string `json:"TYPE"`
+	Channel string `json:"channel"`
+}
+
+// TYPE: ROOM_MESSAGE
+type RoomMessage struct {
+	Type    string `json:"TYPE"`
+	Content string `json:"content"`
+	Channel string `json:"channel"`
+}
+
+// TYPE: ROOM_MESSAGE_UPDATE
+type RoomMessageUpdate struct {
+	Type    string `json:"TYPE"`
+	Content string `json:"content"`
+	Channel string `json:"channel"`
+	ID      string `json:"ID"`
+}
+
+// TYPE: ROOM_MESSAGE_DELETE
+type RoomMessageDelete struct {
+	Type    string `json:"TYPE"`
+	Channel string `json:"channel"`
+	ID      string `json:"ID"`
 }
 
 // TYPE: CHANGE

@@ -25,7 +25,7 @@ const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 function deleteClicked() {
-  if (editRoomChannelsData.promoteToMain === id.value && id.value) {
+  if (editRoomChannelsData.promote_to_main === id.value && id.value) {
     modalMsg.value = {
       msg: "You cannot delete a channel which you also intend on promoting to main",
       err: true,
@@ -39,8 +39,8 @@ function deleteClicked() {
   const room = roomStore.rooms.find((r) => r.ID === roomStore.currentRoom);
   if (
     room?.main_channel === id.value &&
-    !editRoomChannelsData.promoteToMain &&
-    !editRoomChannelsData.insertData.find((c) => c.promoteToMain)
+    !editRoomChannelsData.promote_to_main &&
+    !editRoomChannelsData.insert_data.find((c) => c.promote_to_main)
   ) {
     modalMsg.value = {
       msg: "You cannot delete the main channel without replacing it with another",
@@ -53,15 +53,15 @@ function deleteClicked() {
     return;
   }
   if (id.value) {
-    if (editRoomChannelsData.flaggedForDeletion.includes(id.value)) {
-      editRoomChannelsData.flaggedForDeletion = [
-        ...editRoomChannelsData.flaggedForDeletion.filter(
+    if (editRoomChannelsData.delete_ids.includes(id.value)) {
+      editRoomChannelsData.delete_ids = [
+        ...editRoomChannelsData.delete_ids.filter(
           (checkId) => checkId !== id.value
         ),
       ];
     } else {
-      editRoomChannelsData.flaggedForDeletion = [
-        ...editRoomChannelsData.flaggedForDeletion.filter(
+      editRoomChannelsData.delete_ids = [
+        ...editRoomChannelsData.delete_ids.filter(
           (checkId) => checkId !== id.value
         ),
         id.value,
@@ -77,26 +77,24 @@ function deleteClicked() {
     }
   } else {
     // else because if there is no ID, its a channel that hasn't been created,
-    // so remove from the insertData by name instead
-    const i = editRoomChannelsData.insertData.findIndex(
+    // so remove from the insert_data by name instead
+    const i = editRoomChannelsData.insert_data.findIndex(
       (c) => c.name === channel?.name
     );
-    if (editRoomChannelsData.insertData[i].promoteToMain) {
-      if (
-        editRoomChannelsData.flaggedForDeletion.includes(room?.main_channel!)
-      ) {
-        editRoomChannelsData.flaggedForDeletion =
-          editRoomChannelsData.flaggedForDeletion.filter(
+    if (editRoomChannelsData.insert_data[i].promote_to_main) {
+      if (editRoomChannelsData.delete_ids.includes(room?.main_channel!)) {
+        editRoomChannelsData.delete_ids =
+          editRoomChannelsData.delete_ids.filter(
             (c) => c !== room?.main_channel
           );
       }
     }
-    editRoomChannelsData.insertData.splice(i, 1);
+    editRoomChannelsData.insert_data.splice(i, 1);
   }
 }
 
 function promoteToMainClicked() {
-  if (editRoomChannelsData.flaggedForDeletion.includes(id.value)) {
+  if (editRoomChannelsData.delete_ids.includes(id.value)) {
     modalMsg.value = {
       msg: "You cannot promote a channel to main if is also flagged for deletion",
       err: true,
@@ -109,10 +107,10 @@ function promoteToMainClicked() {
   }
   // if there is an id.value, it means it's a channel that already exists
   if (id.value) {
-    if (editRoomChannelsData.promoteToMain === id.value) {
-      editRoomChannelsData.promoteToMain = "";
+    if (editRoomChannelsData.promote_to_main === id.value) {
+      editRoomChannelsData.promote_to_main = "";
     } else {
-      editRoomChannelsData.promoteToMain = id.value;
+      editRoomChannelsData.promote_to_main = id.value;
       modalMsg.value = {
         msg: "Channel will be promoted to main",
         err: true,
@@ -124,26 +122,24 @@ function promoteToMainClicked() {
     }
   } else {
     // otherwise it's a channel pending creation, so proceed by name
-    editRoomChannelsData.promoteToMain = "";
-    const i = editRoomChannelsData.insertData.findIndex(
+    editRoomChannelsData.promote_to_main = "";
+    const i = editRoomChannelsData.insert_data.findIndex(
       (c) => c.name === channel?.name
     );
-    if (!editRoomChannelsData.insertData[i].promoteToMain) {
-      editRoomChannelsData.insertData = editRoomChannelsData.insertData.map(
+    if (!editRoomChannelsData.insert_data[i].promote_to_main) {
+      editRoomChannelsData.insert_data = editRoomChannelsData.insert_data.map(
         (c) => ({
           ...c,
-          promoteToMain: false,
+          promote_to_main: false,
         })
       );
-      editRoomChannelsData.insertData[i].promoteToMain = true;
+      editRoomChannelsData.insert_data[i].promote_to_main = true;
     } else {
-      editRoomChannelsData.insertData[i].promoteToMain = false;
+      editRoomChannelsData.insert_data[i].promote_to_main = false;
       const room = roomStore.rooms.find((r) => r.ID === roomStore.currentRoom);
-      if (
-        editRoomChannelsData.flaggedForDeletion.includes(room?.main_channel!)
-      ) {
-        editRoomChannelsData.flaggedForDeletion =
-          editRoomChannelsData.flaggedForDeletion.filter(
+      if (editRoomChannelsData.delete_ids.includes(room?.main_channel!)) {
+        editRoomChannelsData.delete_ids =
+          editRoomChannelsData.delete_ids.filter(
             (c) => c !== room?.main_channel
           );
       }
@@ -167,7 +163,7 @@ function promoteToMainClicked() {
       <button
         type="button"
         :style="
-          editRoomChannelsData.flaggedForDeletion.includes(id)
+          editRoomChannelsData.delete_ids.includes(id)
             ? { background: 'red' }
             : {}
         "
@@ -181,9 +177,9 @@ function promoteToMainClicked() {
       <button
         type="button"
         :style="
-          (editRoomChannelsData.promoteToMain === id && id) ||
-          editRoomChannelsData.insertData.find(
-            (c) => c.name === channel?.name && c.promoteToMain
+          (editRoomChannelsData.promote_to_main === id && id) ||
+          editRoomChannelsData.insert_data.find(
+            (c) => c.name === channel?.name && c.promote_to_main
           )
             ? { background: 'lime' }
             : {}

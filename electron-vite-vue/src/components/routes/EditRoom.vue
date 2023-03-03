@@ -4,7 +4,11 @@ import { IRoom, IResMsg } from "../../interfaces/GeneralInterfaces";
 import ResMsg from "../layout/ResMsg.vue";
 import Toggle from "../shared/Toggle.vue";
 import { ref, onMounted, onBeforeUnmount } from "vue";
-import { getRoom } from "../../services/Rooms";
+import {
+  getRoom,
+  updateRoom,
+  updateRoomChannelsData,
+} from "../../services/Rooms";
 import EditRoomChannelCard from "../layout/EditRoomChannelCard.vue";
 import { roomStore } from "../../store/RoomStore";
 import { roomChannelStore } from "../../store/RoomChannelStore";
@@ -27,17 +31,27 @@ const room = ref<IRoom>({
   main_channel: "",
   is_private: false,
 });
+const originalRoom = ref<IRoom>({
+  ID: "",
+  name: "",
+  blur: "",
+  author: "",
+  channels: [],
+  main_channel: "",
+  is_private: false,
+});
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 onMounted(async () => {
-  editRoomChannelsData.flaggedForDeletion = [];
-  editRoomChannelsData.insertData = [];
-  editRoomChannelsData.promoteToMain = "";
-  editRoomChannelsData.updateData = [];
+  editRoomChannelsData.delete_ids = [];
+  editRoomChannelsData.insert_data = [];
+  editRoomChannelsData.promote_to_main = "";
+  editRoomChannelsData.update_data = [];
   try {
     resMsg.value = { msg: "", err: false, pen: true };
     const data: IRoom = await getRoom(route.params.id as string);
     room.value = data;
+    originalRoom.value = data;
     await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
     roomStore.rooms = [
       ...roomStore.rooms.filter((r) => r.ID !== data.ID),
@@ -64,16 +78,40 @@ function handleAddChannelInput(e: Event) {
 function handeAddChannelClicked() {
   if (addChannelInput.value.trim() === "" || addChannelInput.value.length > 24)
     return;
-  editRoomChannelsData.insertData.push({
+  editRoomChannelsData.insert_data.push({
     name: addChannelInput.value,
-    promoteToMain: false,
+    promote_to_main: false,
   });
   addChannelInput.value = "";
+}
+
+async function handleSubmit() {
+  try {
+    resMsg.value = { msg: "", err: false, pen: true };
+    if (room !== originalRoom)
+      await updateRoom(room.value.ID, room.value.name, room.value.is_private);
+    if (
+      editRoomChannelsData.delete_ids.length !== 0 ||
+      editRoomChannelsData.insert_data.length !== 0 ||
+      editRoomChannelsData.promote_to_main !== "" ||
+      editRoomChannelsData.update_data.length !== 0
+    )
+      await updateRoomChannelsData(
+        room.value.ID,
+        editRoomChannelsData.update_data,
+        editRoomChannelsData.insert_data,
+        editRoomChannelsData.delete_ids,
+        editRoomChannelsData.promote_to_main
+      );
+    resMsg.value = { msg: "", err: false, pen: false };
+  } catch (e) {
+    resMsg.value = { msg: `${e}`, err: true, pen: false };
+  }
 }
 </script>
 
 <template>
-  <form class="container">
+  <form @submit.prevent="handleSubmit" class="container">
     <ResMsg :resMsg="resMsg" />
     <div v-if="!resMsg.pen && !resMsg.err && !resMsg.msg" class="content">
       <!-- Basic settings section -->
@@ -99,9 +137,9 @@ function handeAddChannelClicked() {
             />
           </div>
           <div
-            v-if="editRoomChannelsData.insertData.length !== 0"
+            v-if="editRoomChannelsData.insert_data.length !== 0"
             class="channel-container"
-            v-for="channel in editRoomChannelsData.insertData"
+            v-for="channel in editRoomChannelsData.insert_data"
           >
             <EditRoomChannelCard
               :mainChannelId="room.main_channel"

@@ -13,7 +13,7 @@ const useRoomChannel = (
   const found = roomChannelStore.channels.find((c) => c.ID === identifier);
   if (found && identifier) return found;
   if (!found && isEditPage) {
-    return editRoomChannelsData.insertData.find((c) => c.name === name);
+    return editRoomChannelsData.insert_data.find((c) => c.name === name);
   }
 };
 export default useRoomChannel;

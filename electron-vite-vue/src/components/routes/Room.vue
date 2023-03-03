@@ -40,18 +40,27 @@ onBeforeUnmount(async () => {
       class="channels-container"
     >
       <div class="channels">
-        <div
-          class="channel-container"
-          v-for="channel in roomChannelStore.channels"
-        >
+        <!-- Main channel -->
+        <div class="channel-container">
           <button
-            :style="
-              channel.ID === room?.main_channel ? {} : { 'font-weight': 300 }
-            "
+            :style="{ fontWeight: 600, marginBottom: 'var(--padding)' }"
             class="channel"
           >
-            # {{ channel.name }}
+            #
+            {{
+              roomChannelStore.channels.find((c) => c.ID === room?.main_channel)
+                ?.name
+            }}
           </button>
+        </div>
+        <!-- Secondary channels -->
+        <div
+          class="channel-container"
+          v-for="channel in roomChannelStore.channels.filter(
+            (c) => c.ID !== room?.main_channel
+          )"
+        >
+          <button class="channel"># {{ channel.name }}</button>
         </div>
       </div>
     </div>
@@ -90,10 +99,13 @@ onBeforeUnmount(async () => {
       display: flex;
       flex-direction: column;
       padding: var(--padding-medium);
+      gap: var(--padding-medium);
       .channel {
         white-space: nowrap;
         font-size: 0.833rem;
         padding: 2px var(--padding-medium);
+        width: 100%;
+        text-align: left;
       }
     }
   }
