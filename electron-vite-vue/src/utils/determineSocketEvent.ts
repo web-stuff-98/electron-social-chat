@@ -5,6 +5,25 @@ export type ChangeData = {
   DATA: { ID: string };
 };
 
+export type RoomMessageData = Omit<
+  {
+    content: string;
+    ID: string;
+    author: string;
+  },
+  "TYPE"
+>;
+
+export type RoomMessageUpdateData = Omit<
+  {
+    content: string;
+    ID: string;
+  },
+  "TYPE"
+>;
+
+export type RoomMessageDeleteData = Omit<{ ID: string }, "TYPE">;
+
 export type SocketEventChangeMethod =
   | "UPDATE"
   | "INSERT"
@@ -17,9 +36,26 @@ export function instanceOfChangeData(object: any): object is ChangeData {
   return object.TYPE === "CHANGE";
 }
 
+export function instanceOfRoomMessageData(
+  object: any
+): object is RoomMessageData {
+  return object.TYPE === "OUT_ROOM_MESSAGE";
+}
+
+export function instanceOfRoomMessageUpdateData(
+  object: any
+): object is RoomMessageUpdateData {
+  return object.TYPE === "OUT_ROOM_MESSAGE_UPDATE";
+}
+export function instanceOfRoomMessageDeleteData(
+  object: any
+): object is RoomMessageUpdateData {
+  return object.TYPE === "OUT_ROOM_MESSAGE_UPDATE";
+}
+
 export function parseSocketEventData(e: MessageEvent): object | undefined {
   let data = JSON.parse(e.data);
-  if (!data["DATA"]) return;
+  if (!data["DATA"]) return data;
   data["DATA"] = JSON.parse(data["DATA"]);
-  return data
+  return data;
 }

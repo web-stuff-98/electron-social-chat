@@ -51,19 +51,19 @@ func reader(conn *websocket.Conn, socketServer *socketserver.SocketServer, uid *
 		if eventTypeOk {
 			err := HandleSocketEvent(eventType.(string), p, conn, *uid, socketServer, colls)
 			if err != nil {
-				sendErrorMessageThroughSocket(conn)
+				sendErrorMessageThroughSocket(conn, err)
 			}
 		} else {
 			// eventType was not received. Send error.
-			sendErrorMessageThroughSocket(conn)
+			sendErrorMessageThroughSocket(conn, err)
 		}
 	}
 }
 
-func sendErrorMessageThroughSocket(conn *websocket.Conn) {
+func sendErrorMessageThroughSocket(conn *websocket.Conn, e error) {
 	err := conn.WriteJSON(map[string]string{
 		"TYPE": "RESPONSE_MESSAGE",
-		"DATA": `{"msg":"Socket error","err":true}`,
+		"DATA": `{"msg":"` + e.Error() + `","err":true}`,
 	})
 	if err != nil {
 		log.Println(err)

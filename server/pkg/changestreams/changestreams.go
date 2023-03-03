@@ -43,7 +43,7 @@ func WatchCollections(DB *mongo.Database, ss *socketserver.SocketServer) {
 
 	go watchUserDeletes(DB, ss)
 	go watchRoomDeletes(DB, ss)
-	go watchRoomChannelDeletes(DB, ss)
+	go watchRoomChannelUpdates(DB, ss)
 }
 
 func watchUserDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
@@ -167,16 +167,12 @@ func watchRoomDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 			cursor.Close(context.Background())
 		}
 		db.Collection("room_channels").DeleteMany(context.Background(), bson.M{"room_id": id})
+		db.Collection("room_channel_messages").DeleteMany(context.Background(), bson.M{"room_id": id})
 	}
 }
 
-func watchRoomChannelDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
-	defer func() {
-		if r := recover(); r != nil {
-			log.Println("Recovered from panic watching room channel deletes :", r)
-		}
-	}()
-	cs, err := db.Collection("room_channels").Watch(context.Background(), mongo.Pipeline{deletePipeline}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+func watchRoomChannelUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
+	cs, err := db.Collection("room_channels").Watch(context.Background(), mongo.Pipeline{updatePipeline}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
 	if err != nil {
 		log.Panicln("CS ERR : ", err.Error())
 	}
@@ -185,13 +181,20 @@ func watchRoomChannelDeletes(db *mongo.Database, ss *socketserver.SocketServer) 
 			DocumentKey struct {
 				ID primitive.ObjectID `bson:"_id"`
 			} `bson:"documentKey"`
+			FullDocument models.RoomChannel `bson:"fullDocument"`
 		}
 		err := cs.Decode(&changeEv)
 		if err != nil {
 			log.Println("CS DECODE ERROR : ", err)
 			return
 		}
-		id := changeEv.DocumentKey.ID
-		db.Collection("room_channels_messages").DeleteOne(context.Background(), bson.M{"_id": id})
+		if changeEv.FullDocument.ToBeDeleted {
+			db.Collection("room_internal_data").UpdateByID(context.Background(), changeEv.FullDocument.RoomID, bson.M{
+				"$pull": bson.M{
+					"channels": changeEv.DocumentKey.ID,
+				},
+			})
+			db.Collection("room_channels").DeleteOne(context.Background(), bson.M{"_id": changeEv.FullDocument.ID})
+		}
 	}
 }

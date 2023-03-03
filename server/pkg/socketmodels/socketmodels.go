@@ -19,7 +19,7 @@ type OpenCloseSubscriptions struct {
 	Names []string `json:"names"`
 }
 
-// TYPE: ROOM_OPEN_CHANNEL
+// TYPE: ROOM_OPEN_CHANNEL/ROOM_EXIT_CHANNEL
 type RoomOpenExitChannel struct {
 	Type    string `json:"TYPE"`
 	Channel string `json:"channel"`
@@ -51,7 +51,7 @@ type RoomMessageDelete struct {
 type OutRoomMessage struct {
 	Type    string `json:"TYPE"`
 	Content string `json:"content"`
-	ID      string `json:"id"`
+	ID      string `json:"ID"`
 	Author  string `json:"author"`
 }
 

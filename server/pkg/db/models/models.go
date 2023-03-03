@@ -30,7 +30,7 @@ type Pfp struct {
 
 type RoomChannelMessage struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
-	Content   string             `bson:"content,maxlength=200" json:"content"`
+	Content   string             `bson:"content,maxlength=300" json:"content"`
 	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
 	UpdatedAt primitive.DateTime `bson:"updated_at" json:"updated_at"`
 	Author    primitive.ObjectID `bson:"author" json:"author"`
@@ -48,6 +48,8 @@ type RoomChannel struct {
 	RoomID   primitive.ObjectID   `bson:"room_id" json:"-"`
 	Name     string               `bson:"name" json:"name"`
 	Messages []RoomChannelMessage `bson:"-" json:"messages"`
+	// Need to use this because changeStream delete events dont return full document
+	ToBeDeleted bool `bson:"to_be_deleted" json:"to_be_deleted"`
 }
 
 // Changes to room docs triggers changestream events

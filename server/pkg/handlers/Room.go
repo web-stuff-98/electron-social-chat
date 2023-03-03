@@ -325,25 +325,19 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 			}
 			ids = append(ids, id)
 		}
-		res, err := h.Collections.RoomChannelCollection.DeleteMany(r.Context(), bson.M{
+		/*res, err := h.Collections.RoomChannelCollection.DeleteMany(r.Context(), bson.M{
 			"_id": bson.M{
 				"$in": ids,
 			},
 			"room_id": roomId,
-		})
-		if err != nil {
-			responseMessage(w, http.StatusInternalServerError, "Internal error")
-			return
-		}
-		if res.DeletedCount != int64(len(updateRoomChannelsData.Delete)) {
-			responseMessage(w, http.StatusBadRequest, "Bad request")
-			return
-		}
-		if _, err := h.Collections.RoomInternalDataCollection.UpdateByID(r.Context(), roomId, bson.M{
-			"channels": bson.M{
-				"$pull": bson.M{"$in": ids},
+		})*/
+		_, err := h.Collections.RoomChannelCollection.UpdateMany(r.Context(), bson.M{
+			"_id": bson.M{
+				"$in": ids,
 			},
-		}); err != nil {
+			"room_id": roomId,
+		}, bson.M{"$set": bson.M{"to_be_deleted": true}})
+		if err != nil {
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 			return
 		}

@@ -43,7 +43,6 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		err := roomMessageDelete(data, conn, uid, ss, colls)
 		return err
 	}
-
 	return fmt.Errorf("Unrecognized event type")
 }
 
@@ -179,8 +178,8 @@ func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *soc
 	if strings.TrimSpace(data.Content) == "" {
 		return fmt.Errorf("You cannot submit an empty message")
 	}
-	if len(data.Content) > 200 {
-		return fmt.Errorf("Max 200 characters")
+	if len(data.Content) > 300 {
+		return fmt.Errorf("Max 300 characters")
 	}
 
 	channelId, err := primitive.ObjectIDFromHex(data.Channel)
@@ -217,9 +216,9 @@ func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *soc
 
 	msgId := primitive.NewObjectID()
 
-	if _, err := colls.RoomChannelMessagesCollection.UpdateByID(context.Background(), bson.M{"_id": channel.ID}, bson.M{
-		"messages": bson.M{
-			"$push": models.RoomChannelMessage{
+	if _, err := colls.RoomChannelMessagesCollection.UpdateByID(context.Background(), channel.ID, bson.M{
+		"$push": bson.M{
+			"messages": models.RoomChannelMessage{
 				ID:        msgId,
 				Content:   data.Content,
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
@@ -255,8 +254,8 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 	if strings.TrimSpace(data.Content) == "" {
 		return fmt.Errorf("You cannot submit an empty message")
 	}
-	if len(data.Content) > 200 {
-		return fmt.Errorf("Max 200 characters")
+	if len(data.Content) > 300 {
+		return fmt.Errorf("Max 300 characters")
 	}
 
 	channelId, err := primitive.ObjectIDFromHex(data.Channel)

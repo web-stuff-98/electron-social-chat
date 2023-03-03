@@ -13,6 +13,7 @@ interface ISocketStore {
 export const socketStore: ISocketStore = reactive({
   socket: undefined,
   connectSocket: (uid: string) => {
+    if(socketStore.socket) socketStore.socket.close()
     const socket = new WebSocket(
       process.env.NODE_ENV === "development" ||
       window.location.origin === "http://localhost:8080"

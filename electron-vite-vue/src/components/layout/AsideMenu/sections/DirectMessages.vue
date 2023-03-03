@@ -29,9 +29,11 @@
 p {
   text-align: left;
   margin: 0;
+  font-size: 0.8rem;
 }
 b {
   filter: opacity(0.5);
   margin: 0;
+  font-size: 0.8rem;
 }
 </style>

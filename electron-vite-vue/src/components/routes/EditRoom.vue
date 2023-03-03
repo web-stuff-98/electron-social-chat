@@ -71,11 +71,11 @@ onBeforeUnmount(async () => {
 const addChannelInput = ref("");
 function handleAddChannelInput(e: Event) {
   const target = e.target as HTMLInputElement;
-  if (target.value.length > 24) return;
+  if (target.value.length > 24 || !target.value.trim()) return;
   addChannelInput.value = target.value;
 }
 
-function handeAddChannelClicked() {
+function handleAddChannelClicked() {
   if (addChannelInput.value.trim() === "" || addChannelInput.value.length > 24)
     return;
   editRoomChannelsData.insert_data.push({
@@ -155,7 +155,7 @@ async function handleSubmit() {
               type="text"
             />
             <v-icon
-              @click="handeAddChannelClicked"
+              @click="handleAddChannelClicked"
               class="add-channel-icon"
               name="io-add-circle-sharp"
             />
