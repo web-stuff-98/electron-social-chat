@@ -306,7 +306,7 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 	}); err != nil {
 		return err
 	} else if res.MatchedCount == 0 {
-		return fmt.Errorf("Updated failed")
+		return fmt.Errorf("Update failed")
 	}
 
 	outBytes, err := json.Marshal(socketmodels.OutRoomMessageUpdate{
