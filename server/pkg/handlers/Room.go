@@ -325,12 +325,6 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 			}
 			ids = append(ids, id)
 		}
-		/*res, err := h.Collections.RoomChannelCollection.DeleteMany(r.Context(), bson.M{
-			"_id": bson.M{
-				"$in": ids,
-			},
-			"room_id": roomId,
-		})*/
 		_, err := h.Collections.RoomChannelCollection.UpdateMany(r.Context(), bson.M{
 			"_id": bson.M{
 				"$in": ids,
