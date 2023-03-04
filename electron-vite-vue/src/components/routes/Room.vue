@@ -1,6 +1,10 @@
 <script lang="ts" setup>
 import { useRoute } from "vue-router";
-import { IRoom, IResMsg } from "../../interfaces/GeneralInterfaces";
+import {
+  IRoom,
+  IResMsg,
+  IRoomChannel,
+} from "../../interfaces/GeneralInterfaces";
 import ResMsg from "../layout/ResMsg.vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
 import { roomStore } from "../../store/RoomStore";
@@ -65,16 +69,15 @@ onMounted(async () => {
     const data: IRoom = await getRoom(route.params.id as string);
     room.value = data;
     currentChannel.value = data.main_channel;
-    await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
     roomStore.rooms = [
       ...roomStore.rooms.filter((r) => r.ID !== data.ID),
       data,
     ];
-    const mainChannelData = await getRoomChannelData(
+    await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
+    await roomChannelStore.getFullDataForChannel(
       data.main_channel,
-      room.value?.ID!
+      room.value.ID
     );
-    roomChannelStore.channels = [mainChannelData];
     socketStore.send(
       JSON.stringify({
         event_type: "ROOM_OPEN_CHANNEL",
@@ -111,12 +114,10 @@ watch(currentChannel, async (oldChannel, channel) => {
         })
       );
     }
-    console.log("GET");
-    const data = await getRoomChannelData(channel, room.value?.ID!);
-    roomChannelStore.channels = [
-      ...roomChannelStore.channels.filter((c) => c.ID !== channel),
-      data,
-    ];
+    await roomChannelStore.getFullDataForChannel(
+      channel,
+      room.value?.ID as string
+    );
     socketStore.send(
       JSON.stringify({
         event_type: "ROOM_OPEN_CHANNEL",

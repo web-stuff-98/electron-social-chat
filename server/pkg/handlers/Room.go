@@ -91,9 +91,10 @@ func (h handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	mainChannel := models.RoomChannel{
-		ID:     primitive.NewObjectID(),
-		RoomID: inserted.InsertedID.(primitive.ObjectID),
-		Name:   "Main channel",
+		ID:          primitive.NewObjectID(),
+		RoomID:      inserted.InsertedID.(primitive.ObjectID),
+		Name:        "Main channel",
+		ToBeDeleted: false,
 	}
 	if _, err := h.Collections.RoomInternalDataCollection.InsertOne(r.Context(), models.RoomInternalData{
 		ID:          inserted.InsertedID.(primitive.ObjectID),
@@ -239,12 +240,12 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 
 	// Update room channel names
 	for _, urcd := range updateRoomChannelsData.UpdateData {
+		id, err := primitive.ObjectIDFromHex(urcd.ID)
+		if err != nil {
+			responseMessage(w, http.StatusBadRequest, "Invalid ID")
+			return
+		}
 		for _, hex := range updateRoomChannelsData.Delete {
-			id, err := primitive.ObjectIDFromHex(urcd.ID)
-			if err != nil {
-				responseMessage(w, http.StatusBadRequest, "Invalid ID")
-				return
-			}
 			oid, err := primitive.ObjectIDFromHex(hex)
 			if err != nil {
 				responseMessage(w, http.StatusBadRequest, "Invalid ID")
@@ -255,7 +256,7 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 				continue
 			}
 		}
-		res, err := h.Collections.RoomChannelCollection.UpdateOne(r.Context(), bson.M{"_id": urcd.ID, "room_id": roomId}, bson.M{
+		res, err := h.Collections.RoomChannelCollection.UpdateOne(r.Context(), bson.M{"_id": id, "room_id": roomId}, bson.M{
 			"$set": bson.M{
 				"name": strings.TrimSpace(urcd.Name),
 			},
@@ -271,6 +272,7 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 	}
 
 	insertedNewMainChannel := false
+	insertedChannels := []models.RoomChannel{}
 
 	// Insert room channels. The user can create multiple channels with the same name, but it doesn't really matter
 	for _, insertData := range updateRoomChannelsData.InsertData {
@@ -312,6 +314,11 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 				return
 			}
 		}
+		insertedChannels = append(insertedChannels, models.RoomChannel{
+			ID:     res.InsertedID.(primitive.ObjectID),
+			RoomID: roomId,
+			Name:   strings.TrimSpace(insertData.Name),
+		})
 	}
 
 	// Delete room channels

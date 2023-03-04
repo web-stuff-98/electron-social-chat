@@ -17,13 +17,14 @@ export const roomChannelStore: IRoomChannelStore = reactive({
   channels: [],
   getDisplayDataForChannels: async (roomId: string) => {
     const data: IRoomChannel[] = await getRoomChannelsDisplayData(roomId);
-    roomChannelStore.channels = data;
+    roomChannelStore.channels =
+      data.sort((a, b) => a.name.localeCompare(b.name)) || [];
   },
   getFullDataForChannel: async (id: string, roomId: string) => {
     const data: IRoomChannel = await getRoomChannelData(id, roomId);
     roomChannelStore.channels = [
       ...roomChannelStore.channels.filter((r) => r.ID !== id),
       data,
-    ];
+    ].sort((a, b) => a.name.localeCompare(b.name));
   },
 });

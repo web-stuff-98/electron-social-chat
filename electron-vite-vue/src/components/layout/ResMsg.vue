@@ -4,7 +4,7 @@ defineProps<{ resMsg: IResMsg }>();
 </script>
 
 <template>
-  <div v-show="resMsg.pen || resMsg.err || resMsg.err" class="res-msg">
+  <div v-show="resMsg.pen || resMsg.err || resMsg.msg" class="res-msg">
     <v-icon v-if="resMsg.err" class="res-msg-err-icon" name="md-error-round" />
     <p v-if="resMsg.msg">{{ resMsg.msg }}</p>
     <v-icon

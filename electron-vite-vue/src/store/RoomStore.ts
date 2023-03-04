@@ -2,7 +2,7 @@ import { reactive } from "vue";
 import { IRoom, IRoomCard } from "../interfaces/GeneralInterfaces";
 
 interface IRoomStore {
-  rooms: IRoom[];
+  rooms: Partial<IRoom>[];
   currentRoom: string;
 }
 

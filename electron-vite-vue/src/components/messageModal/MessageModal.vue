@@ -12,7 +12,7 @@ defineProps<{
   <div v-if="show" class="modal-backdrop" />
   <div v-if="show" class="modal-container">
     <div class="modal">
-      <div v-if="msg.pen || msg.err || msg.err" class="icons">
+      <div v-if="msg.pen || msg.err" class="icons">
         <v-icon
           v-if="msg.err"
           class="icons-err-icon"

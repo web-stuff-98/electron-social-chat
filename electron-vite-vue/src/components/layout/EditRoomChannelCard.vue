@@ -23,6 +23,72 @@ const modalConfirmation = ref(() => {});
 const modalCancellation = ref<Function | undefined>(() => {});
 const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+const isEditing = ref(false);
+
+function renderName() {
+  if (id.value) {
+    // if there is an id value, its a room that already exists
+    const found = editRoomChannelsData.update_data.find(
+      (c) => c.ID === id.value
+    );
+    if (found) {
+      return found.name;
+    } else {
+      return channel?.name;
+    }
+  } else {
+    // otherwise its a room not yet created
+    const found = editRoomChannelsData.insert_data.find(
+      (c) => c.name === name?.value
+    );
+    return found?.name || "";
+  }
+}
+
+function getEditValue() {
+  const found = id.value
+    ? editRoomChannelsData.update_data.find((c) => c.ID === id.value)
+    : editRoomChannelsData.insert_data.find((c) => c.name === name?.value);
+    if(found) return found.name
+    else {
+      if(id.value) {
+        return channel?.name
+      } else {
+        return ""
+      }
+    }
+}
+
+function handleEditRoomNameInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (target.value.length > 24 || !target.value.trim()) return;
+  // if there is an id value, its a room that already exists being edited
+  if (id.value) {
+    const i = editRoomChannelsData.update_data.findIndex(
+      (c) => c.ID === id.value
+    );
+    if (i === -1) {
+      editRoomChannelsData.update_data.push({
+        ID: id.value,
+        name: target.value,
+      });
+    } else {
+      editRoomChannelsData.update_data[i].name = target.value;
+    }
+  } else {
+    // otherwise its a room that hasn't been created yet being edited
+    const i = editRoomChannelsData.insert_data.findIndex(
+      (c) => c.name === name?.value
+    );
+    if (i !== -1) {
+      editRoomChannelsData.insert_data[i].name = target.value;
+    }
+  }
+}
+
+function handleEditChannelNameForm() {
+  isEditing.value = false;
+}
 
 function deleteClicked() {
   if (editRoomChannelsData.promote_to_main === id.value && id.value) {
@@ -68,7 +134,7 @@ function deleteClicked() {
       ];
       modalMsg.value = {
         msg: "Channel is now flagged for deletion",
-        err: true,
+        err: false,
         pen: false,
       };
       modalConfirmation.value = () => (showModal.value = false);
@@ -156,22 +222,42 @@ function promoteToMainClicked() {
     :cancellationCallback="modalCancellation"
   />
   <div class="channel">
-    <div class="name">
-      {{ channel?.name }} {{ mainChannelId === id ? "(main)" : "" }}
+    <div v-if="!isEditing" class="name">
+      {{ renderName() }} {{ mainChannelId === id ? "(main)" : "" }}
     </div>
+    <form
+      @submit.prevent="handleEditChannelNameForm"
+      class="edit-channel-form"
+      v-else
+    >
+      <input
+        maxlength="24"
+        :value="getEditValue()"
+        @input="handleEditRoomNameInput"
+        type="text"
+      />
+      <button type="submit">
+        <v-icon name="bi-check-lg" />
+      </button>
+    </form>
     <div class="buttons">
       <button
+        v-if="!isEditing"
         type="button"
         :style="
           editRoomChannelsData.delete_ids.includes(id)
-            ? { background: 'red' }
+            ? {
+                background: 'red',
+                border: '1px solid black',
+                outline: '1px solid white',
+              }
             : {}
         "
         @click="deleteClicked"
       >
         <v-icon name="md-delete-sharp" />
       </button>
-      <button type="button">
+      <button v-if="!isEditing" @click="isEditing = true" type="button">
         <v-icon name="ri-edit-box-fill" />
       </button>
       <button
@@ -185,7 +271,7 @@ function promoteToMainClicked() {
             : {}
         "
         @click="promoteToMainClicked"
-        v-if="mainChannelId !== id"
+        v-if="mainChannelId !== id && !isEditing"
       >
         <v-icon name="bi-caret-up-fill" />
       </button>
@@ -202,6 +288,21 @@ function promoteToMainClicked() {
   box-sizing: border-box;
   align-items: center;
   padding: 2px;
+  .edit-channel-form {
+    padding: var(--padding-medium);
+    gap: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+    button {
+      padding: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      margin: 0;
+    }
+  }
   .name {
     text-align: left;
     padding: 0 3px;

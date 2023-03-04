@@ -88,21 +88,41 @@ function handleAddChannelClicked() {
 async function handleSubmit() {
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    if (room !== originalRoom)
+    if (room.value !== originalRoom.value) {
       await updateRoom(room.value.ID, room.value.name, room.value.is_private);
+      originalRoom.value = room.value;
+    }
     if (
       editRoomChannelsData.delete_ids.length !== 0 ||
       editRoomChannelsData.insert_data.length !== 0 ||
       editRoomChannelsData.promote_to_main !== "" ||
       editRoomChannelsData.update_data.length !== 0
-    )
-      await updateRoomChannelsData(
+    ) {
+      const insertedRooms = await updateRoomChannelsData(
         room.value.ID,
         editRoomChannelsData.update_data,
         editRoomChannelsData.insert_data,
         editRoomChannelsData.delete_ids,
         editRoomChannelsData.promote_to_main
       );
+      roomChannelStore.channels.filter(
+        (c) => !editRoomChannelsData.delete_ids.includes(c.ID)
+      );
+      editRoomChannelsData.update_data.forEach((c) => {
+        const i = roomChannelStore.channels.findIndex((ec) => ec.ID === c.ID);
+        roomChannelStore.channels[i].name = c.name;
+      });
+      roomChannelStore.channels =
+        roomChannelStore.channels.concat(insertedRooms);
+      if (editRoomChannelsData.promote_to_main) {
+        room.value.main_channel = editRoomChannelsData.promote_to_main;
+        originalRoom.value = room.value;
+      }
+      editRoomChannelsData.delete_ids = [];
+      editRoomChannelsData.insert_data = [];
+      editRoomChannelsData.update_data = [];
+      editRoomChannelsData.promote_to_main = "";
+    }
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
