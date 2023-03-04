@@ -49,8 +49,6 @@ func Init() (*mongo.Database, *Collections) {
 		RoomChannelMessagesCollection: DB.Collection("room_channel_messages"),
 	}
 
-	DB.Drop(context.Background())
-
 	colls.UserCollection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 		Keys: bson.M{
 			"username": "text",

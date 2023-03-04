@@ -18,6 +18,8 @@ import (
 	"github.com/nfnt/resize"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/helpers"
+	"github.com/web-stuff-98/electron-social-chat/pkg/socketmodels"
+	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/validation"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -532,6 +534,22 @@ func (h handler) UploadRoomImage(w http.ResponseWriter, r *http.Request) {
 		responseMessage(w, http.StatusOK, "Image updated")
 	} else {
 		responseMessage(w, http.StatusCreated, "Image created")
+	}
+
+	outBytes, err := json.Marshal(socketmodels.OutChangeMessage{
+		Type:   "CHANGE",
+		Method: "UPDATE_IMAGE",
+		Entity: "ROOM",
+		Data:   `{"ID":"` + room.ID.Hex() + `"}`,
+	})
+	if err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+
+	h.SocketServer.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+		Name: "room-display-data=" + room.ID.Hex(),
+		Data: outBytes,
 	}
 }
 

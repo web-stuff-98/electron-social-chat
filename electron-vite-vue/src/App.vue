@@ -14,6 +14,7 @@ import {
   instanceOfChangeData,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
+import { baseURL } from "./services/makeRequest";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -55,6 +56,18 @@ const watchForRoomChanges = (e: MessageEvent) => {
         if (roomStore.currentRoom === data.DATA.ID) {
           router.push("/");
         }
+      }
+      if (data.METHOD === "UPDATE_IMAGE") {
+        console.log("UPDATE IMAGE");
+        const i = roomStore.rooms.findIndex((r) => r.ID === data.DATA.ID);
+        let imgUrl = roomStore.rooms[i].img_url || "";
+        if (imgUrl) {
+          const split = imgUrl.split("?v=");
+          imgUrl = split[0] + `?v=${Number(split[1]) + 1}`;
+        } else {
+          imgUrl = `${baseURL}/api/room/image/${data.DATA.ID}?v=1`;
+        }
+        roomStore.rooms[i].img_url = imgUrl;
       }
     }
   }

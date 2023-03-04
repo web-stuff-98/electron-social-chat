@@ -8,6 +8,7 @@ import {
   getRoom,
   updateRoom,
   updateRoomChannelsData,
+  uploadRoomImage,
 } from "../../services/Rooms";
 import EditRoomChannelCard from "../layout/EditRoomChannelCard.vue";
 import { roomStore } from "../../store/RoomStore";
@@ -32,6 +33,20 @@ const room = ref<IRoom>({
   is_private: false,
 });
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+
+const roomImage = ref<File>();
+const roomImageURL = ref<string>();
+const fileInputRef = ref<HTMLCanvasElement | null>(null);
+function clickHiddenImageInput() {
+  fileInputRef.value?.click();
+}
+function selectImage(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (!target.files || !target.files[0]) return;
+  const file = target.files[0];
+  roomImage.value = file;
+  roomImageURL.value = URL.createObjectURL(file);
+}
 
 onMounted(async () => {
   const abortController = new AbortController();
@@ -122,6 +137,9 @@ async function handleSubmit() {
       editRoomChannelsData.update_data = [];
       editRoomChannelsData.promote_to_main = "";
     }
+    if (roomImage.value) {
+      await uploadRoomImage(roomImage.value, route.params.id as string);
+    }
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
@@ -146,6 +164,12 @@ async function handleSubmit() {
         <div class="input-label">
           <label for="name">Room name</label>
           <input
+            accept=".jpeg,.jpg,.png"
+            ref="fileInputRef"
+            type="file"
+            @change="selectImage"
+          />
+          <input
             maxlength="24"
             :value="room.name"
             @input="handleRoomNameInput"
@@ -153,7 +177,9 @@ async function handleSubmit() {
             type="text"
           />
         </div>
-        <button type="button">Select image</button>
+        <button @click="clickHiddenImageInput" type="button">
+          Select image
+        </button>
       </span>
       <!-- Channels section -->
       <span v-if="section === EEditRoomSection.CHANNELS">
@@ -214,6 +240,7 @@ async function handleSubmit() {
         Users
       </button>
       <button type="submit">Update room</button>
+      <img v-if="roomImageURL" :src="roomImageURL" />
     </div>
   </form>
 </template>
@@ -240,6 +267,13 @@ async function handleSubmit() {
   }
   input {
     text-align: center;
+  }
+  img {
+    width: 100%;
+    object-position: center;
+    object-fit: contain;
+    max-height: 5rem;
+    margin-top: var(--padding-medium);
   }
   .content {
     position: relative;

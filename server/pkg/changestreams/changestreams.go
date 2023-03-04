@@ -151,7 +151,17 @@ func watchRoomUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
 			return
 		}
 
-		outBytes, err := json.Marshal(changeEv.FullDocument)
+		jsonBytes, err := json.Marshal(changeEv.FullDocument)
+		if err != nil {
+			continue
+		}
+
+		outBytes, err := json.Marshal(socketmodels.OutChangeMessage{
+			Type:   "CHANGE",
+			Method: "UPDATE",
+			Entity: "ROOM",
+			Data:   string(jsonBytes),
+		})
 		if err != nil {
 			continue
 		}

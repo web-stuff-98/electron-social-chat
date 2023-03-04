@@ -8,6 +8,8 @@ export interface IRoomCard {
   name: string;
   blur: string;
   author: string;
+  // Not included from data sent out by server... has v url param which increments whenever the image is updated, so that the image can be refreshed
+  img_url?: string;
 }
 export interface IRoomMessage {
   ID: string;

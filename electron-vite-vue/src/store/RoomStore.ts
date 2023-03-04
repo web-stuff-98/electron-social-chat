@@ -1,5 +1,6 @@
 import { reactive } from "vue";
 import { IRoom, IRoomCard } from "../interfaces/GeneralInterfaces";
+import { baseURL } from "../services/makeRequest";
 import { getRoom, getRoomDisplayData } from "../services/Rooms";
 import { socketStore } from "./SocketStore";
 
@@ -72,6 +73,9 @@ export const roomStore: IRoomStore = reactive({
     try {
       const p = full ? getRoom(id) : getRoomDisplayData(id);
       const r = await p;
+      if (r.blur) {
+        r.img_url = `${baseURL}/api/room/image/${id}?v=0`;
+      }
       roomStore.rooms = [...roomStore.rooms.filter((r) => r.ID !== id), r];
       return r;
     } catch (e) {

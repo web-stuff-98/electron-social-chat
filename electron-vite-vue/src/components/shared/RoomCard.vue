@@ -2,13 +2,11 @@
 import { IResMsg } from "../../interfaces/GeneralInterfaces";
 import MessageModal from "../messageModal/MessageModal.vue";
 import { toRefs, ref, onMounted, onBeforeUnmount } from "vue";
-import useRoomCard from "../../composables/useRoomCard";
 import { deleteRoom } from "../../services/Rooms";
 import { roomStore } from "../../store/RoomStore";
 
 const props = defineProps<{ id: string }>();
 const { id } = toRefs(props);
-const room = useRoomCard(id.value);
 
 const modalConfirmation = ref(() => {});
 const modalCancellation = ref(() => {});
@@ -62,7 +60,15 @@ function promptDeleteRoom() {
 
 <template>
   <div
-    :style="room?.blur ? { 'background-image': `url(${room.blur})` } : {}"
+    :style="
+      roomStore.getRoom(id)?.blur
+        ? {
+            'background-image': `url(${
+              roomStore.getRoom(id)?.img_url || roomStore.getRoom(id)?.blur
+            })`,
+          }
+        : {}
+    "
     ref="containerRef"
     class="container"
   >
@@ -74,16 +80,16 @@ function promptDeleteRoom() {
         :cancellationCallback="modalCancellation"
       />
       <div class="name">
-        {{ room?.name }}
+        {{ roomStore.getRoom(id)?.name }}
       </div>
       <div class="buttons">
         <button @click="promptDeleteRoom">
           <v-icon name="md-delete-sharp" />
         </button>
-        <router-link :to="`/room/${room!.ID}`">
+        <router-link :to="`/room/${id}`">
           <button><v-icon name="bi-door-closed-fill" /></button>
         </router-link>
-        <router-link :to="`/room/edit/${room!.ID}`">
+        <router-link :to="`/room/edit/${id}`">
           <button><v-icon name="ri-edit-box-fill" /></button>
         </router-link>
       </div>
@@ -99,6 +105,7 @@ function promptDeleteRoom() {
   padding-left: 4px;
   box-sizing: border-box;
   background-size: cover;
+  background-position: center;
   text-align: left;
   .inner {
     display: flex;
