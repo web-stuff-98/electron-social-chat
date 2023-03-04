@@ -2,7 +2,11 @@
 import { toRefs, onMounted, ref, onBeforeUnmount } from "vue";
 import { userStore } from "../../store/UserStore";
 import useUser from "../../composables/useUser";
-const props = defineProps<{ uid: string; reverse?: boolean }>();
+const props = defineProps<{
+  uid: string;
+  dateTime?: Date;
+  reverse?: boolean;
+}>();
 const { uid } = toRefs(props);
 const user = useUser(uid.value);
 
@@ -40,9 +44,15 @@ onBeforeUnmount(() => {
       <div class="name">
         {{ user?.username }}
       </div>
-      <div class="date-time">
-        <span>01/02/23</span>
-        <span>12:34PM</span>
+      <div v-if="dateTime" class="date-time">
+        <span>{{ new Intl.DateTimeFormat("en-GB").format(dateTime) }}</span>
+        <span>{{
+          new Intl.DateTimeFormat("default", {
+            hour: "numeric",
+            minute: "numeric",
+            second: "numeric",
+          }).format(dateTime)
+        }}</span>
       </div>
     </div>
   </div>

@@ -10,7 +10,7 @@ defineProps<{ msg: IRoomMessage; reverse?: boolean }>();
     class="message"
   >
     <div class="user-container">
-      <User :reverse="reverse" :uid="msg.author" />
+      <User :dateTime="new Date(msg.created_at)" :reverse="reverse" :uid="msg.author" />
     </div>
     {{ msg.content }}
   </div>

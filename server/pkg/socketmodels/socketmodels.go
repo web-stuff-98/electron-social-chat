@@ -9,14 +9,10 @@ package socketmodels
 	the client.
 */
 
-// TYPE: OPEN_SUBSCRIPTION/CLOSE_SUBSCRIPTION
-type OpenCloseSubscription struct {
-	Name string `json:"name"`
-}
-
-// TYPE: OPEN_SUBSCRIPTIONS
-type OpenCloseSubscriptions struct {
-	Names []string `json:"names"`
+// TYPE: WATCH_USER/STOP_WATCHING_USER/WATCH_ROOM/STOP_WATCHING_ROOM
+type WatchStopWatching struct {
+	Type string `json:"TYPE"`
+	ID   string `json:"ID"`
 }
 
 // TYPE: ROOM_OPEN_CHANNEL/ROOM_EXIT_CHANNEL

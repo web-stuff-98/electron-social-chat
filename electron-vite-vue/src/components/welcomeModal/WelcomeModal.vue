@@ -6,6 +6,18 @@ import {
 import Welcome from "./sections/Welcome.vue";
 import Login from "./sections/Login.vue";
 import Register from "./sections/Register.vue";
+import { watch } from "vue";
+
+watch(welcomeModalStore, (oldVal, newVal) => {
+  if (newVal.modalType !== oldVal.modalType) {
+    welcomeModalStore.messageModalProps = {
+      ...welcomeModalStore.messageModalProps,
+      msg: "",
+      err: false,
+      pen: false,
+    };
+  }
+});
 </script>
 
 <template>

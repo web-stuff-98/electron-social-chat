@@ -31,18 +31,10 @@ const room = ref<IRoom>({
   main_channel: "",
   is_private: false,
 });
-const originalRoom = ref<IRoom>({
-  ID: "",
-  name: "",
-  blur: "",
-  author: "",
-  channels: [],
-  main_channel: "",
-  is_private: false,
-});
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 onMounted(async () => {
+  const abortController = new AbortController();
   editRoomChannelsData.delete_ids = [];
   editRoomChannelsData.insert_data = [];
   editRoomChannelsData.promote_to_main = "";
@@ -51,7 +43,6 @@ onMounted(async () => {
     resMsg.value = { msg: "", err: false, pen: true };
     const data: IRoom = await getRoom(route.params.id as string);
     room.value = data;
-    originalRoom.value = data;
     await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
     roomStore.rooms = [
       ...roomStore.rooms.filter((r) => r.ID !== data.ID),
@@ -62,6 +53,9 @@ onMounted(async () => {
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
+  return () => {
+    abortController.abort();
+  };
 });
 
 onBeforeUnmount(async () => {
@@ -85,13 +79,19 @@ function handleAddChannelClicked() {
   addChannelInput.value = "";
 }
 
+function handleRoomNameInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (target.value.length > 24 || !target.value.trim()) {
+    return;
+  }
+  room.value.name = target.value;
+}
+
 async function handleSubmit() {
+  const abortController = new AbortController();
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    if (room.value !== originalRoom.value) {
-      await updateRoom(room.value.ID, room.value.name, room.value.is_private);
-      originalRoom.value = room.value;
-    }
+    await updateRoom(room.value.ID, room.value.name, room.value.is_private);
     if (
       editRoomChannelsData.delete_ids.length !== 0 ||
       editRoomChannelsData.insert_data.length !== 0 ||
@@ -116,7 +116,6 @@ async function handleSubmit() {
         roomChannelStore.channels.concat(insertedRooms);
       if (editRoomChannelsData.promote_to_main) {
         room.value.main_channel = editRoomChannelsData.promote_to_main;
-        originalRoom.value = room.value;
       }
       editRoomChannelsData.delete_ids = [];
       editRoomChannelsData.insert_data = [];
@@ -127,6 +126,9 @@ async function handleSubmit() {
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
+  return () => {
+    abortController.abort();
+  };
 }
 </script>
 
@@ -143,7 +145,13 @@ async function handleSubmit() {
         />
         <div class="input-label">
           <label for="name">Room name</label>
-          <input v-model="room.name" id="name" type="text" />
+          <input
+            maxlength="24"
+            :value="room.name"
+            @input="handleRoomNameInput"
+            id="name"
+            type="text"
+          />
         </div>
         <button type="button">Select image</button>
       </span>

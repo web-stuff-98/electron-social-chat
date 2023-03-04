@@ -21,7 +21,6 @@ import {
 } from "../../utils/determineSocketEvent";
 
 const route = useRoute();
-const room = ref<IRoom | undefined>();
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 const messageInput = ref("");
@@ -29,10 +28,9 @@ const currentChannel = ref("");
 
 function messageEventListener(e: MessageEvent) {
   const data = parseSocketEventData(e);
-  console.log(data);
   if (!data) return;
   const i = roomChannelStore.channels.findIndex(
-    (c) => c.ID === room.value?.main_channel
+    (c) => c.ID === currentChannel.value
   );
   if (instanceOfRoomMessageData(data)) {
     roomChannelStore.channels[i].messages?.push({
@@ -64,19 +62,15 @@ function messageEventListener(e: MessageEvent) {
 }
 
 onMounted(async () => {
+  const abortController = new AbortController();
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const data: IRoom = await getRoom(route.params.id as string);
-    room.value = data;
-    currentChannel.value = data.main_channel;
-    roomStore.rooms = [
-      ...roomStore.rooms.filter((r) => r.ID !== data.ID),
-      data,
-    ];
+    const data = await roomStore.roomEnteredView(route.params.id as string);
+    currentChannel.value = data.main_channel as string;
     await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
     await roomChannelStore.getFullDataForChannel(
-      data.main_channel,
-      room.value.ID
+      data.main_channel as string,
+      route.params.id as string
     );
     socketStore.send(
       JSON.stringify({
@@ -84,16 +78,20 @@ onMounted(async () => {
         channel: currentChannel.value,
       })
     );
-    roomStore.currentRoom = data.ID;
+    roomStore.currentRoom = route.params.id as string;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
   socketStore.socket?.addEventListener("message", messageEventListener);
+  return () => {
+    abortController.abort();
+  };
 });
 
 onBeforeUnmount(async () => {
   roomStore.currentRoom = "";
+  roomStore.roomLeftView(route.params.id as string);
   socketStore.send(
     JSON.stringify({
       event_type: "ROOM_EXIT_CHANNEL",
@@ -116,7 +114,7 @@ watch(currentChannel, async (oldChannel, channel) => {
     }
     await roomChannelStore.getFullDataForChannel(
       channel,
-      room.value?.ID as string
+      route.params.id as string
     );
     socketStore.send(
       JSON.stringify({
@@ -162,16 +160,22 @@ function handleMessageSubmit() {
         <div class="channel-container">
           <button
             type="button"
-            @click="currentChannel = room?.main_channel!"
-            :style="{ fontWeight: 600, marginBottom: 'var(--padding)', ...(currentChannel !== room?.main_channel! ? {
+            @click="
+              currentChannel = roomStore.getRoom(route.params.id as string)
+                ?.main_channel!
+            "
+            :style="{ fontWeight: 600, marginBottom: 'var(--padding)', ...(currentChannel !== roomStore.getRoom(route.params.id as string)?.main_channel! ? {
               filter:'opacity(0.5)'
             } : {}) }"
             class="channel"
           >
             #
             {{
-              roomChannelStore.channels.find((c) => c.ID === room?.main_channel)
-                ?.name
+              roomChannelStore.channels.find(
+                (c) =>
+                  c.ID ===
+                  roomStore.getRoom(route.params.id as string)?.main_channel
+              )?.name
             }}
           </button>
         </div>
@@ -179,7 +183,7 @@ function handleMessageSubmit() {
         <div
           class="channel-container"
           v-for="channel in roomChannelStore.channels.filter(
-            (c) => c.ID !== room?.main_channel
+            (c) => c.ID !== roomStore.getRoom(route.params.id as string)?.main_channel
           )"
         >
           <button
@@ -198,7 +202,9 @@ function handleMessageSubmit() {
     <div class="messaging-container">
       <ResMsg :resMsg="resMsg" />
       <div v-if="!resMsg.pen && !resMsg.err && !resMsg.msg" class="content">
-        <div class="header">{{ room?.name }}</div>
+        <div class="header">
+          {{ roomStore.getRoom(route.params.id as string)?.name }}
+        </div>
         <div class="messages-list-container">
           <div class="messages">
             <div

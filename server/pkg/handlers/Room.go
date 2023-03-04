@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
@@ -90,8 +89,9 @@ func (h handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 		responseMessage(w, http.StatusInternalServerError, "Internal error")
 		return
 	}
+	mainChannelId := primitive.NewObjectID()
 	mainChannel := models.RoomChannel{
-		ID:          primitive.NewObjectID(),
+		ID:          mainChannelId,
 		RoomID:      inserted.InsertedID.(primitive.ObjectID),
 		Name:        "Main channel",
 		ToBeDeleted: false,
@@ -99,7 +99,7 @@ func (h handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
 	if _, err := h.Collections.RoomInternalDataCollection.InsertOne(r.Context(), models.RoomInternalData{
 		ID:          inserted.InsertedID.(primitive.ObjectID),
 		Channels:    []primitive.ObjectID{mainChannel.ID},
-		MainChannel: mainChannel.ID,
+		MainChannel: mainChannelId,
 	}); err != nil {
 		h.Collections.RoomCollection.DeleteOne(r.Context(), bson.M{"_id": inserted.InsertedID.(primitive.ObjectID)})
 		responseMessage(w, http.StatusInternalServerError, "Internal error")
@@ -164,7 +164,6 @@ func (h handler) UpdateRoom(w http.ResponseWriter, r *http.Request) {
 	var room models.Room
 	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&room); err != nil {
 		if err != mongo.ErrNoDocuments {
-			log.Println("A:", err)
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 			return
 		}
@@ -174,13 +173,12 @@ func (h handler) UpdateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := h.Collections.RoomCollection.UpdateByID(r.Context(), bson.M{"_id": id}, bson.M{
+	if _, err := h.Collections.RoomCollection.UpdateByID(r.Context(), id, bson.M{
 		"$set": bson.M{
 			"name":    roomInput.Name,
 			"private": roomInput.Private,
 		},
 	}); err != nil {
-		log.Println("B:", err)
 		responseMessage(w, http.StatusInternalServerError, "Internal error")
 	} else {
 		responseMessage(w, http.StatusOK, "Room updated")
@@ -235,8 +233,6 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 		responseMessage(w, http.StatusBadRequest, "Bad request")
 		return
 	}
-
-	fmt.Println(updateRoomChannelsData)
 
 	// Update room channel names
 	for _, urcd := range updateRoomChannelsData.UpdateData {
@@ -682,6 +678,66 @@ func (h handler) GetRoom(w http.ResponseWriter, r *http.Request) {
 	room.Banned = roomExternalData.Banned
 	room.Channels = roomInternalData.Channels
 	room.MainChannel = roomInternalData.MainChannel
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(room)
+}
+
+func (h handler) GetRoomDisplayData(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	id, err := primitive.ObjectIDFromHex(mux.Vars(r)["id"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&room); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		}
+		return
+	}
+
+	roomExternalData := &models.RoomExternalData{}
+	if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&roomExternalData); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		} else {
+			responseMessage(w, http.StatusNotFound, "Room not found")
+		}
+		return
+	}
+
+	if room.Author != user.ID {
+		for _, oi := range roomExternalData.Banned {
+			if oi == user.ID {
+				responseMessage(w, http.StatusUnauthorized, "You are banned from this room")
+				return
+			}
+		}
+		if roomExternalData.Private {
+			isMember := false
+			for _, oi := range roomExternalData.Members {
+				if oi == user.ID {
+					isMember = true
+					break
+				}
+			}
+			if !isMember {
+				responseMessage(w, http.StatusForbidden, "You are not a member of this room")
+				return
+			}
+		}
+	}
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

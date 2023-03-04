@@ -80,7 +80,7 @@ type RoomInternalData struct {
 	MainChannel primitive.ObjectID   `bson:"main_channel" json:"main_channel"`
 }
 
-// Data that will be accessed before the room is opened
+// Data that will be accessed before the room is opened (not for display)
 type RoomExternalData struct {
 	ID      primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
 	Private bool                 `bson:"private" json:"private"`

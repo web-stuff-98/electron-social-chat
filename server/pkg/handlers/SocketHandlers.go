@@ -18,14 +18,17 @@ import (
 
 func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
 	switch eventType {
-	case "OPEN_SUBSCRIPTION":
-		err := openSubscription(data, conn, uid, ss, colls)
+	case "WATCH_USER":
+		err := watchUser(data, conn, uid, ss, colls)
 		return err
-	case "CLOSE_SUBSCRIPTION":
-		err := closeSubscription(data, conn, uid, ss, colls)
+	case "STOP_WATCHING_USER":
+		err := stopWatchingUser(data, conn, uid, ss, colls)
 		return err
-	case "OPEN_SUBSCRIPTIONS":
-		err := openSubscriptions(data, conn, uid, ss, colls)
+	case "WATCH_ROOM":
+		err := watchRoom(data, conn, uid, ss, colls)
+		return err
+	case "STOP_WATCHING_ROOM":
+		err := stopWatchingRoom(data, conn, uid, ss, colls)
 		return err
 	case "ROOM_OPEN_CHANNEL":
 		err := openRoomChannel(data, conn, uid, ss, colls)
@@ -46,50 +49,83 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	return fmt.Errorf("Unrecognized event type")
 }
 
-func openSubscription(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.OpenCloseSubscription
+func watchUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.WatchStopWatching
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
-	if strings.HasPrefix(data.Name, "channel:") {
-		return fmt.Errorf("Unauthorized")
+
+	id, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
 	}
+
 	ss.RegisterSubscriptionConn <- socketserver.SubscriptionConnectionInfo{
-		Name: data.Name,
+		Name: "user=" + id.Hex(),
 		Uid:  uid,
 		Conn: conn,
 	}
+
 	return nil
 }
 
-func closeSubscription(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.OpenCloseSubscription
+func stopWatchingUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.WatchStopWatching
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
+
+	id, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
 	ss.UnregisterSubscriptionConn <- socketserver.SubscriptionConnectionInfo{
-		Name: data.Name,
+		Name: "user=" + id.Hex(),
 		Uid:  uid,
 		Conn: conn,
 	}
+
 	return nil
 }
 
-func openSubscriptions(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.OpenCloseSubscriptions
+func watchRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.WatchStopWatching
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
-	for _, name := range data.Names {
-		if strings.HasPrefix(name, "channel:") {
-			continue
-		}
-		ss.RegisterSubscriptionConn <- socketserver.SubscriptionConnectionInfo{
-			Name: name,
-			Uid:  uid,
-			Conn: conn,
-		}
+
+	id, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
 	}
+
+	ss.RegisterSubscriptionConn <- socketserver.SubscriptionConnectionInfo{
+		Name: "room-display-data=" + id.Hex(),
+		Uid:  uid,
+		Conn: conn,
+	}
+
+	return nil
+}
+
+func stopWatchingRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.WatchStopWatching
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	id, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
+	ss.UnregisterSubscriptionConn <- socketserver.SubscriptionConnectionInfo{
+		Name: "room-display-data=" + id.Hex(),
+		Uid:  uid,
+		Conn: conn,
+	}
+
 	return nil
 }
 

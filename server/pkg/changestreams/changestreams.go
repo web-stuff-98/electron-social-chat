@@ -40,10 +40,11 @@ var insertPipeline = bson.D{
 
 func WatchCollections(DB *mongo.Database, ss *socketserver.SocketServer) {
 	go watchUserPfpUpdates(DB, ss)
+	go watchRoomChannelUpdates(DB, ss)
+	go watchRoomUpdates(DB, ss)
 
 	go watchUserDeletes(DB, ss)
 	go watchRoomDeletes(DB, ss)
-	go watchRoomChannelUpdates(DB, ss)
 }
 
 func watchUserDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
@@ -71,10 +72,17 @@ func watchUserDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 
 		db.Collection("pfps").DeleteOne(context.Background(), bson.M{"_id": uid})
 		db.Collection("rooms").DeleteMany(context.Background(), bson.M{"author": uid})
+
+		ss.DestroySubscription <- "user=" + uid.Hex()
 	}
 }
 
 func watchUserPfpUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recovered from panic watching pfp updates :", r)
+		}
+	}()
 	cs, err := db.Collection("pfps").Watch(context.Background(), mongo.Pipeline{updatePipeline}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
 	if err != nil {
 		log.Panicln("CS ERR : ", err.Error())
@@ -93,14 +101,6 @@ func watchUserPfpUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
 		}
 		uid := changeEv.DocumentKey.ID
 		pfp := &changeEv.FullDocument
-		if err != nil {
-			log.Println("CS JSON MARSHAL ERROR : ", err)
-			return
-		}
-		if err != nil {
-			log.Println("CS JSON MARSHAL ERROR : ", err)
-			return
-		}
 		pfpB64 := map[string]string{
 			"ID":        uid.Hex(),
 			"base64pfp": "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(pfp.Binary.Data),
@@ -117,9 +117,47 @@ func watchUserPfpUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
 			Entity: "USER",
 			Data:   string(jsonBytes),
 		})
+		if err != nil {
+			continue
+		}
 
 		ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
 			Name: "user=" + uid.Hex(),
+			Data: outBytes,
+		}
+	}
+}
+
+func watchRoomUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recovered from panic watching room updates :", r)
+		}
+	}()
+	cs, err := db.Collection("rooms").Watch(context.Background(), mongo.Pipeline{updatePipeline}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
+	if err != nil {
+		log.Panicln("CS ERR : ", err.Error())
+	}
+	for cs.Next(context.Background()) {
+		var changeEv struct {
+			DocumentKey struct {
+				ID primitive.ObjectID `bson:"_id"`
+			} `bson:"documentKey"`
+			FullDocument models.Room `bson:"fullDocument"`
+		}
+		err := cs.Decode(&changeEv)
+		if err != nil {
+			log.Println("CS DECODE ERROR : ", err)
+			return
+		}
+
+		outBytes, err := json.Marshal(changeEv.FullDocument)
+		if err != nil {
+			continue
+		}
+
+		ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+			Name: "room-display-data=" + changeEv.DocumentKey.ID.Hex(),
 			Data: outBytes,
 		}
 	}
@@ -168,10 +206,17 @@ func watchRoomDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 		}
 		db.Collection("room_channels").DeleteMany(context.Background(), bson.M{"room_id": id})
 		db.Collection("room_channel_messages").DeleteMany(context.Background(), bson.M{"_id": bson.M{"$in": channelIds}})
+
+		ss.DestroySubscription <- "room-display-data=" + id.Hex()
 	}
 }
 
 func watchRoomChannelUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Recovered from panic watching room channel updates :", r)
+		}
+	}()
 	cs, err := db.Collection("room_channels").Watch(context.Background(), mongo.Pipeline{updatePipeline}, options.ChangeStream().SetFullDocument(options.UpdateLookup))
 	if err != nil {
 		log.Panicln("CS ERR : ", err.Error())
@@ -195,6 +240,16 @@ func watchRoomChannelUpdates(db *mongo.Database, ss *socketserver.SocketServer) 
 				},
 			})
 			db.Collection("room_channels").DeleteOne(context.Background(), bson.M{"_id": changeEv.FullDocument.ID})
+		} else {
+			outBytes, err := json.Marshal(changeEv.FullDocument)
+			if err != nil {
+				continue
+			}
+
+			ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+				Name: "room-channel-data=" + changeEv.DocumentKey.ID.Hex(),
+				Data: outBytes,
+			}
 		}
 	}
 }

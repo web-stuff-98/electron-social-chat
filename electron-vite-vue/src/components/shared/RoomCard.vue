@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { IResMsg } from "../../interfaces/GeneralInterfaces";
 import MessageModal from "../messageModal/MessageModal.vue";
-import { toRefs, ref } from "vue";
+import { toRefs, ref, onMounted, onBeforeUnmount } from "vue";
 import useRoomCard from "../../composables/useRoomCard";
 import { deleteRoom } from "../../services/Rooms";
+import { roomStore } from "../../store/RoomStore";
 
 const props = defineProps<{ id: string }>();
 const { id } = toRefs(props);
@@ -13,6 +14,23 @@ const modalConfirmation = ref(() => {});
 const modalCancellation = ref(() => {});
 const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+
+const containerRef = ref<HTMLCanvasElement | null>(null);
+
+const observer = new IntersectionObserver(([entry]) => {
+  if (entry.isIntersecting) {
+    roomStore.roomEnteredView(id.value);
+  } else {
+    roomStore.roomLeftView(id.value);
+  }
+});
+
+onMounted(() => {
+  observer.observe(containerRef.value!);
+});
+onBeforeUnmount(() => {
+  observer.disconnect();
+});
 
 function promptDeleteRoom() {
   modalMsg.value = {
@@ -45,6 +63,7 @@ function promptDeleteRoom() {
 <template>
   <div
     :style="room?.blur ? { 'background-image': `url(${room.blur})` } : {}"
+    ref="containerRef"
     class="container"
   >
     <div class="inner">

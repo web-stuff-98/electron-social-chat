@@ -41,6 +41,12 @@ export const getRoom = (id: string) =>
     withCredentials: true,
   });
 
+export const getRoomDisplayData = (id: string) =>
+  makeRequest(`/api/room/display/${id}`, {
+    method: "GET",
+    withCredentials: true,
+  });
+
 export const getRoomChannelsDisplayData = (id: string) =>
   makeRequest(`/api/room/channels/${id}`, {
     method: "GET",

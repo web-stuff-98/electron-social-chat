@@ -13,7 +13,7 @@ const password = ref("");
     <input autofocus v-model="username" id="username" type="text" />
     <label for="password">Password</label>
     <input v-model="password" id="password" type="password" />
-    <button type="submit" v-if="!authStore.resMsg.pen">Login</button>
+    <button type="submit" v-if="!authStore.resMsg.pen">Create account</button>
     <ResMsg :resMsg="authStore.resMsg" />
   </form>
 </template>
