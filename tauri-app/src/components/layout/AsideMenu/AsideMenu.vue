@@ -85,7 +85,7 @@ aside {
   box-sizing: border-box;
   min-width: var(--aside-width);
   width: var(--aside-width);
-  height: calc(100% - var(--header-height));
+  height: 100vh;
   border-right: 2px solid var(--base-light);
   display: flex;
   flex-direction: column;

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import WelcomeModal from "./components/welcomeModal/WelcomeModal.vue";
-import Bar from "./components/layout/Bar.vue";
 import AsideMenu from "./components/layout/asideMenu/AsideMenu.vue";
 
 import { authStore, IUser } from "./store/AuthStore";
@@ -164,7 +163,6 @@ onMounted(() => {
       :confirmationCallback="modalConfirmation"
       :cancellationCallback="modalCancellation"
     />
-    <Bar />
     <main :style="showAside ? { 'padding-left': 'var(--aside-width)' } : {}">
       <router-view />
     </main>
@@ -181,7 +179,6 @@ onMounted(() => {
 .root {
   display: flex;
   height: 100%;
-  padding-top: var(--header-height);
   box-sizing: border-box;
   background: var(--background-radial);
 

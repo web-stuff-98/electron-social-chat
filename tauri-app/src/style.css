@@ -36,9 +36,6 @@ svg {
   --background-radial:radial-gradient(circle at center, hsl(0, 0%, 8%) 0%, hsl(0, 0%, 7%) 150%);
   --foreground-hover: hsl(0, 0%, 6%);
 
-  --header: hsl(0, 0%, 6%);
-  --header-height: 1.65rem;
-
   --aside-width: 13.666rem;
 
   --shadow: 0px 1px 13px rgba(0, 0, 0, 0.5), 0px 2px 3px rgba(0, 0, 0, 0.5);
