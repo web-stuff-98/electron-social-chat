@@ -1,0 +1,219 @@
+@font-face {
+  font-family: "CqMono";
+  src: url(BrassMonoCozyRegular-g146.otf);
+}
+
+* {
+  font-family: "CqMono";
+  color: white;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+svg {
+  fill: white;
+  color: white;
+}
+
+:root {
+  font-family: "CqMono";
+  line-height: 1;
+  font-weight: 300;
+
+  color-scheme: light dark;
+  color: white;
+  background-color: hsl(0, 0%, 8%);
+
+  font-synthesis: none;
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+
+  --foreground: hsl(0, 0%, 8%);
+  --background-radial:radial-gradient(circle at center, hsl(0, 0%, 8%) 0%, hsl(0, 0%, 7%) 150%);
+  --foreground-hover: hsl(0, 0%, 6%);
+
+  --header: hsl(0, 0%, 6%);
+  --header-height: 1.65rem;
+
+  --aside-width: 13.666rem;
+
+  --shadow: 0px 1px 13px rgba(0, 0, 0, 0.5), 0px 2px 3px rgba(0, 0, 0, 0.5);
+  --shadow-medium: 0px 2px 3px rgba(0, 0, 0, 0.5);
+
+  --border-radius-medium: 0.333rem;
+
+  --base: rgba(255, 255, 255, 0.35);
+  --base-light: rgba(255, 255, 255, 0.05);
+
+  --padding: 0.5rem;
+  --padding-medium: 0.25rem;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  min-height: 100vh;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+input,
+textarea {
+  border-radius: var(--border-radius-medium);
+  border: 1px solid var(--base-light);
+  outline: none;
+  padding: var(--padding-medium);
+  box-sizing: border-box;
+  background: none;
+  box-shadow: var(--shadow-medium);
+}
+input:focus,
+textarea:focus {
+  border: 1px solid transparent;
+  outline: 2px solid var(--base);
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0 var(--padding);
+  font-size: 1.25rem;
+  font-family: inherit;
+  background-color: var(--foreground);
+  cursor: pointer;
+  border-radius: var(--border-radius-medium);
+  border: 1px solid var(--base-light);
+  box-shadow: var(--shadow-medium);
+  font-weight: 600;
+}
+button:hover {
+  background: var(--foreground-hover);
+}
+
+code {
+  background-color: #1a1a1a;
+  padding: 2px 4px;
+  margin: 0 4px;
+  border-radius: 4px;
+}
+
+.card {
+  padding: 2em;
+}
+
+#app {
+  width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  max-height: 100vh;
+}
+
+.input-label {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
+  gap: var(--padding-medium);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+  code {
+    background-color: #f9f9f9;
+  }
+}
+
+.modal-backdrop {
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  position: fixed;
+  background: rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(1.5px);
+  filter: opacity(0.5);
+  z-index: 99;
+}
+.modal-container {
+  display: flex;
+  place-items: center;
+  place-content: center;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  z-index: 100;
+}
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--padding-medium);
+  border: 2px solid var(--base-light);
+  background: var(--foreground);
+  padding: var(--padding);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow);
+  max-width: min(calc(100% - var(--padding) * 4), 15rem);
+  position: relative;
+}
+.modal-close-button {
+  position: absolute;
+  background: red;
+  top: 2px;
+  right: 2px;
+  width: 1rem;
+  height: 1rem;
+  z-index: 99;
+  padding: 0;
+  border: 2px solid white;
+  filter: opacity(0.5);
+  display: flex;
+  transition: filter 100ms ease;
+}
+.modal-close-button svg {
+  width: 100%;
+  height: 100%;
+}
+.modal-close-button:hover {
+  filter: opacity(1);
+}
+
+.anim-spin {
+  animation: spin 500ms linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotateZ(0deg);
+  }
+  100% {
+    transform: rotateZ(360deg);
+  }
+}

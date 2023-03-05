@@ -35,7 +35,7 @@ func main() {
 	if os.Getenv("PRODUCTION") == "true" {
 		origins = []string{"https://electron-social-chat-backend.herokuapp.com"}
 	} else {
-		origins = []string{"http://localhost:5173", "http://localhost:8080"}
+		origins = []string{"http://localhost:1420", "http://localhost:8080"}
 	}
 
 	c := cors.New(cors.Options{
