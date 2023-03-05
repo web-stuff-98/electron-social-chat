@@ -1,6 +1,6 @@
 @font-face {
   font-family: "CqMono";
-  src: url(CqMono-mBXa.ttf);
+  src: url(BrassMonoCozyRegular-g146.otf);
 }
 
 * {
@@ -24,7 +24,7 @@ svg {
 
   color-scheme: light dark;
   color: white;
-  background-color: hsl(180, 0%, 10%);
+  background-color: hsl(0, 0%, 8%);
 
   font-synthesis: none;
   text-rendering: optimizeSpeed;
@@ -32,11 +32,11 @@ svg {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --foreground: hsl(180, 0%, 10%);
-  --background-radial:radial-gradient(circle at center, hsl(180, 0%, 10%) 0%, hsl(180, 0%, 9%) 150%);
-  --foreground-hover: hsl(180, 0%, 12%);
+  --foreground: hsl(0, 0%, 8%);
+  --background-radial:radial-gradient(circle at center, hsl(0, 0%, 8%) 0%, hsl(0, 0%, 7%) 150%);
+  --foreground-hover: hsl(0, 0%, 6%);
 
-  --header: hsl(180, 0%, 12%);
+  --header: hsl(0, 0%, 6%);
   --header-height: 1.65rem;
 
   --aside-width: 13.666rem;
@@ -46,8 +46,8 @@ svg {
 
   --border-radius-medium: 0.333rem;
 
-  --base: rgba(255, 255, 255, 0.2);
-  --base-light: rgba(255, 255, 255, 0.035);
+  --base: rgba(255, 255, 255, 0.35);
+  --base-light: rgba(255, 255, 255, 0.05);
 
   --padding: 0.5rem;
   --padding-medium: 0.25rem;

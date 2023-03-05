@@ -19,7 +19,7 @@ const containerRef = ref<HTMLCanvasElement | null>(null);
 
 const observer = new IntersectionObserver(async ([entry]) => {
   if (entry.isIntersecting) {
-    const r = await roomStore.roomEnteredView(id.value);
+    const r = await roomStore.roomEnteredView(id.value, false);
     const abortController = new AbortController();
     const res = await axios({
       method: "GET",
@@ -46,9 +46,9 @@ onBeforeUnmount(() => {
 });
 
 watch(roomStore, async (oldVal, newVal) => {
-  const oldRoom = oldVal.getRoom(id.value);
-  const newRoom = newVal.getRoom(id.value);
-  if (oldRoom?.img_url !== newRoom) {
+  const oldRoom = oldVal.rooms.find((r) => r.ID === id.value);
+  const newRoom = newVal.rooms.find((r) => r.ID === id.value);
+  if (oldRoom?.img_url !== newRoom && !oldRoom?.img_url) {
     const abortController = new AbortController();
     const res = await axios({
       method: "GET",
