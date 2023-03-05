@@ -62,6 +62,7 @@ function handleDeleteMessage() {
       {{ msg.content }}
     </div>
     <textarea
+      autofocus="true"
       ref="editInputRef"
       maxlength="300"
       @value="editInput"

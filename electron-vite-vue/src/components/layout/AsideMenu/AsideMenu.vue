@@ -152,6 +152,7 @@ aside {
   position: fixed;
   bottom: 3px;
   left: 3px;
+  z-index: 100;
 }
 .aside-menu-icon {
   width: 1.666rem;

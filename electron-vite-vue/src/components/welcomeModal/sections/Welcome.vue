@@ -25,10 +25,10 @@ import {
 h1 {
   margin: 0;
   font-size: 1.5rem;
+  font-weight: 600;
 }
 p {
   margin: 0;
-  margin-bottom: var(--padding);
 }
 .buttons {
   display: flex;

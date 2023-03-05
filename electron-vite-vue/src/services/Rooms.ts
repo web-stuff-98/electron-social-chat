@@ -35,6 +35,11 @@ export const getRooms = (own: boolean) =>
     withCredentials: true,
   });
 
+export const getRoomPage = (page: number, own?: boolean) =>
+  makeRequest(`/api/room/page/${page}${own ? "?own" : ""}`, {
+    withCredentials: true,
+  });
+
 export const getRoom = (id: string) =>
   makeRequest(`/api/room/${id}`, {
     method: "GET",

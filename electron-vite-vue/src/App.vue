@@ -165,15 +165,15 @@ onMounted(() => {
       :cancellationCallback="modalCancellation"
     />
     <Bar />
+    <main :style="showAside ? { 'padding-left': 'var(--aside-width)' } : {}">
+      <router-view />
+    </main>
     <AsideMenu
       :toggleShowAside="() => (showAside = !showAside)"
       :showAside="showAside"
       v-if="authStore.user"
     />
     <WelcomeModal v-else />
-    <main :style="showAside ? { 'padding-left': 'var(--aside-width)' } : {}">
-      <router-view />
-    </main>
   </div>
 </template>
 
@@ -183,6 +183,8 @@ onMounted(() => {
   height: 100%;
   padding-top: var(--header-height);
   box-sizing: border-box;
+  background: var(--background-radial);
+
   main {
     display: flex;
     align-items: center;

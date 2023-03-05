@@ -31,7 +31,11 @@ function deleteAccount() {
     pen: false,
   };
   showModal.value = true;
-  modalConfirmation.value = authStore.deleteAccount;
+  modalConfirmation.value = () => {
+    authStore.deleteAccount();
+    showModal.value = false;
+  };
+  showAccountMenu.value = false;
   modalCancellation.value = () => (showModal.value = false);
 }
 
@@ -62,7 +66,16 @@ onBeforeUnmount(() => {
         class="account-menu"
       >
         <button @click="deleteAccount">Delete account</button>
-        <button @click="authStore.logout">Log out</button>
+        <button
+          @click="
+            {
+              authStore.logout();
+              showAccountMenu = false;
+            }
+          "
+        >
+          Log out
+        </button>
       </div>
       <button
         v-if="authStore.user"

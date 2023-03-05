@@ -24,6 +24,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (h handler) CreateRoom(w http.ResponseWriter, r *http.Request) {
@@ -581,6 +582,91 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 			room := &models.OutRoom{}
 			err := cursor.Decode(&room)
 			if err != nil {
+				cursor.Close(r.Context())
+				responseMessage(w, http.StatusInternalServerError, "Internal error")
+				return
+			}
+			rooms = append(rooms, *room)
+		}
+		cursor.Close(r.Context())
+	}
+
+	outRooms := []models.OutRoom{}
+	for _, room := range rooms {
+		var roomExternalData models.RoomExternalData
+		if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": room.ID}).Decode(&roomExternalData); err != nil {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+		addRoom := true
+		// If user is banned from a room don't add it to the response
+		for _, oi := range roomExternalData.Banned {
+			if oi == user.ID {
+				addRoom = false
+				break
+			}
+		}
+		isMember := room.Author == user.ID
+		if !isMember {
+			// If user is not a member, and the room is private, don't add it to the response
+			for _, oi := range roomExternalData.Members {
+				if oi == user.ID {
+					isMember = true
+					break
+				}
+			}
+		}
+		if !addRoom || roomExternalData.Private && !isMember {
+			continue
+		}
+		outRooms = append(outRooms, room)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(outRooms)
+}
+
+func (h handler) GetRoomPage(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	filter := bson.M{}
+	if r.URL.Query().Has("own") {
+		filter = bson.M{"author": user.ID}
+	}
+
+	pageNumberString := mux.Vars(r)["page"]
+	pageNumber, err := strconv.Atoi(pageNumberString)
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid page")
+		return
+	}
+	pageSize := 20
+
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "created_at", Value: -1}})
+	findOptions.SetLimit(int64(pageSize))
+	findOptions.SetSkip(int64(pageSize) * (int64(pageNumber) - 1))
+
+	rooms := []models.OutRoom{}
+	if cursor, err := h.Collections.RoomCollection.Find(r.Context(), filter, findOptions); err != nil {
+		cursor.Close(r.Context())
+		if err == mongo.ErrNoDocuments {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(rooms)
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	} else {
+		for cursor.Next(r.Context()) {
+			room := &models.OutRoom{}
+			if err := cursor.Decode(&room); err != nil {
 				cursor.Close(r.Context())
 				responseMessage(w, http.StatusInternalServerError, "Internal error")
 				return

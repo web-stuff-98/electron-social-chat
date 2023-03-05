@@ -1,27 +1,57 @@
 <script lang="ts" setup>
-import { getRooms } from "../../../../services/Rooms";
-import { roomStore } from "../../../../store/RoomStore";
+import { getRoomPage } from "../../../../services/Rooms";
 import { IRoomCard, IResMsg } from "../../../../interfaces/GeneralInterfaces";
 import Room from "../../../shared/RoomCard.vue";
-import { onMounted, ref, toRefs } from "vue";
+import { onMounted, onBeforeUnmount, ref, toRefs } from "vue";
 import ResMsg from "../../ResMsg.vue";
+import { socketStore } from "../../../../store/SocketStore";
+import {
+  instanceOfChangeData,
+  instanceOfRoomMessageDeleteData,
+  parseSocketEventData,
+} from "../../../../utils/determineSocketEvent";
 
 const roomsResult = ref<string[]>([]);
+const page = ref<number>(1);
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
-
 const props = defineProps<{ own: boolean }>();
 
 const { own } = toRefs(props);
 
-onMounted(async () => {
+async function getPage() {
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const rooms: IRoomCard[] = await getRooms(own.value);
-    roomsResult.value = rooms.map((r) => r.ID);
-    resMsg.value = { msg: "", err: false, pen: false };
+    const rooms: IRoomCard[] = await getRoomPage(page.value, own.value);
+    if (!rooms || rooms.length === 0) {
+      roomsResult.value = rooms.map((r) => r.ID);
+      resMsg.value = { msg: "No results", err: false, pen: false };
+    } else {
+      roomsResult.value = rooms.map((r) => r.ID);
+      resMsg.value = { msg: "", err: false, pen: false };
+    }
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: true };
   }
+}
+
+function watchForDeletes(e: MessageEvent) {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfChangeData(data)) {
+    if (data.ENTITY === "ROOM" && data.METHOD === "DELETE") {
+      const i = roomsResult.value.findIndex((r) => r === data.DATA.ID);
+      if (i !== -1) {
+        roomsResult.value.splice(i, 1);
+      }
+    }
+  }
+}
+onMounted(() => {
+  getPage();
+  socketStore.socket?.addEventListener("message", watchForDeletes);
+});
+onBeforeUnmount(() => {
+  socketStore.socket?.removeEventListener("message", watchForDeletes);
 });
 </script>
 
@@ -32,19 +62,37 @@ onMounted(async () => {
         <div class="room-container" v-for="id in roomsResult">
           <Room :id="id" />
         </div>
-        <div v-if="resMsg.pen || resMsg.err" class="resMsg-container">
+        <div
+          v-if="resMsg.pen || resMsg.err || resMsg.msg"
+          class="resMsg-container"
+        >
           <ResMsg :resMsg="resMsg" />
         </div>
       </div>
       <div class="pagination-controls">
-        <button>
+        <button
+          @click="
+            {
+              if (page !== 1) {
+                page--;
+                getPage();
+              }
+            }
+          "
+        >
           <v-icon name="bi-caret-left" />
         </button>
-        <div class="page-count">
-          <span>1/20</span>
-          <span>200</span>
-        </div>
-        <button>
+        <div class="page-count">{{ page }}</div>
+        <button
+          @click="
+            {
+              if (roomsResult && roomsResult.length > 0) {
+                page++;
+                getPage();
+              }
+            }
+          "
+        >
           <v-icon name="bi-caret-right" />
         </button>
       </div>
@@ -77,7 +125,7 @@ onMounted(async () => {
       justify-content: center;
       position: absolute;
       bottom: 0;
-      left:0;
+      left: 0;
       .page-count {
         display: flex;
         flex-direction: column;
@@ -86,9 +134,6 @@ onMounted(async () => {
         text-align: center;
         font-size: 0.8rem;
         padding-top: 2px;
-        span {
-          padding: 0;
-        }
       }
       button {
         padding: 0;

@@ -40,7 +40,7 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit" class="container">
+  <form @submit.prevent="handleSubmit">
     <Toggle
       name="Private"
       :on="roomPrivate"
@@ -75,10 +75,10 @@ form {
   gap: var(--padding-medium);
   padding: calc(var(--padding) * 2);
   box-sizing: border-box;
-  height: fit-content;
-  margin: auto;
+  height: 100%;
+  flex-grow: 1;
   input {
-    width: calc(var(--aside-width) - var(--padding-medium) * 2 - 4px);
+    width: calc(var(--aside-width) - var(--padding) * 4 - 4px);
     flex-grow: 1;
     text-align: center;
     max-width: none;
@@ -93,8 +93,9 @@ form {
     max-height: 5rem;
   }
   .resMsg-container {
-    margin: auto;
+    margin: 0 auto;
     padding: 0;
+    height: fit-content;
     display: flex;
     align-items: center;
     justify-content: center;

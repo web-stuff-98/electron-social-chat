@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { IResMsg } from "../../interfaces/GeneralInterfaces";
 import MessageModal from "../messageModal/MessageModal.vue";
-import { toRefs, ref, onMounted, onBeforeUnmount } from "vue";
+import { toRefs, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { deleteRoom } from "../../services/Rooms";
 import { roomStore } from "../../store/RoomStore";
+import axios from "axios";
 
 const props = defineProps<{ id: string }>();
 const { id } = toRefs(props);
@@ -12,12 +13,26 @@ const modalConfirmation = ref(() => {});
 const modalCancellation = ref(() => {});
 const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+const imgObjectURL = ref("");
 
 const containerRef = ref<HTMLCanvasElement | null>(null);
 
-const observer = new IntersectionObserver(([entry]) => {
+const observer = new IntersectionObserver(async ([entry]) => {
   if (entry.isIntersecting) {
-    roomStore.roomEnteredView(id.value);
+    const r = await roomStore.roomEnteredView(id.value);
+    const abortController = new AbortController();
+    const res = await axios({
+      method: "GET",
+      url: r.img_url,
+      responseType: "arraybuffer",
+      withCredentials: true,
+    });
+    if (imgObjectURL.value) URL.revokeObjectURL(imgObjectURL.value);
+    const blob = new Blob([res.data], { type: "image/jpeg" });
+    imgObjectURL.value = URL.createObjectURL(blob);
+    return () => {
+      abortController.abort();
+    };
   } else {
     roomStore.roomLeftView(id.value);
   }
@@ -28,6 +43,26 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   observer.disconnect();
+});
+
+watch(roomStore, async (oldVal, newVal) => {
+  const oldRoom = oldVal.getRoom(id.value);
+  const newRoom = newVal.getRoom(id.value);
+  if (oldRoom?.img_url !== newRoom) {
+    const abortController = new AbortController();
+    const res = await axios({
+      method: "GET",
+      url: newRoom?.img_url,
+      responseType: "arraybuffer",
+      withCredentials: true,
+    });
+    if (imgObjectURL.value) URL.revokeObjectURL(imgObjectURL.value);
+    const blob = new Blob([res.data], { type: "image/jpeg" });
+    imgObjectURL.value = URL.createObjectURL(blob);
+    return () => {
+      abortController.abort();
+    };
+  }
 });
 
 function promptDeleteRoom() {
@@ -64,7 +99,7 @@ function promptDeleteRoom() {
       roomStore.getRoom(id)?.blur
         ? {
             'background-image': `url(${
-              roomStore.getRoom(id)?.img_url || roomStore.getRoom(id)?.blur
+              imgObjectURL || roomStore.getRoom(id)?.blur
             })`,
           }
         : {}
