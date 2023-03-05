@@ -68,6 +68,18 @@ type Room struct {
 	MainChannel primitive.ObjectID   `bson:"-" json:"main_channel"`
 }
 
+// Not used in DB, I just need this so that channels and main_channels aren't sent out when not necessary
+type OutRoom struct {
+	ID     primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Name   string             `bson:"name" json:"name,maxlength=16"`
+	Author primitive.ObjectID `bson:"author" json:"author"`
+	// blur will not be present if the room has no image
+	Blur string `bson:"blur" json:"blur"`
+
+	Channels    []primitive.ObjectID `bson:"-" json:"-"`
+	MainChannel primitive.ObjectID   `bson:"-" json:"-"`
+}
+
 type RoomImage struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty"`
 	Binary primitive.Binary   `bson:"binary"`

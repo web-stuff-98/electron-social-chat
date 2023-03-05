@@ -7,6 +7,7 @@ import {
 
 interface IRoomChannelStore {
   channels: IRoomChannel[];
+  currentChannel: string;
   // Get the basic information for an array of channel ids (excludes messages)
   getDisplayDataForChannels: (roomId: string) => Promise<void>;
   // Get the full data for a channel (including messages)
@@ -15,6 +16,7 @@ interface IRoomChannelStore {
 
 export const roomChannelStore: IRoomChannelStore = reactive({
   channels: [],
+  currentChannel: "",
   getDisplayDataForChannels: async (roomId: string) => {
     const data: IRoomChannel[] = await getRoomChannelsDisplayData(roomId);
     roomChannelStore.channels =

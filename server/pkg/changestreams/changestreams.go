@@ -217,6 +217,21 @@ func watchRoomDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 		db.Collection("room_channels").DeleteMany(context.Background(), bson.M{"room_id": id})
 		db.Collection("room_channel_messages").DeleteMany(context.Background(), bson.M{"_id": bson.M{"$in": channelIds}})
 
+		outBytes, err := json.Marshal(socketmodels.OutChangeMessage{
+			Type:   "CHANGE",
+			Method: "DELETE",
+			Entity: "ROOM",
+			Data:   `{"ID":"` + id.Hex() + `"}`,
+		})
+		if err != nil {
+			continue
+		}
+
+		ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+			Name: "room-display-data=" + changeEv.DocumentKey.ID.Hex(),
+			Data: outBytes,
+		}
+
 		ss.DestroySubscription <- "room-display-data=" + id.Hex()
 	}
 }

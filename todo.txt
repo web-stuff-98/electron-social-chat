@@ -1,12 +1,8 @@
 Todos :
 
-Fixes (do first)
- - Fix weird main channel not found 000000000000000000000000 object ID error...
- - Fix room image not being loaded until updated
-
 Additions
  - Users section in edit room page
  - Update/Delete room messages
  - User dropdown
-
+ - Room & user search pagination
 

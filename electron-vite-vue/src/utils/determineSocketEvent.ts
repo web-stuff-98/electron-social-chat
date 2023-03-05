@@ -22,6 +22,14 @@ export type RoomMessageUpdateData = Omit<
   "TYPE"
 >;
 
+export type ResponseMessageData = Omit<
+  {
+    msg: string;
+    err: boolean;
+  },
+  "TYPE"
+>;
+
 export type RoomMessageDeleteData = Omit<{ ID: string }, "TYPE">;
 
 export type SocketEventChangeMethod =
@@ -41,7 +49,6 @@ export function instanceOfRoomMessageData(
 ): object is RoomMessageData {
   return object.TYPE === "OUT_ROOM_MESSAGE";
 }
-
 export function instanceOfRoomMessageUpdateData(
   object: any
 ): object is RoomMessageUpdateData {
@@ -50,7 +57,12 @@ export function instanceOfRoomMessageUpdateData(
 export function instanceOfRoomMessageDeleteData(
   object: any
 ): object is RoomMessageUpdateData {
-  return object.TYPE === "OUT_ROOM_MESSAGE_UPDATE";
+  return object.TYPE === "OUT_ROOM_MESSAGE_DELETE";
+}
+export function instanceOfResponseMessageData(
+  object: any
+): object is ResponseMessageData {
+  return object.TYPE === "RESPONSE_MESSAGE";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {

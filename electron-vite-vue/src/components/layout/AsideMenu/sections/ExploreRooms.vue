@@ -18,7 +18,6 @@ onMounted(async () => {
     resMsg.value = { msg: "", err: false, pen: true };
     const rooms: IRoomCard[] = await getRooms(own.value);
     roomsResult.value = rooms.map((r) => r.ID);
-    roomStore.rooms = rooms;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: true };
@@ -36,6 +35,18 @@ onMounted(async () => {
         <div v-if="resMsg.pen || resMsg.err" class="resMsg-container">
           <ResMsg :resMsg="resMsg" />
         </div>
+      </div>
+      <div class="pagination-controls">
+        <button>
+          <v-icon name="bi-caret-left" />
+        </button>
+        <div class="page-count">
+          <span>1/20</span>
+          <span>200</span>
+        </div>
+        <button>
+          <v-icon name="bi-caret-right" />
+        </button>
       </div>
     </div>
   </div>
@@ -55,6 +66,43 @@ onMounted(async () => {
     flex-grow: 1;
     box-sizing: border-box;
     box-shadow: var(--shadow-medium);
+    .pagination-controls {
+      width: 100%;
+      height: 2.5rem;
+      background: rgba(0, 0, 0, 0.333);
+      border-top: 1px solid var(--base-light);
+      box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      bottom: 0;
+      left:0;
+      .page-count {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.8rem;
+        padding-top: 2px;
+        span {
+          padding: 0;
+        }
+      }
+      button {
+        padding: 0;
+        border: none;
+        background: none;
+        box-shadow: none;
+        display: flex;
+        align-items: center;
+        svg {
+          width: 1rem;
+          height: 1rem;
+        }
+      }
+    }
     .resMsg-container {
       width: 100%;
       height: 100%;
@@ -65,7 +113,7 @@ onMounted(async () => {
     .room-list {
       position: absolute;
       width: 100%;
-      height: 100%;
+      height: calc(100% - 2.5rem);
       min-width: 100%;
       overflow-y: auto;
       display: flex;

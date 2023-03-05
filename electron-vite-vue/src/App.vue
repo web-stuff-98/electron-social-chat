@@ -12,12 +12,20 @@ import { watch, onBeforeUnmount, onMounted, ref } from "vue";
 import {
   parseSocketEventData,
   instanceOfChangeData,
+  instanceOfResponseMessageData,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
+import MessageModal from "./components/messageModal/MessageModal.vue";
+import { IResMsg } from "./interfaces/GeneralInterfaces";
 
 const router = useRouter();
 const showAside = ref(false);
+
+const modalConfirmation = ref(() => {});
+const modalCancellation = ref<Function | undefined>(() => {});
+const showModal = ref(false);
+const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 /* ------- Update users when socket event received ------- */
 const watchForUserChanges = (e: MessageEvent) => {
@@ -58,7 +66,6 @@ const watchForRoomChanges = (e: MessageEvent) => {
         }
       }
       if (data.METHOD === "UPDATE_IMAGE") {
-        console.log("UPDATE IMAGE");
         const i = roomStore.rooms.findIndex((r) => r.ID === data.DATA.ID);
         let imgUrl = roomStore.rooms[i].img_url || "";
         if (imgUrl) {
@@ -73,10 +80,28 @@ const watchForRoomChanges = (e: MessageEvent) => {
   }
 };
 
+/* ------- Watch for response messages from the socket connection ------- */
+const watchForResponseMessages = (e: MessageEvent) => {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfResponseMessageData(data)) {
+    modalMsg.value = {
+      msg: data.msg,
+      err: data.err,
+      pen: false,
+    };
+    modalConfirmation.value = () => (showModal.value = false);
+    modalCancellation.value = undefined;
+  }
+};
+
 watch(socketStore, (_, newVal) => {
   if (newVal.socket) {
     socketStore.socket?.addEventListener("message", watchForUserChanges);
     socketStore.socket?.addEventListener("message", watchForRoomChanges);
+    socketStore.socket?.addEventListener("message", watchForResponseMessages);
+  } else {
+    socketStore.connectSocket(authStore.user?.ID!);
   }
 });
 
@@ -93,6 +118,7 @@ onBeforeUnmount(() => {
   /* ------- Cleanup socket event listeners ------- */
   socketStore.socket?.removeEventListener("message", watchForUserChanges);
   socketStore.socket?.removeEventListener("message", watchForRoomChanges);
+  socketStore.socket?.removeEventListener("message", watchForResponseMessages);
 });
 
 onMounted(() => {
@@ -132,6 +158,12 @@ onMounted(() => {
 
 <template>
   <div class="root">
+    <MessageModal
+      :msg="modalMsg"
+      :show="showModal"
+      :confirmationCallback="modalConfirmation"
+      :cancellationCallback="modalCancellation"
+    />
     <Bar />
     <AsideMenu
       :toggleShowAside="() => (showAside = !showAside)"

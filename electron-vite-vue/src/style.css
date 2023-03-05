@@ -1,6 +1,6 @@
 @font-face {
   font-family: "Monofonto";
-  src: url(monofonto.regular.otf);
+  src: url(CqMono-mBXa.ttf);
 }
 
 * {
@@ -24,7 +24,7 @@ svg {
 
   color-scheme: light dark;
   color: white;
-  background-color: hsl(0, 2%, 9%);
+  background-color: hsl(180, 0%, 8%);
 
   font-synthesis: none;
   text-rendering: optimizeSpeed;
@@ -32,10 +32,10 @@ svg {
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --foreground: hsl(0, 2%, 9%);
-  --foreground-hover: rgb(29, 27, 27);
+  --foreground: hsl(180, 0%, 8%);
+  --foreground-hover: hsl(180, 0%, 12%);
 
-  --header: rgb(29, 27, 27);
+  --header: hsl(180, 0%, 12%);
   --header-height: 1.65rem;
 
   --aside-width: 13.666rem;
@@ -45,8 +45,8 @@ svg {
 
   --border-radius-medium: 0.333rem;
 
-  --base: rgba(255, 255, 255, 0.25);
-  --base-light: rgba(255, 255, 255, 0.05);
+  --base: rgba(255, 255, 255, 0.2);
+  --base-light: rgba(255, 255, 255, 0.035);
 
   --padding: 0.5rem;
   --padding-medium: 0.25rem;
@@ -72,7 +72,8 @@ h1 {
   line-height: 1.1;
 }
 
-input {
+input,
+textarea {
   border-radius: var(--border-radius-medium);
   border: 1px solid var(--base-light);
   outline: none;
@@ -81,7 +82,8 @@ input {
   background: none;
   box-shadow: var(--shadow-medium);
 }
-input:focus {
+input:focus,
+textarea:focus {
   border: 1px solid transparent;
   outline: 2px solid var(--base);
 }

@@ -9,7 +9,6 @@ import ResMsg from "../layout/ResMsg.vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
 import { roomStore } from "../../store/RoomStore";
 import { ref, watch, onMounted, onBeforeUnmount } from "vue";
-import { getRoom, getRoomChannelData } from "../../services/Rooms";
 import { socketStore } from "../../store/SocketStore";
 import RoomMessage from "../layout/RoomMessage.vue";
 import { authStore } from "../../store/AuthStore";
@@ -24,13 +23,12 @@ const route = useRoute();
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 const messageInput = ref("");
-const currentChannel = ref("");
 
 function messageEventListener(e: MessageEvent) {
   const data = parseSocketEventData(e);
   if (!data) return;
   const i = roomChannelStore.channels.findIndex(
-    (c) => c.ID === currentChannel.value
+    (c) => c.ID === roomChannelStore.currentChannel
   );
   if (instanceOfRoomMessageData(data)) {
     roomChannelStore.channels[i].messages?.push({
@@ -43,15 +41,14 @@ function messageEventListener(e: MessageEvent) {
     return;
   }
   if (instanceOfRoomMessageUpdateData(data)) {
-    const msgI: number =
-      roomChannelStore.channels[i].messages?.findIndex(
-        (m) => m.ID === data.ID
-      ) || -1;
-    roomChannelStore.channels[i].messages![msgI] = {
-      ...roomChannelStore.channels[i].messages![msgI],
-      content: data.content,
-      updated_at: new Date().toISOString(),
-    };
+    const msgI = roomChannelStore.channels[i].messages?.findIndex(
+      (m) => m.ID === data.ID
+    );
+    if (msgI === undefined || msgI === -1) return;
+    console.log(roomChannelStore.channels[i].messages![msgI]);
+    roomChannelStore.channels[i].messages![msgI].content = data.content;
+    roomChannelStore.channels[i].messages![msgI].updated_at =
+      new Date().toISOString();
   }
   if (instanceOfRoomMessageDeleteData(data)) {
     const msgI = roomChannelStore.channels[i].messages?.findIndex(
@@ -65,8 +62,11 @@ onMounted(async () => {
   const abortController = new AbortController();
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const data = await roomStore.roomEnteredView(route.params.id as string);
-    currentChannel.value = data.main_channel as string;
+    const data = await roomStore.roomEnteredView(
+      route.params.id as string,
+      true
+    );
+    roomChannelStore.currentChannel = data.main_channel as string;
     await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
     await roomChannelStore.getFullDataForChannel(
       data.main_channel as string,
@@ -75,7 +75,7 @@ onMounted(async () => {
     socketStore.send(
       JSON.stringify({
         event_type: "ROOM_OPEN_CHANNEL",
-        channel: currentChannel.value,
+        channel: roomChannelStore.currentChannel,
       })
     );
     roomStore.currentRoom = route.params.id as string;
@@ -95,31 +95,32 @@ onBeforeUnmount(async () => {
   socketStore.send(
     JSON.stringify({
       event_type: "ROOM_EXIT_CHANNEL",
-      channel: currentChannel.value,
+      channel: roomChannelStore.currentChannel,
     })
   );
   socketStore.socket?.removeEventListener("message", messageEventListener);
 });
 
-watch(currentChannel, async (oldChannel, channel) => {
-  if (!channel) return;
+watch(roomChannelStore, async (oldVal, newVal) => {
+  if (!newVal.currentChannel) return;
+  if (oldVal.currentChannel === newVal.currentChannel) return;
   try {
-    if (oldChannel) {
+    if (oldVal.currentChannel) {
       socketStore.send(
         JSON.stringify({
           event_type: "ROOM_EXIT_CHANNEL",
-          channel: oldChannel,
+          channel: oldVal.currentChannel,
         })
       );
     }
     await roomChannelStore.getFullDataForChannel(
-      channel,
+      newVal.currentChannel,
       route.params.id as string
     );
     socketStore.send(
       JSON.stringify({
         event_type: "ROOM_OPEN_CHANNEL",
-        channel: channel,
+        channel: newVal.currentChannel,
       })
     );
   } catch (e) {
@@ -142,7 +143,7 @@ function handleMessageSubmit() {
     JSON.stringify({
       event_type: "ROOM_MESSAGE",
       content: messageInput.value,
-      channel: currentChannel.value,
+      channel: roomChannelStore.currentChannel,
     })
   );
   messageInput.value = "";
@@ -161,10 +162,11 @@ function handleMessageSubmit() {
           <button
             type="button"
             @click="
-              currentChannel = roomStore.getRoom(route.params.id as string)
-                ?.main_channel!
+              roomChannelStore.currentChannel = roomStore.getRoom(
+                route.params.id as string
+              )?.main_channel!
             "
-            :style="{ fontWeight: 600, marginBottom: 'var(--padding)', ...(currentChannel !== roomStore.getRoom(route.params.id as string)?.main_channel! ? {
+            :style="{ fontWeight: 600, marginBottom: 'var(--padding)', ...(roomChannelStore.currentChannel !== roomStore.getRoom(route.params.id as string)?.main_channel! ? {
               filter:'opacity(0.5)'
             } : {}) }"
             class="channel"
@@ -187,11 +189,13 @@ function handleMessageSubmit() {
           )"
         >
           <button
-            @click="currentChannel = channel.ID"
+            @click="roomChannelStore.currentChannel = channel.ID"
             type="button"
             class="channel"
             :style="
-              currentChannel !== channel.ID ? { filter: 'opacity(0.5)' } : {}
+              roomChannelStore.currentChannel !== channel.ID
+                ? { filter: 'opacity(0.5)' }
+                : {}
             "
           >
             # {{ channel.name }}
@@ -209,7 +213,7 @@ function handleMessageSubmit() {
           <div class="messages">
             <div
               v-for="message in roomChannelStore.channels.find(
-                (c) => c.ID === currentChannel
+                (c) => c.ID === roomChannelStore.currentChannel
               )?.messages"
               class="message-container"
             >

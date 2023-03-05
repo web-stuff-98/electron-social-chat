@@ -72,9 +72,13 @@ export const roomStore: IRoomStore = reactive({
     if (found && !force) return found;
     try {
       const p = full ? getRoom(id) : getRoomDisplayData(id);
-      const r = await p;
+      let r = await p;
       if (r.blur) {
         r.img_url = `${baseURL}/api/room/image/${id}?v=0`;
+      }
+      if(!full) {
+        delete r.channels
+        delete r.main_channel
       }
       roomStore.rooms = [...roomStore.rooms.filter((r) => r.ID !== id), r];
       return r;

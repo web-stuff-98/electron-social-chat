@@ -56,14 +56,14 @@ onMounted(async () => {
   editRoomChannelsData.update_data = [];
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const data: IRoom = await getRoom(route.params.id as string);
-    room.value = data;
+    const data = await roomStore.cacheRoomData(
+      route.params.id as string,
+      true,
+      true
+    );
+    room.value = data as IRoom;
     await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
-    roomStore.rooms = [
-      ...roomStore.rooms.filter((r) => r.ID !== data.ID),
-      data,
-    ];
-    roomStore.currentRoom = data.ID;
+    roomStore.currentRoom = data.ID as string;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
@@ -217,7 +217,16 @@ async function handleSubmit() {
         </div>
       </span>
       <!-- Users section -->
-      <span v-if="section === EEditRoomSection.USERS"> </span>
+      <span class="users" v-if="section === EEditRoomSection.USERS">
+        <div class="list-container">
+          <label>Banned</label>
+          <div class="users-banned"></div>
+        </div>
+        <div class="list-container">
+          <label>Members</label>
+          <div class="users-members"></div>
+        </div>
+      </span>
       <button
         @click="section = EEditRoomSection.BASIC"
         v-if="section !== EEditRoomSection.BASIC"
@@ -261,6 +270,10 @@ async function handleSubmit() {
     gap: var(--padding-medium);
     display: flex;
     flex-direction: column;
+    box-shadow: var(--shadow-medium);
+    border-radius: var(--border-radius-medium);
+    border: 1px solid var(--base-light);
+    padding: var(--padding-medium);
   }
   button:first-of-type {
     margin-top: var(--padding-medium);
@@ -288,15 +301,33 @@ async function handleSubmit() {
     padding: var(--padding);
     gap: var(--padding-medium);
     overflow: hidden;
+    .users {
+      display: flex;
+      gap: var(--padding-medium);
+      flex-direction: row;
+      .list-container {
+        display: flex;
+        flex-direction: column;
+        gap: var(--padding-base);
+        label {
+          margin: 0;
+          padding: 0;
+        }
+        .users-banned,
+        .users-members {
+          min-width: 5rem;
+          border: 1px solid var(--base-light);
+          min-height: 5rem;
+          border-radius: var(--border-radius-medium);
+        }
+      }
+    }
     .channels-list {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: var(--padding-medium);
-      box-shadow: var(--shadow-medium);
-      border-radius: var(--border-radius-medium);
-      border: 1px solid var(--base-light);
       .channel-container {
         width: 100%;
       }

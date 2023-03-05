@@ -330,13 +330,14 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 		}
 	}
 
-	if res, err := colls.RoomChannelMessagesCollection.UpdateByID(context.Background(), bson.M{
+	if res, err := colls.RoomChannelMessagesCollection.UpdateOne(context.Background(), bson.M{
 		"_id":             channelId,
 		"messages._id":    msgId,
 		"messages.author": uid,
 	}, bson.M{
 		"$set": bson.M{
-			"messages.$.content": data.Content,
+			"messages.$.content":    data.Content,
+			"messages.$.updated_at": primitive.NewDateTimeFromTime(time.Now()),
 		},
 	}); err != nil {
 		return err
@@ -349,6 +350,10 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 		Content: data.Content,
 		ID:      msgId.Hex(),
 	})
+
+	if err != nil {
+		return err
+	}
 
 	ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
 		Name: "channel:" + channelId.Hex(),
@@ -400,9 +405,7 @@ func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 		}
 	}
 
-	if res, err := colls.RoomChannelMessagesCollection.UpdateByID(context.Background(), bson.M{
-		"_id": channelId,
-	}, bson.M{
+	if res, err := colls.RoomChannelMessagesCollection.UpdateByID(context.Background(), channelId, bson.M{
 		"$pull": bson.M{
 			"messages": bson.M{
 				"_id":    msgId,
