@@ -472,6 +472,7 @@ func directMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
 				Author:    uid,
+				Content:   data.Content,
 			},
 		},
 		"$addToSet": bson.M{
@@ -589,13 +590,7 @@ func directMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&recipientMessagingData); err != nil {
 		return err
 	} else {
-		wasOnlyMessage := true
-		for _, dm := range recipientMessagingData.Messages {
-			if dm.Author == uid {
-				wasOnlyMessage = false
-				break
-			}
-		}
+		wasOnlyMessage := checkAnyMessagesOrInvitesRemaining(*recipientMessagingData, uid)
 		if wasOnlyMessage {
 			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
 				"$pull": bson.M{
@@ -631,4 +626,325 @@ func directMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 	}
 
 	return nil
+}
+
+func inviteToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.InviteToRoom
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	recipientId, err := primitive.ObjectIDFromHex(data.Recipient)
+	if err != nil {
+		return err
+	}
+	roomId, err := primitive.ObjectIDFromHex(data.RoomID)
+	if err != nil {
+		return err
+	}
+
+	room := &models.Room{}
+	if err := colls.RoomCollection.FindOne(context.Background(), bson.M{"_id": roomId}).Decode(&room); err != nil {
+		return err
+	}
+
+	roomExternalData := &models.RoomExternalData{}
+	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": roomId}).Decode(&roomExternalData); err != nil {
+		return err
+	}
+
+	for _, oi := range roomExternalData.Banned {
+		if oi == recipientId {
+			return fmt.Errorf("You have banned this user. You must unban them to send an invite")
+		}
+	}
+	for _, oi := range roomExternalData.Members {
+		if oi == recipientId {
+			return fmt.Errorf("This user is already a member of the room")
+		}
+	}
+
+	if room.Author != uid {
+		return fmt.Errorf("Unauthorized")
+	}
+
+	messagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": recipientId}).Decode(&messagingData); err != nil {
+		return err
+	}
+	for _, oi := range messagingData.Blocked {
+		if oi == recipientId {
+			return fmt.Errorf("You have blocked this users account. You must unblock the user before sending them an invite")
+		}
+	}
+
+	recipientMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": recipientId}).Decode(&recipientMessagingData); err != nil {
+		return err
+	} else {
+		for _, oi := range recipientMessagingData.Blocked {
+			if oi == uid {
+				return fmt.Errorf("This user has blocked your account, you cannot send them invitations")
+			}
+		}
+	}
+
+	invitationId := primitive.NewObjectID()
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
+		"$push": bson.M{
+			"invitations": models.Invitation{
+				ID:        invitationId,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				Author:    uid,
+				RoomID:    roomId,
+				Accepted:  false,
+				Declined:  false,
+			},
+		},
+		"$addToSet": bson.M{
+			// invitations count as messages, even though they are stored in a seperate array
+			"messages_received_from": uid,
+		},
+	}); err != nil {
+		return err
+	}
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+		"$addToSet": bson.M{
+			// invitations count as messages, even though they are stored in a seperate array
+			"messages_sent_to": recipientId,
+		},
+	}); err != nil {
+		return err
+	}
+
+	msg := &socketmodels.OutInvite{
+		ID:        invitationId.Hex(),
+		Content:   data.Content,
+		Author:    uid.Hex(),
+		Recipient: recipientId.Hex(),
+		RoomID:    roomId.Hex(),
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  uid,
+		Type: "OUT_DIRECT_MESSAGE",
+		Data: msg,
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  recipientId,
+		Type: "OUT_DIRECT_MESSAGE",
+		Data: msg,
+	}
+
+	return nil
+}
+
+func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.InvitationDelete
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	invitationId, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
+	messagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": uid}).Decode(&messagingData); err != nil {
+		return err
+	}
+
+	invitationIndex := -1
+	for i, inv := range messagingData.Invitations {
+		if inv.ID == invitationId {
+			invitationIndex = i
+			break
+		}
+	}
+	if invitationIndex == -1 {
+		return fmt.Errorf("Invitation not found")
+	}
+
+	if messagingData.Invitations[invitationIndex].Author != uid {
+		return fmt.Errorf("Unauthorized")
+	}
+
+	if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": uid}, bson.M{
+		"$pull": bson.M{
+			"invitations": bson.M{
+				"_id":    invitationId,
+				"author": messagingData.Invitations[invitationIndex].Author,
+			},
+		},
+	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
+		return err
+	} else {
+		if !checkAnyMessagesOrInvitesRemaining(*messagingData, messagingData.Invitations[invitationIndex].Author) {
+			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+				"$pull": bson.M{
+					"messages_received_from": messagingData.Invitations[invitationIndex].Author,
+				},
+			}); err != nil {
+				return err
+			}
+		}
+	}
+
+	msg := &socketmodels.OutInvitationDelete{
+		ID:     invitationId.Hex(),
+		Author: uid.Hex(),
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  uid,
+		Type: "OUT_INVITATION_DELETE",
+		Data: msg,
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  messagingData.Invitations[invitationIndex].Author,
+		Type: "OUT_INVITATION_DELETE",
+		Data: msg,
+	}
+
+	return nil
+}
+
+func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.InvitationResponse
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	invitationId, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
+	messagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": uid}).Decode(&messagingData); err != nil {
+		return err
+	}
+
+	invitationIndex := -1
+	for i, inv := range messagingData.Invitations {
+		if inv.ID == invitationId {
+			invitationIndex = i
+			break
+		}
+	}
+	if invitationIndex == -1 {
+		return fmt.Errorf("Invitation not found")
+	}
+
+	authorMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.Invitations[invitationIndex].Author}).Decode(&authorMessagingData); err != nil {
+		return err
+	}
+
+	roomExternalData := &models.RoomExternalData{}
+	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.Invitations[invitationIndex].RoomID}).Decode(&roomExternalData); err != nil {
+		return err
+	}
+
+	var deleteIfErr error = nil
+	for _, oi := range roomExternalData.Banned {
+		if oi == uid {
+			deleteIfErr = fmt.Errorf("You can no longer accept this invitation, you have been banned from the room")
+			break
+		}
+	}
+	for _, oi := range roomExternalData.Members {
+		if oi == uid {
+			deleteIfErr = fmt.Errorf("You are already a member of this room")
+			break
+		}
+	}
+	for _, oi := range authorMessagingData.Blocked {
+		if oi == uid {
+			deleteIfErr = fmt.Errorf("The sender of this invitation has blocked your account, invitation is no longer valid")
+			break
+		}
+	}
+	if deleteIfErr != nil {
+		if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": uid}, bson.M{
+			"$pull": bson.M{
+				"invitations": bson.M{
+					"_id":    invitationId,
+					"author": messagingData.Invitations[invitationIndex].Author,
+				},
+			},
+		}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
+			return err
+		}
+		if !checkAnyMessagesOrInvitesRemaining(*messagingData, messagingData.Invitations[invitationIndex].Author) {
+			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+				"$pull": bson.M{
+					"messages_received_from": messagingData.Invitations[invitationIndex].Author,
+				},
+			}); err != nil {
+				return err
+			}
+		}
+		msg := &socketmodels.OutInvitationDelete{
+			ID:     invitationId.Hex(),
+			Author: uid.Hex(),
+		}
+		ss.SendDataToUser <- socketserver.UserDataMessage{
+			Uid:  uid,
+			Type: "OUT_INVITATION_DELETE",
+			Data: msg,
+		}
+		ss.SendDataToUser <- socketserver.UserDataMessage{
+			Uid:  messagingData.Invitations[invitationIndex].Author,
+			Type: "OUT_INVITATION_DELETE",
+			Data: msg,
+		}
+		return deleteIfErr
+	}
+
+	if _, err := colls.RoomExternalDataCollection.UpdateOne(context.Background(), bson.M{
+		"_id":             messagingData.Invitations[invitationIndex].ID,
+		"invitations._id": invitationId,
+	}, bson.M{
+		"$set": bson.M{
+			"invitations.$.accepted": data.Accept,
+			"invitations.$.declined": !data.Accept,
+		},
+	}); err != nil {
+		return err
+	}
+
+	inv := &socketmodels.OutInvitationResponse{
+		ID:        invitationId.Hex(),
+		Author:    uid.Hex(),
+		Recipient: messagingData.Invitations[invitationIndex].Author.Hex(),
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  uid,
+		Type: "OUT_INVITATION_RESPONSE",
+		Data: inv,
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  messagingData.Invitations[invitationIndex].Author,
+		Type: "OUT_INVITATION_RESPONSE",
+		Data: inv,
+	}
+
+	return nil
+}
+
+// helper function
+func checkAnyMessagesOrInvitesRemaining(messagingData models.UserMessagingData, sender primitive.ObjectID) bool {
+	for _, inv := range messagingData.Invitations {
+		if inv.Author == sender {
+			return true
+		}
+	}
+	for _, msg := range messagingData.Messages {
+		if msg.Author == sender {
+			return true
+		}
+	}
+	return false
 }
