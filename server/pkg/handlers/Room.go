@@ -566,7 +566,7 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 		filter = bson.M{"author": user.ID}
 	}
 
-	rooms := []models.OutRoom{}
+	rooms := []models.Room{}
 	if cursor, err := h.Collections.RoomCollection.Find(r.Context(), filter); err != nil {
 		cursor.Close(r.Context())
 		if err == mongo.ErrNoDocuments {
@@ -579,7 +579,7 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		for cursor.Next(r.Context()) {
-			room := &models.OutRoom{}
+			room := &models.Room{}
 			err := cursor.Decode(&room)
 			if err != nil {
 				cursor.Close(r.Context())
@@ -591,7 +591,7 @@ func (h handler) GetRooms(w http.ResponseWriter, r *http.Request) {
 		cursor.Close(r.Context())
 	}
 
-	outRooms := []models.OutRoom{}
+	outRooms := []models.Room{}
 	for _, room := range rooms {
 		var roomExternalData models.RoomExternalData
 		if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": room.ID}).Decode(&roomExternalData); err != nil {
@@ -652,7 +652,7 @@ func (h handler) GetRoomPage(w http.ResponseWriter, r *http.Request) {
 	findOptions.SetLimit(int64(pageSize))
 	findOptions.SetSkip(int64(pageSize) * (int64(pageNumber) - 1))
 
-	rooms := []models.OutRoom{}
+	rooms := []models.Room{}
 	if cursor, err := h.Collections.RoomCollection.Find(r.Context(), filter, findOptions); err != nil {
 		cursor.Close(r.Context())
 		if err == mongo.ErrNoDocuments {
@@ -665,7 +665,7 @@ func (h handler) GetRoomPage(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		for cursor.Next(r.Context()) {
-			room := &models.OutRoom{}
+			room := &models.Room{}
 			if err := cursor.Decode(&room); err != nil {
 				cursor.Close(r.Context())
 				responseMessage(w, http.StatusInternalServerError, "Internal error")
@@ -676,7 +676,7 @@ func (h handler) GetRoomPage(w http.ResponseWriter, r *http.Request) {
 		cursor.Close(r.Context())
 	}
 
-	outRooms := []models.OutRoom{}
+	outRooms := []models.Room{}
 	for _, room := range rooms {
 		var roomExternalData models.RoomExternalData
 		if err := h.Collections.RoomExternalDataCollection.FindOne(r.Context(), bson.M{"_id": room.ID}).Decode(&roomExternalData); err != nil {
@@ -801,7 +801,7 @@ func (h handler) GetRoomDisplayData(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room := &models.OutRoom{}
+	room := &models.Room{}
 	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": id}).Decode(&room); err != nil {
 		if err != mongo.ErrNoDocuments {
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
