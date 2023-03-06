@@ -130,7 +130,21 @@ func (h handler) Register(w http.ResponseWriter, r *http.Request) {
 		IsOnline: true,
 	}
 
+	userMessagingData := models.UserMessagingData{
+		ID:                   user.ID,
+		Messages:             []models.DirectMessage{},
+		MessagesSentTo:       []primitive.ObjectID{},
+		MessagesReceivedFrom: []primitive.ObjectID{},
+		Blocked:              []primitive.ObjectID{},
+		Friends:              []primitive.ObjectID{},
+	}
+
 	if _, err := h.Collections.UserCollection.InsertOne(r.Context(), user); err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+
+	if _, err := h.Collections.UserMessagingDataCollection.InsertOne(r.Context(), userMessagingData); err != nil {
 		responseMessage(w, http.StatusInternalServerError, "Internal error")
 		return
 	}

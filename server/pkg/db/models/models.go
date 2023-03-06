@@ -20,6 +20,23 @@ type User struct {
 	IsOnline  bool               `bson:"-" json:"online"`
 }
 
+type DirectMessage struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Content   string             `bson:"content,maxlength=300" json:"content"`
+	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
+	UpdatedAt primitive.DateTime `bson:"updated_at" json:"updated_at"`
+	Author    primitive.ObjectID `bson:"author" json:"author"`
+}
+
+type UserMessagingData struct {
+	ID                   primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
+	Messages             []DirectMessage      `bson:"messages" json:"messages"`
+	MessagesSentTo       []primitive.ObjectID `bson:"messages_sent_to" json:"messages_sent_to"`
+	MessagesReceivedFrom []primitive.ObjectID `bson:"messages_received_from" json:"messages_received_from"`
+	Blocked              []primitive.ObjectID `bson:"blocked" json:"blocked"`
+	Friends              []primitive.ObjectID `bson:"friends" json:"friends"`
+}
+
 // Changes to pfp docs triggers changestream events
 type Pfp struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty" json:"ID"`

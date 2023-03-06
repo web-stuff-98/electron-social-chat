@@ -33,7 +33,7 @@ svg {
   -webkit-text-size-adjust: 100%;
 
   --foreground: hsl(0, 0%, 8%);
-  --background-radial:radial-gradient(circle at center, hsl(0, 0%, 8%) 0%, hsl(0, 0%, 7%) 150%);
+  --background-radial:radial-gradient(circle at center, hsl(0, 0%, 8%) 33%, hsl(0, 0%, 5%) 150%);
   --foreground-hover: hsl(0, 0%, 6%);
 
   --aside-width: 12rem;
@@ -78,7 +78,6 @@ textarea {
   padding: var(--padding-medium);
   box-sizing: border-box;
   background: none;
-  box-shadow: var(--shadow-medium);
 }
 input:focus,
 textarea:focus {

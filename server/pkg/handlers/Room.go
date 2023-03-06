@@ -1106,3 +1106,33 @@ func (h handler) GetRoomChannel(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(roomChannel)
 }
+
+/*func (h handler) InviteToRoom(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	roomId, err := primitive.ObjectIDFromHex(mux.Vars(r)["roomId"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+	inviteSentTo, err := primitive.ObjectIDFromHex(mux.Vars(r)["uid"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	room := &models.Room{}
+	if err := h.Collections.RoomCollection.FindOne(r.Context(), bson.M{"_id": roomId}).Decode(&room); err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+
+	if room.Author != user.ID {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+}*/

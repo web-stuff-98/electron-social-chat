@@ -73,6 +73,32 @@ func watchUserDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 		db.Collection("pfps").DeleteOne(context.Background(), bson.M{"_id": uid})
 		db.Collection("rooms").DeleteMany(context.Background(), bson.M{"author": uid})
 
+		userMessagingData := &models.UserMessagingData{}
+		if err := db.Collection("user_messaging_data").FindOne(context.Background(), bson.M{"_id": uid}).Decode(&userMessagingData); err == nil {
+			for _, oi := range userMessagingData.MessagesSentTo {
+				// for each inbox the user has sent a message to, remove their messages
+				db.Collection("user_messaging_data").UpdateByID(context.Background(), oi, bson.M{
+					"$pull": bson.M{
+						"messages": bson.M{
+							"author": uid,
+						},
+					},
+				})
+			}
+			for _, oi := range userMessagingData.MessagesReceivedFrom {
+				// for each inbox the user has received a message from, remove those messages
+				db.Collection("user_messaging_data").UpdateByID(context.Background(), oi, bson.M{
+					"$pull": bson.M{
+						"messages": bson.M{
+							"recipient": uid,
+						},
+					},
+				})
+			}
+		}
+
+		db.Collection("user_messaging_data").DeleteOne(context.Background(), bson.M{"_id": uid})
+
 		ss.DestroySubscription <- "user=" + uid.Hex()
 	}
 }

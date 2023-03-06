@@ -15,6 +15,8 @@ type WatchStopWatching struct {
 	ID   string `json:"ID"`
 }
 
+/* -------- ROOM MODELS -------- */
+
 // TYPE: ROOM_OPEN_CHANNEL/ROOM_EXIT_CHANNEL
 type RoomOpenExitChannel struct {
 	Type    string `json:"TYPE"`
@@ -63,6 +65,58 @@ type OutRoomMessageDelete struct {
 	Type string `json:"TYPE"`
 	ID   string `json:"ID"`
 }
+
+/* -------- DIRECT MESSAGE MODELS -------- */
+
+// TYPE: DIRECT_MESSAGE
+type DirectMessage struct {
+	Type      string `json:"TYPE"`
+	Content   string `json:"content"`
+	Recipient string `json:"recipient"`
+}
+
+// TYPE: DIRECT_MESSAGE_UPDATE
+type DirectMessageUpdate struct {
+	Type      string `json:"TYPE"`
+	Content   string `json:"content"`
+	Recipient string `json:"recipient"`
+	ID        string `json:"ID"`
+}
+
+// TYPE: DIRECT_MESSAGE_DELETE
+type DirectMessageDelete struct {
+	Type      string `json:"TYPE"`
+	Recipient string `json:"recipient"`
+	ID        string `json:"ID"`
+}
+
+// TYPE: OUT_DIRECT_MESSAGE
+type OutDirectMessage struct {
+	Type      string `json:"TYPE"`
+	Content   string `json:"content"`
+	ID        string `json:"ID"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
+}
+
+// TYPE: OUT_DIRECT_MESSAGE_UPDATE
+type OutDirectMessageUpdate struct {
+	Type      string `json:"TYPE"`
+	Content   string `json:"content"`
+	ID        string `json:"ID"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
+}
+
+// TYPE: OUT_DIRECT_MESSAGE_DELETE
+type OutDirectMessageDelete struct {
+	Type      string `json:"TYPE"`
+	ID        string `json:"ID"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
+}
+
+/* -------- MISC -------- */
 
 // TYPE: CHANGE
 type OutChangeMessage struct {

@@ -14,6 +14,7 @@ import (
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
@@ -44,6 +45,15 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		return err
 	case "ROOM_MESSAGE_DELETE":
 		err := roomMessageDelete(data, conn, uid, ss, colls)
+		return err
+	case "DIRECT_MESSAGE":
+		err := directMessage(data, conn, uid, ss, colls)
+		return err
+	case "DIRECT_MESSAGE_UPDATE":
+		err := directMessageUpdate(data, conn, uid, ss, colls)
+		return err
+	case "DIRECT_MESSAGE_DELETE":
+		err := directMessageDelete(data, conn, uid, ss, colls)
 		return err
 	}
 	return fmt.Errorf("Unrecognized event type")
@@ -426,6 +436,198 @@ func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 	ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
 		Name: "channel:" + channelId.Hex(),
 		Data: outBytes,
+	}
+
+	return nil
+}
+
+func directMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.DirectMessage
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	recipientId, err := primitive.ObjectIDFromHex(data.Recipient)
+	if err != nil {
+		return err
+	}
+
+	recipientMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": recipientId}).Decode(&recipientMessagingData); err != nil {
+		return err
+	} else {
+		for _, oi := range recipientMessagingData.Blocked {
+			if oi == uid {
+				return fmt.Errorf("This user has blocked your account")
+			}
+		}
+	}
+
+	msgId := primitive.NewObjectID()
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
+		"$push": bson.M{
+			"messages": models.DirectMessage{
+				ID:        msgId,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				Author:    uid,
+			},
+		},
+		"$addToSet": bson.M{
+			"messages_received_from": uid,
+		},
+	}); err != nil {
+		return err
+	}
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+		"$addToSet": bson.M{
+			"messages_sent_to": recipientId,
+		},
+	}); err != nil {
+		return err
+	}
+
+	msg := &socketmodels.OutDirectMessage{
+		ID:        msgId.Hex(),
+		Content:   data.Content,
+		Author:    uid.Hex(),
+		Recipient: recipientId.Hex(),
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  uid,
+		Type: "OUT_DIRECT_MESSAGE",
+		Data: msg,
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  recipientId,
+		Type: "OUT_DIRECT_MESSAGE",
+		Data: msg,
+	}
+
+	return nil
+}
+
+func directMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.DirectMessageUpdate
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	recipientId, err := primitive.ObjectIDFromHex(data.Recipient)
+	if err != nil {
+		return err
+	}
+
+	msgId, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
+	if res, err := colls.UserMessagingDataCollection.UpdateOne(context.Background(), bson.M{
+		"_id":             recipientId,
+		"messages._id":    msgId,
+		"messages.author": uid,
+	}, bson.M{
+		"$set": bson.M{
+			"messages.$.content":    data.Content,
+			"messages.$.updated_at": primitive.NewDateTimeFromTime(time.Now()),
+		},
+	}); err != nil {
+		return err
+	} else if res.MatchedCount == 0 {
+		return fmt.Errorf("Update failed")
+	}
+
+	msg := &socketmodels.OutDirectMessageUpdate{
+		ID:        msgId.Hex(),
+		Content:   data.Content,
+		Author:    uid.Hex(),
+		Recipient: recipientId.Hex(),
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  uid,
+		Type: "OUT_DIRECT_MESSAGE_UPDATE",
+		Data: msg,
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  recipientId,
+		Type: "OUT_DIRECT_MESSAGE_UPDATE",
+		Data: msg,
+	}
+
+	return nil
+}
+
+func directMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.DirectMessageDelete
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	recipientId, err := primitive.ObjectIDFromHex(data.Recipient)
+	if err != nil {
+		return err
+	}
+
+	msgId, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
+	recipientMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{
+		"_id": recipientId,
+	}, bson.M{
+		"$pull": bson.M{
+			"messages": bson.M{
+				"_id":    msgId,
+				"author": uid,
+			},
+		},
+	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&recipientMessagingData); err != nil {
+		return err
+	} else {
+		wasOnlyMessage := true
+		for _, dm := range recipientMessagingData.Messages {
+			if dm.Author == uid {
+				wasOnlyMessage = false
+				break
+			}
+		}
+		if wasOnlyMessage {
+			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
+				"$pull": bson.M{
+					"messages_received_from": uid,
+				},
+			}); err != nil {
+				return err
+			}
+			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+				"$pull": bson.M{
+					"messages_sent_to": uid,
+				},
+			}); err != nil {
+				return err
+			}
+		}
+	}
+
+	msg := &socketmodels.OutDirectMessageDelete{
+		ID:        msgId.Hex(),
+		Author:    uid.Hex(),
+		Recipient: recipientId.Hex(),
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  uid,
+		Type: "OUT_DIRECT_MESSAGE_DELETE",
+		Data: msg,
+	}
+	ss.SendDataToUser <- socketserver.UserDataMessage{
+		Uid:  recipientId,
+		Type: "OUT_DIRECT_MESSAGE_DELETE",
+		Data: msg,
 	}
 
 	return nil

@@ -12,8 +12,9 @@ import (
 )
 
 type Collections struct {
-	UserCollection *mongo.Collection
-	PfpCollection  *mongo.Collection
+	UserCollection              *mongo.Collection
+	UserMessagingDataCollection *mongo.Collection
+	PfpCollection               *mongo.Collection
 
 	RoomCollection                *mongo.Collection
 	RoomInternalDataCollection    *mongo.Collection
@@ -38,8 +39,9 @@ func Init() (*mongo.Database, *Collections) {
 	DB := client.Database(os.Getenv("MONGODB_DB"))
 
 	colls := &Collections{
-		UserCollection: DB.Collection("users"),
-		PfpCollection:  DB.Collection("pfps"),
+		UserCollection:              DB.Collection("users"),
+		UserMessagingDataCollection: DB.Collection("user_messaging_data"),
+		PfpCollection:               DB.Collection("pfps"),
 
 		RoomCollection:                DB.Collection("rooms"),
 		RoomInternalDataCollection:    DB.Collection("room_internal_data"),

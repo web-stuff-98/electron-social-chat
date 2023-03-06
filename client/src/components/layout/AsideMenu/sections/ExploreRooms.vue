@@ -113,7 +113,6 @@ onBeforeUnmount(() => {
     height: 100%;
     flex-grow: 1;
     box-sizing: border-box;
-    box-shadow: var(--shadow-medium);
     .pagination-controls {
       width: 100%;
       height: 1.5rem;
