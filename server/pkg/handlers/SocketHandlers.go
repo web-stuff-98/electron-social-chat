@@ -614,13 +614,11 @@ func directMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 		Author:    uid.Hex(),
 		Recipient: recipientId.Hex(),
 	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  uid,
-		Type: "OUT_DIRECT_MESSAGE_DELETE",
-		Data: msg,
-	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  recipientId,
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[recipientId] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
 		Type: "OUT_DIRECT_MESSAGE_DELETE",
 		Data: msg,
 	}
@@ -726,13 +724,11 @@ func inviteToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *so
 		Recipient: recipientId.Hex(),
 		RoomID:    roomId.Hex(),
 	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  uid,
-		Type: "OUT_DIRECT_MESSAGE",
-		Data: msg,
-	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  recipientId,
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[recipientId] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
 		Type: "OUT_DIRECT_MESSAGE",
 		Data: msg,
 	}
@@ -796,13 +792,11 @@ func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.Object
 		ID:     invitationId.Hex(),
 		Author: uid.Hex(),
 	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  uid,
-		Type: "OUT_INVITATION_DELETE",
-		Data: msg,
-	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  messagingData.Invitations[invitationIndex].Author,
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[messagingData.Invitations[invitationIndex].Author] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
 		Type: "OUT_INVITATION_DELETE",
 		Data: msg,
 	}
@@ -890,13 +884,11 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 			ID:     invitationId.Hex(),
 			Author: uid.Hex(),
 		}
-		ss.SendDataToUser <- socketserver.UserDataMessage{
-			Uid:  uid,
-			Type: "OUT_INVITATION_DELETE",
-			Data: msg,
-		}
-		ss.SendDataToUser <- socketserver.UserDataMessage{
-			Uid:  messagingData.Invitations[invitationIndex].Author,
+		Uids := make(map[primitive.ObjectID]struct{})
+		Uids[uid] = struct{}{}
+		Uids[messagingData.Invitations[invitationIndex].Author] = struct{}{}
+		ss.SendDataToUsers <- socketserver.UsersDataMessage{
+			Uids: Uids,
 			Type: "OUT_INVITATION_DELETE",
 			Data: msg,
 		}
@@ -920,13 +912,11 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 		Author:    uid.Hex(),
 		Recipient: messagingData.Invitations[invitationIndex].Author.Hex(),
 	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  uid,
-		Type: "OUT_INVITATION_RESPONSE",
-		Data: inv,
-	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  messagingData.Invitations[invitationIndex].Author,
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[messagingData.Invitations[invitationIndex].Author] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
 		Type: "OUT_INVITATION_RESPONSE",
 		Data: inv,
 	}

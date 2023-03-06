@@ -33,7 +33,8 @@ type SocketServer struct {
 	// websocket Write/Read must be done from 1 goroutine. Queue all of them to be executed in a loop.
 	MessageSendQueue chan QueuedMessage
 
-	SendDataToUser chan UserDataMessage
+	SendDataToUser  chan UserDataMessage
+	SendDataToUsers chan UsersDataMessage
 
 	DestroySubscription chan string
 }
@@ -90,6 +91,11 @@ type UserDataMessage struct {
 	Data interface{}
 	Type string
 }
+type UsersDataMessage struct {
+	Uids map[primitive.ObjectID]struct{}
+	Data interface{}
+	Type string
+}
 type RemoveUserFromSubscription struct {
 	Name string
 	Uid  primitive.ObjectID
@@ -120,7 +126,8 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 
 		MessageSendQueue: make(chan QueuedMessage),
 
-		SendDataToUser: make(chan UserDataMessage),
+		SendDataToUser:  make(chan UserDataMessage),
+		SendDataToUsers: make(chan UsersDataMessage),
 
 		DestroySubscription: make(chan string),
 	}
@@ -414,6 +421,38 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 						log.Println("Error marshaling data to be sent to user :", err)
 					}
 					break
+				}
+			}
+			socketServer.Connections.mutex.Unlock()
+		}
+	}()
+	/* ----- Send data to users ----- */
+	go func() {
+		for {
+			defer func() {
+				r := recover()
+				if r != nil {
+					log.Println("Recovered from panic in send data to users channel :", r)
+				}
+			}()
+			data := <-socketServer.SendDataToUsers
+			socketServer.Connections.mutex.Lock()
+			var m map[string]interface{}
+			outBytesNoTypeKey, err := json.Marshal(data.Data)
+			json.Unmarshal(outBytesNoTypeKey, &m)
+			m["TYPE"] = data.Type
+			outBytes, err := json.Marshal(m)
+			if err != nil {
+				log.Println("Error marshaling data to be sent to user :", err)
+				continue
+			}
+			for conn, uid := range socketServer.Connections.data {
+				_, ok := data.Uids[uid]
+				if ok {
+					socketServer.MessageSendQueue <- QueuedMessage{
+						Conn: conn,
+						Data: outBytes,
+					}
 				}
 			}
 			socketServer.Connections.mutex.Unlock()
