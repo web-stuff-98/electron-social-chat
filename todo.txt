@@ -2,7 +2,8 @@ Todos :
 
 Additions
  - User dropdown
- - Room & user search pagination
+ - API routes for inviting/banning users
+ - Direct messaging
 
 and lots more
 
