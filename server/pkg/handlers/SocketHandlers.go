@@ -55,6 +55,18 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "DIRECT_MESSAGE_DELETE":
 		err := directMessageDelete(data, conn, uid, ss, colls)
 		return err
+	case "FRIEND_REQUEST":
+		err := friendRequest(data, conn, uid, ss, colls)
+		return err
+	case "FRIEND_REQUEST_RESPONSE":
+		err := friendRequestResponse(data, conn, uid, ss, colls)
+		return err
+	case "BLOCK_USER":
+		err := blockUser(data, conn, uid, ss, colls)
+		return err
+	case "UNBLOCK_USER":
+		err := unblockUser(data, conn, uid, ss, colls)
+		return err
 	}
 	return fmt.Errorf("Unrecognized event type")
 }

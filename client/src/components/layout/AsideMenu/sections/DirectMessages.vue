@@ -1,8 +1,13 @@
+<script lang="ts" setup>
+import { authStore } from "../../../../store/AuthStore";
+import User from "../../../shared/User.vue";
+</script>
+
 <template>
-  <div class="messages">
+  <div class="container">
     <div class="message">
+      <User :small="true" :dateTime="new Date()" :uid="authStore.user?.ID!" />
       <p>
-        <b>Username: </b>
         Lorem ipsum dolor sit amet consectetur adipisicing elit. Iusto vitae
         commodi adipisci corporis, doloribus aperiam odit possimus aspernatur
         saepe eaque.
@@ -10,10 +15,11 @@
     </div>
   </div>
 </template>
-<style scoped>
-.messages {
+<style lang="scss" scoped>
+.container {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   height: 100%;
   width: 100%;
   padding: var(--padding-medium);
@@ -21,19 +27,28 @@
   top: 0;
   left: 0;
 }
-.message {
+.message,
+.message-reversed {
   width: 100%;
   height: 100%;
   margin: 0;
-}
-p {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  box-sizing: border-box;
   text-align: left;
-  margin: 0;
-  font-size: 0.8rem;
+  p {
+    text-align: left;
+    font-size: 0.6rem;
+    padding: 0 var(--padding-medium);
+    margin: 0;
+  }
 }
-b {
-  filter: opacity(0.5);
-  margin: 0;
-  font-size: 0.8rem;
+.message-reversed {
+  align-items: flex-end;
+  text-align: right;
+  p {
+    text-align: right;
+  }
 }
 </style>

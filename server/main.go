@@ -52,8 +52,11 @@ func main() {
 	api.HandleFunc("/acc/logout", h.Logout).Methods(http.MethodPost)
 	api.HandleFunc("/acc/delete", h.DeleteAccount).Methods(http.MethodDelete)
 	api.HandleFunc("/acc/pfp", h.UploadPfp).Methods(http.MethodPost)
+	api.HandleFunc("/acc/conversation/{uid}", h.GetConversation).Methods(http.MethodGet)
+	api.HandleFunc("/acc/conversations", h.GetConversations).Methods(http.MethodGet)
 
 	api.HandleFunc("/user/search", h.SearchUsers).Methods(http.MethodPost)
+	api.HandleFunc("/user/{id}", h.GetUser).Methods(http.MethodGet)
 
 	api.HandleFunc("/room/create", h.CreateRoom).Methods(http.MethodPost)
 	api.HandleFunc("/room/update/{id}", h.UpdateRoom).Methods(http.MethodPatch)
@@ -66,7 +69,7 @@ func main() {
 	api.HandleFunc("/room/display/{id}", h.GetRoomDisplayData).Methods(http.MethodGet)
 	api.HandleFunc("/room/image/{id}", h.UploadRoomImage).Methods(http.MethodPost)
 	api.HandleFunc("/room/page/{page}", h.GetRoomPage).Methods(http.MethodGet)
-	api.HandleFunc("/rooms", h.GetRooms).Methods(http.MethodGet)
+	api.HandleFunc("/rooms/own/ids", h.GetOwnRoomIDs).Methods(http.MethodGet)
 
 	api.HandleFunc("/ws", h.WebSocketEndpoint)
 

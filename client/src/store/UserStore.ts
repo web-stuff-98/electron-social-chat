@@ -58,6 +58,7 @@ export const userStore: IUserStore = reactive({
     try {
       const u = await makeRequest(`/api/user/${uid}`, {
         method: "GET",
+        withCredentials: true,
       });
       userStore.users = [...userStore.users.filter((u) => u.ID !== uid), u];
     } catch (e) {

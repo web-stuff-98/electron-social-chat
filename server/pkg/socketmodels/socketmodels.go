@@ -85,7 +85,6 @@ type InviteToRoom struct {
 // TYPE: FRIEND_REQUEST
 type FriendRequest struct {
 	Type      string `json:"TYPE"`
-	Content   string `json:"content"`
 	Recipient string `json:"recipient"`
 }
 

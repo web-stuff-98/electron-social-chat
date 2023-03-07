@@ -50,7 +50,7 @@ function handleUsernameInput(e: Event) {
     <div class="results-container">
       <div class="user-list">
         <div class="user-container" v-for="user in usersResult">
-          <User :uid="user" />
+          <User :menu="true" :uid="user" />
         </div>
       </div>
     </div>
@@ -80,7 +80,6 @@ function handleUsernameInput(e: Event) {
     width: 100%;
     flex-grow: 1;
     box-sizing: border-box;
-    box-shadow: var(--shadow-medium);
     .user-list {
       position: absolute;
       width: 100%;

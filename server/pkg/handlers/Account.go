@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 	"github.com/nfnt/resize"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/helpers"
@@ -285,4 +286,98 @@ func (h handler) UploadPfp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseMessage(w, http.StatusOK, "Pfp updated")
+}
+
+func (h handler) GetConversation(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	converseId, err := primitive.ObjectIDFromHex(mux.Vars(r)["uid"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	messagingData := &models.UserMessagingData{}
+	if h.Collections.UserMessagingDataCollection.FindOne(r.Context(), bson.M{"_id": user.ID}).Decode(&messagingData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	converseMessagingData := &models.UserMessagingData{}
+	if h.Collections.UserMessagingDataCollection.FindOne(r.Context(), bson.M{"_id": converseId}).Decode(&converseMessagingData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	messages := []models.DirectMessage{}
+	for _, dm := range messagingData.Messages {
+		if dm.Author == converseId {
+			messages = append(messages, dm)
+		}
+	}
+	for _, dm := range converseMessagingData.Messages {
+		if dm.Author == user.ID {
+			messages = append(messages, dm)
+		}
+	}
+	invitations := []models.Invitation{}
+	for _, inv := range messagingData.Invitations {
+		invitations = append(invitations, inv)
+	}
+	friendRequests := []models.FriendRequest{}
+	for _, req := range messagingData.FriendRequests {
+		friendRequests = append(friendRequests, req)
+	}
+
+	out := make(map[string]interface{})
+	out["messages"] = messages
+	out["invitations"] = invitations
+	out["friend_requests"] = friendRequests
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(out)
+}
+
+func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	conversations := []primitive.ObjectID{}
+
+	messagingData := &models.UserMessagingData{}
+	if h.Collections.UserMessagingDataCollection.FindOne(r.Context(), bson.M{"_id": user.ID}).Decode(&messagingData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	for _, oi := range messagingData.MessagesReceivedFrom {
+		conversations = append(conversations, oi)
+	}
+	for _, oi := range messagingData.MessagesSentTo {
+		conversations = append(conversations, oi)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(conversations)
 }

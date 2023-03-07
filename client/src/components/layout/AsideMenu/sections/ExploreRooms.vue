@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { getRoomPage } from "../../../../services/Rooms";
 import { IRoomCard, IResMsg } from "../../../../interfaces/GeneralInterfaces";
-import Room from "../../../shared/RoomCard.vue";
+import Room from "../../RoomCard.vue";
 import { onMounted, onBeforeUnmount, ref, toRefs } from "vue";
 import ResMsg from "../../ResMsg.vue";
 import { socketStore } from "../../../../store/SocketStore";

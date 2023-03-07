@@ -2,12 +2,16 @@
 import { toRefs, onMounted, ref, onBeforeUnmount } from "vue";
 import { userStore } from "../../store/UserStore";
 import useUser from "../../composables/useUser";
+import { userdropdownStore } from "../../store/UserDropdownStore";
 const props = defineProps<{
   uid: string;
   dateTime?: Date;
   reverse?: boolean;
+  menu?: boolean;
+  room?: string;
+  small?: boolean;
 }>();
-const { uid } = toRefs(props);
+const { uid, menu, room } = toRefs(props);
 const user = useUser(uid.value);
 
 const containerRef = ref<HTMLCanvasElement | null>(null);
@@ -20,6 +24,13 @@ const observer = new IntersectionObserver(([entry]) => {
   }
 });
 
+function handleClick() {
+  if (!menu.value) return;
+  userdropdownStore.roomId = room ? room?.value || "" : "";
+  userdropdownStore.subject = uid.value;
+  userdropdownStore.open = true;
+}
+
 onMounted(() => {
   observer.observe(containerRef.value!);
 });
@@ -30,23 +41,34 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    :style="reverse ? { flexDirection: 'row-reverse' } : {}"
+    @click="handleClick"
+    :style="{
+      ...(reverse ? { flexDirection: 'row-reverse' } : {}),
+      ...(menu ? { cursor: 'pointer' } : {}),
+    }"
     ref="containerRef"
     class="user"
   >
     <div
+      :style="small ? { width: '1.5rem', height: '1.5rem' } : {}"
       v-bind:style="{ backgroundImage: `url(${user?.base64pfp})` }"
       class="pfp"
     >
       <v-icon v-if="!user?.base64pfp" name="la-user" />
     </div>
     <div class="name-date-time">
-      <div class="name">
+      <div
+      :style="small ? { fontSize:'0.7rem'} : {}"
+       class="name">
         {{ user?.username }}
       </div>
       <div v-if="dateTime" class="date-time">
-        <span>{{ new Intl.DateTimeFormat("en-GB").format(dateTime) }}</span>
-        <span>{{
+        <span
+        :style="small ? { fontSize:'0.55rem'} : {}"
+        >{{ new Intl.DateTimeFormat("en-GB").format(dateTime) }}</span>
+        <span
+        :style="small ? { fontSize:'0.55rem'} : {}"
+        >{{
           new Intl.DateTimeFormat("default", {
             hour: "numeric",
             minute: "numeric",

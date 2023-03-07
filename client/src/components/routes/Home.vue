@@ -17,11 +17,12 @@ import { authStore } from "../../store/AuthStore";
   padding: var(--padding);
   gap: var(--padding-medium);
   width: 100%;
+  height: 100%;
   align-items: center;
   justify-content: center;
-  height: 100%;
   box-sizing: border-box;
   pointer-events: none;
+  background: var(--foreground);
   filter: drop-shadow(0px 3px 4px black);
   h1,
   h2 {

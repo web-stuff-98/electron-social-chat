@@ -30,8 +30,8 @@ export const uploadRoomImage = (file: File, id: string) => {
   });
 };
 
-export const getRooms = (own: boolean) =>
-  makeRequest("/api/rooms" + (own ? "?own" : ""), {
+export const getOwnRoomIDs = () =>
+  makeRequest("/api/rooms/own/ids", {
     withCredentials: true,
   });
 

@@ -6,11 +6,9 @@ import CreateRoom from "./sections/CreateRoom.vue";
 import ExploreRooms from "./sections/ExploreRooms.vue";
 import DirectMessages from "./sections/DirectMessages.vue";
 import FindUser from "./sections/FindUser.vue";
-import YourRooms from "./sections/YourRooms.vue";
 import Settings from "./sections/Settings.vue";
 
 enum EAsideSection {
-  "SETTINGS" = "Settings",
   "PROFILE" = "Profile",
   "CREATE_ROOM" = "Create room",
   "EXPLORE_ROOMS" = "Explore rooms",
@@ -51,10 +49,6 @@ defineProps<{ showAside: boolean; toggleShowAside: Function }>();
         Profile
         <span v-if="section === EAsideSection.PROFILE" />
       </button>
-      <button @click="section = EAsideSection.SETTINGS">
-        Settings
-        <span v-if="section === EAsideSection.SETTINGS" />
-      </button>
       <button @click="section = EAsideSection.FIND_USER">
         Find user
         <span v-if="section === EAsideSection.FIND_USER" />
@@ -71,7 +65,6 @@ defineProps<{ showAside: boolean; toggleShowAside: Function }>();
         <Profile v-if="section === EAsideSection.PROFILE" />
         <FindUser v-if="section === EAsideSection.FIND_USER" />
         <ExploreRooms :own="true" v-if="section === EAsideSection.YOUR_ROOMS" />
-        <Settings :own="true" v-if="section === EAsideSection.SETTINGS" />
       </div>
       <button @click="() => toggleShowAside()" class="close-button">
         <v-icon name="io-close" />
@@ -99,6 +92,8 @@ aside {
   background: var(--foreground);
   box-shadow: 0px 0px 3px black;
   transition: transform 50ms linear;
+  padding-right: 1px;
+  padding-top: 2px;
   position: fixed;
   left: 0;
   .buttons {

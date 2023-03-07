@@ -17,6 +17,7 @@ import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
 import MessageModal from "./components/messageModal/MessageModal.vue";
 import { IResMsg } from "./interfaces/GeneralInterfaces";
+import UserdropdownMenu from "./components/layout/UserdropdownMenu.vue";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -91,6 +92,7 @@ const watchForResponseMessages = (e: MessageEvent) => {
     };
     modalConfirmation.value = () => (showModal.value = false);
     modalCancellation.value = undefined;
+    showModal.value = true
   }
 };
 
@@ -163,6 +165,7 @@ onMounted(() => {
       :confirmationCallback="modalConfirmation"
       :cancellationCallback="modalCancellation"
     />
+    <UserdropdownMenu v-if="authStore.user" />
     <main :style="showAside ? { 'padding-left': 'var(--aside-width)' } : {}">
       <router-view />
     </main>

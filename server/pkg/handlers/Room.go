@@ -712,6 +712,31 @@ func (h handler) GetRoomPage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(outRooms)
 }
 
+func (h handler) GetOwnRoomIDs(w http.ResponseWriter, r *http.Request) {
+	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	cursor, err := h.Collections.RoomCollection.Find(r.Context(), bson.M{"author": user.ID})
+	defer cursor.Close(r.Context())
+	rooms := []primitive.ObjectID{}
+	if err != nil {
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
+	for cursor.Next(r.Context()) {
+		room := &models.Room{}
+		cursor.Decode(&room)
+		rooms = append(rooms, room.ID)
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(rooms)
+}
+
 func (h handler) GetRoom(w http.ResponseWriter, r *http.Request) {
 	user, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
 	if err != nil {

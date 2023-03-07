@@ -24,7 +24,7 @@ defineProps<{ resMsg: IResMsg }>();
   padding: var(--padding-medium);
   gap: var(--padding-medium);
   min-width: 3rem;
-  min-height: 3rem;
+  height: fit-content;
   filter: drop-shadow(var(--shadow-medium));
   p {
     margin: 0;
@@ -32,6 +32,8 @@ defineProps<{ resMsg: IResMsg }>();
   .res-msg-err-icon {
     width: 1.5rem;
     height: 1.5rem;
+    color: red;
+    fill:red;
   }
   .res-msg-spinner {
     width: 2.5rem;
