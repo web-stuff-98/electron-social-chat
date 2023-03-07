@@ -737,7 +737,7 @@ func inviteToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *so
 }
 
 func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.InvitationDelete
+	var data socketmodels.RoomInvitationDelete
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
@@ -788,7 +788,7 @@ func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.Object
 		}
 	}
 
-	msg := &socketmodels.OutInvitationDelete{
+	msg := &socketmodels.OutRoomInvitationDelete{
 		ID:     invitationId.Hex(),
 		Author: uid.Hex(),
 	}
@@ -805,7 +805,7 @@ func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.Object
 }
 
 func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.InvitationResponse
+	var data socketmodels.RoomInvitationResponse
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
@@ -880,7 +880,7 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 				return err
 			}
 		}
-		msg := &socketmodels.OutInvitationDelete{
+		msg := &socketmodels.OutRoomInvitationDelete{
 			ID:     invitationId.Hex(),
 			Author: uid.Hex(),
 		}
@@ -907,7 +907,7 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 		return err
 	}
 
-	inv := &socketmodels.OutInvitationResponse{
+	inv := &socketmodels.OutRoomInvitationResponse{
 		ID:        invitationId.Hex(),
 		Author:    uid.Hex(),
 		Recipient: messagingData.Invitations[invitationIndex].Author.Hex(),
@@ -932,6 +932,44 @@ func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 
 	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
 		"$addToSet": bson.M{
+			"blocked": data.UID,
+		},
+		"$pull": bson.M{
+			"friends": data.UID,
+			"messages": bson.M{
+				"author": data.UID,
+			},
+			"messages_sent_to":       data.UID,
+			"messages_received_from": data.UID,
+		},
+	}); err != nil {
+		return err
+	}
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), data.UID, bson.M{
+		"$pull": bson.M{
+			"friends": uid,
+			"messages": bson.M{
+				"author": uid,
+			},
+			"messages_sent_to":       uid,
+			"messages_received_from": uid,
+		},
+	}); err != nil {
+		return nil
+	}
+
+	return nil
+}
+
+func unblockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.BlockUnblockUser
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+		"$pull": bson.M{
 			"blocked": data.UID,
 		},
 	}); err != nil {

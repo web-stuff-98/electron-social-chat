@@ -75,7 +75,7 @@ type DirectMessage struct {
 	Recipient string `json:"recipient"`
 }
 
-// TYPE: INVITATION
+// TYPE: ROOM_INVITATION
 type InviteToRoom struct {
 	Type      string `json:"TYPE"`
 	Content   string `json:"content"`
@@ -83,15 +83,15 @@ type InviteToRoom struct {
 	RoomID    string `json:"room_id"`
 }
 
-// TYPE: INVITATION_RESPONSE
-type InvitationResponse struct {
+// TYPE: ROOM_INVITATION_RESPONSE
+type RoomInvitationResponse struct {
 	Type   string `json:"TYPE"`
 	ID     string `json:"ID"`
 	Accept bool   `json:"accept"`
 }
 
-// TYPE: INVITATION_DELETE
-type InvitationDelete struct {
+// TYPE: ROOM_INVITATION_DELETE
+type RoomInvitationDelete struct {
 	Type      string `json:"TYPE"`
 	ID        string `json:"ID"`
 	Recipient string `json:"recipient"`
@@ -148,15 +148,15 @@ type OutInvite struct {
 	RoomID    string `json:"room_id"`
 }
 
-// TYPE: OUT_INVITATION_DELETE
-type OutInvitationDelete struct {
+// TYPE: OUT_ROOM_INVITATION_DELETE
+type OutRoomInvitationDelete struct {
 	Type   string `json:"TYPE"`
 	ID     string `json:"ID"`
 	Author string `json:"author"`
 }
 
-// TYPE: OUT_INVITATION_RESPONSE
-type OutInvitationResponse struct {
+// TYPE: OUT_ROOM_INVITATION_RESPONSE
+type OutRoomInvitationResponse struct {
 	Type      string `json:"TYPE"`
 	ID        string `json:"ID"`
 	Author    string `json:"author"`
