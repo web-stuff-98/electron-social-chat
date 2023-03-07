@@ -1,10 +1,15 @@
-Todos in order :
+Todos in order
 
-Additions
- - User dropdown
- - Finish direct messaging & invitations (clientside)
+First:
  - Finish socket event handlers for banning/blocking users
- - Figure out how to get 2 instances of the dev client running on different ports... somehow, maybe using docker
+ - Make socket event handlers for friend inviting users
+ - Do client code for banning/blocking/inviting users and sending friend requests
+
+Problematic:
+ - Figure out how to get 2 instances of the dev client running... somehow, maybe using docker
+
+Future:
+ - User actions dropdown menu
  - Manual test direct messaging & invitations
 
 and lots more
