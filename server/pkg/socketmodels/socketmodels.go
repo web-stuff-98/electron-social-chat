@@ -66,7 +66,7 @@ type OutRoomMessageDelete struct {
 	ID   string `json:"ID"`
 }
 
-/* -------- DIRECT MESSAGE & INVITATION MODELS -------- */
+/* -------- DIRECT MESSAGE, FRIEND REQUEST & INVITATION MODELS -------- */
 
 // TYPE: DIRECT_MESSAGE
 type DirectMessage struct {
@@ -78,9 +78,15 @@ type DirectMessage struct {
 // TYPE: ROOM_INVITATION
 type InviteToRoom struct {
 	Type      string `json:"TYPE"`
-	Content   string `json:"content"`
 	Recipient string `json:"recipient"`
 	RoomID    string `json:"room_id"`
+}
+
+// TYPE: FRIEND_REQUEST
+type FriendRequest struct {
+	Type      string `json:"TYPE"`
+	Content   string `json:"content"`
+	Recipient string `json:"recipient"`
 }
 
 // TYPE: ROOM_INVITATION_RESPONSE
@@ -142,7 +148,6 @@ type OutDirectMessageDelete struct {
 type OutInvite struct {
 	Type      string `json:"TYPE"`
 	ID        string `json:"ID"`
-	Content   string `json:"content"`
 	Author    string `json:"author"`
 	Recipient string `json:"recipient"`
 	RoomID    string `json:"room_id"`
@@ -159,6 +164,30 @@ type OutRoomInvitationDelete struct {
 type OutRoomInvitationResponse struct {
 	Type      string `json:"TYPE"`
 	ID        string `json:"ID"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
+}
+
+// TYPE: OUT_FRIEND_REQUEST
+type OutFriendRequest struct {
+	Type      string `json:"TYPE"`
+	ID        string `json:"ID"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
+}
+
+// TYPE: OUT_FRIEND_REQUEST_DELETE
+type OutFriendRequestDelete struct {
+	Type   string `json:"TYPE"`
+	ID     string `json:"ID"`
+	Author string `json:"author"`
+}
+
+// TYPE: OUT_FRIEND_REQUEST_RESPONSE
+type OutFriendRequestResponse struct {
+	Type      string `json:"TYPE"`
+	ID        string `json:"ID"`
+	Accept    bool   `json:"accept"`
 	Author    string `json:"author"`
 	Recipient string `json:"recipient"`
 }

@@ -37,13 +37,22 @@ type Invitation struct {
 	Declined  bool               `bson:"declined" json:"declined"`
 }
 
+type FriendRequest struct {
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
+	Author    primitive.ObjectID `bson:"author" json:"author"`
+	Accepted  bool               `bson:"accepted" json:"accepted"`
+	Declined  bool               `bson:"declined" json:"declined"`
+}
+
 type UserMessagingData struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
-	Messages    []DirectMessage    `bson:"messages" json:"messages"`
-	Invitations []Invitation       `bson:"invitations" json:"invitations"`
-	// also includes invitations
+	ID             primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Messages       []DirectMessage    `bson:"messages" json:"messages"`
+	Invitations    []Invitation       `bson:"invitations" json:"invitations"`
+	FriendRequests []FriendRequest    `bson:"friend_requests" json:"friend_requests"`
+	// also includes invitations & friend requests
 	MessagesSentTo []primitive.ObjectID `bson:"messages_sent_to" json:"messages_sent_to"`
-	// also includes invitations
+	// also includes invitations & friend requests
 	MessagesReceivedFrom []primitive.ObjectID `bson:"messages_received_from" json:"messages_received_from"`
 	Blocked              []primitive.ObjectID `bson:"blocked" json:"blocked"`
 	Friends              []primitive.ObjectID `bson:"friends" json:"friends"`

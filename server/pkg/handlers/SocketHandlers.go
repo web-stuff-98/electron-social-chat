@@ -590,7 +590,7 @@ func directMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&recipientMessagingData); err != nil {
 		return err
 	} else {
-		wasOnlyMessage := checkAnyMessagesOrInvitesFrom(*recipientMessagingData, uid)
+		wasOnlyMessage := checkAnythingReceivedFrom(*recipientMessagingData, uid)
 		if wasOnlyMessage {
 			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
 				"$pull": bson.M{
@@ -719,7 +719,6 @@ func inviteToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *so
 
 	msg := &socketmodels.OutInvite{
 		ID:        invitationId.Hex(),
-		Content:   data.Content,
 		Author:    uid.Hex(),
 		Recipient: recipientId.Hex(),
 		RoomID:    roomId.Hex(),
@@ -777,7 +776,7 @@ func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.Object
 	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
 		return err
 	} else {
-		if !checkAnyMessagesOrInvitesFrom(*messagingData, messagingData.Invitations[invitationIndex].Author) {
+		if !checkAnythingReceivedFrom(*messagingData, messagingData.Invitations[invitationIndex].Author) {
 			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
 				"$pull": bson.M{
 					"messages_received_from": messagingData.Invitations[invitationIndex].Author,
@@ -871,7 +870,7 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 		}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
 			return err
 		}
-		if !checkAnyMessagesOrInvitesFrom(*messagingData, messagingData.Invitations[invitationIndex].Author) {
+		if !checkAnythingReceivedFrom(*messagingData, messagingData.Invitations[invitationIndex].Author) {
 			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
 				"$pull": bson.M{
 					"messages_received_from": messagingData.Invitations[invitationIndex].Author,
@@ -918,6 +917,255 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 	ss.SendDataToUsers <- socketserver.UsersDataMessage{
 		Uids: Uids,
 		Type: "OUT_INVITATION_RESPONSE",
+		Data: inv,
+	}
+
+	return nil
+}
+
+func friendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.FriendRequest
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	recipientId, err := primitive.ObjectIDFromHex(data.Recipient)
+	if err != nil {
+		return err
+	}
+
+	messagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": recipientId}).Decode(&messagingData); err != nil {
+		return err
+	}
+	for _, oi := range messagingData.Blocked {
+		if oi == recipientId {
+			return fmt.Errorf("You have blocked this users account. You must unblock the user before sending them a friend request")
+		}
+	}
+
+	recipientMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": recipientId}).Decode(&recipientMessagingData); err != nil {
+		return err
+	} else {
+		for _, oi := range recipientMessagingData.Blocked {
+			if oi == uid {
+				return fmt.Errorf("This user has blocked your account, you cannot send them friend requests")
+			}
+		}
+	}
+
+	friendRequestId := primitive.NewObjectID()
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
+		"$push": bson.M{
+			"friend_requests": models.FriendRequest{
+				ID:        friendRequestId,
+				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
+				Author:    uid,
+				Accepted:  false,
+				Declined:  false,
+			},
+		},
+		"$addToSet": bson.M{
+			// invitations count as messages, even though they are stored in a seperate array
+			"messages_received_from": uid,
+		},
+	}); err != nil {
+		return err
+	}
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+		"$addToSet": bson.M{
+			// invitations count as messages, even though they are stored in a seperate array
+			"messages_sent_to": recipientId,
+		},
+	}); err != nil {
+		return err
+	}
+
+	msg := &socketmodels.OutFriendRequest{
+		ID:        friendRequestId.Hex(),
+		Author:    uid.Hex(),
+		Recipient: recipientId.Hex(),
+	}
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[recipientId] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
+		Type: "OUT_FRIEND_REQUEST",
+		Data: msg,
+	}
+
+	return nil
+}
+
+func deleteFriendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.OutFriendRequestDelete
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	friendRequestId, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
+	messagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": uid}).Decode(&messagingData); err != nil {
+		return err
+	}
+
+	friendRequestIndex := -1
+	for i, fr := range messagingData.FriendRequests {
+		if fr.ID == friendRequestId {
+			friendRequestIndex = i
+			break
+		}
+	}
+	if friendRequestIndex == -1 {
+		return fmt.Errorf("Friend request not found")
+	}
+
+	if messagingData.FriendRequests[friendRequestIndex].Author != uid {
+		return fmt.Errorf("Unauthorized")
+	}
+
+	if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": uid}, bson.M{
+		"$pull": bson.M{
+			"friend_requests": bson.M{
+				"_id":    friendRequestIndex,
+				"author": messagingData.FriendRequests[friendRequestIndex].Author,
+			},
+		},
+	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
+		return err
+	} else {
+		if !checkAnythingReceivedFrom(*messagingData, messagingData.FriendRequests[friendRequestIndex].Author) {
+			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+				"$pull": bson.M{
+					"messages_received_from": messagingData.FriendRequests[friendRequestIndex].Author,
+				},
+			}); err != nil {
+				return err
+			}
+		}
+	}
+
+	msg := &socketmodels.OutRoomInvitationDelete{
+		ID:     friendRequestId.Hex(),
+		Author: uid.Hex(),
+	}
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[messagingData.FriendRequests[friendRequestIndex].Author] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
+		Type: "OUT_FRIEND_REQUEST_DELETE",
+		Data: msg,
+	}
+
+	return nil
+}
+
+func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.OutFriendRequestResponse
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	friendRequestId, err := primitive.ObjectIDFromHex(data.ID)
+	if err != nil {
+		return err
+	}
+
+	messagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": uid}).Decode(&messagingData); err != nil {
+		return err
+	}
+
+	friendRequestIndex := -1
+	for i, inv := range messagingData.FriendRequests {
+		if inv.ID == friendRequestId {
+			friendRequestIndex = i
+			break
+		}
+	}
+	if friendRequestIndex == -1 {
+		return fmt.Errorf("Friend request not found")
+	}
+
+	authorMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.FriendRequests[friendRequestIndex].Author}).Decode(&authorMessagingData); err != nil {
+		return err
+	}
+
+	var deleteIfErr error = nil
+	for _, oi := range authorMessagingData.Blocked {
+		if oi == uid {
+			deleteIfErr = fmt.Errorf("The sender of this invitation has blocked your account, friend request is no longer valid")
+			break
+		}
+	}
+	if deleteIfErr != nil {
+		if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": uid}, bson.M{
+			"$pull": bson.M{
+				"friend_requests": bson.M{
+					"_id":    friendRequestId,
+					"author": messagingData.Invitations[friendRequestIndex].Author,
+				},
+			},
+		}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
+			return err
+		}
+		if !checkAnythingReceivedFrom(*messagingData, messagingData.FriendRequests[friendRequestIndex].Author) {
+			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+				"$pull": bson.M{
+					"messages_received_from": messagingData.FriendRequests[friendRequestIndex].Author,
+				},
+			}); err != nil {
+				return err
+			}
+		}
+		msg := &socketmodels.OutFriendRequestResponse{
+			ID:     friendRequestId.Hex(),
+			Author: uid.Hex(),
+		}
+		Uids := make(map[primitive.ObjectID]struct{})
+		Uids[uid] = struct{}{}
+		Uids[messagingData.FriendRequests[friendRequestIndex].Author] = struct{}{}
+		ss.SendDataToUsers <- socketserver.UsersDataMessage{
+			Uids: Uids,
+			Type: "OUT_FRIEND_REQUEST_DELETE",
+			Data: msg,
+		}
+		return deleteIfErr
+	}
+
+	if _, err := colls.RoomExternalDataCollection.UpdateOne(context.Background(), bson.M{
+		"_id":                 messagingData.FriendRequests[friendRequestIndex].ID,
+		"friend_requests._id": friendRequestId,
+	}, bson.M{
+		"$set": bson.M{
+			"friend_requests.$.accepted": data.Accept,
+			"friend_requests.$.declined": !data.Accept,
+		},
+	}); err != nil {
+		return err
+	}
+
+	inv := &socketmodels.OutFriendRequestResponse{
+		ID:        friendRequestId.Hex(),
+		Author:    uid.Hex(),
+		Recipient: messagingData.FriendRequests[friendRequestIndex].Author.Hex(),
+	}
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[messagingData.FriendRequests[friendRequestIndex].Author] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
+		Type: "OUT_FRIEND_REQUEST_RESPONSE",
 		Data: inv,
 	}
 
@@ -980,7 +1228,7 @@ func unblockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *soc
 }
 
 // helper function - used to check if messages_sent_to/messages_received_from should have a uid pulled
-func checkAnyMessagesOrInvitesFrom(messagingData models.UserMessagingData, sender primitive.ObjectID) bool {
+func checkAnythingReceivedFrom(messagingData models.UserMessagingData, sender primitive.ObjectID) bool {
 	for _, inv := range messagingData.Invitations {
 		if inv.Author == sender {
 			return true
@@ -988,6 +1236,11 @@ func checkAnyMessagesOrInvitesFrom(messagingData models.UserMessagingData, sende
 	}
 	for _, msg := range messagingData.Messages {
 		if msg.Author == sender {
+			return true
+		}
+	}
+	for _, fr := range messagingData.FriendRequests {
+		if fr.Author == sender {
 			return true
 		}
 	}
