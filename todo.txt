@@ -1,9 +1,11 @@
-Todos :
+Todos in order :
 
 Additions
  - User dropdown
- - API routes for inviting/banning users
- - Direct messaging
+ - Finish direct messaging & invitations (clientside)
+ - Finish socket event handlers for banning/blocking users
+ - Figure out how to get 2 instances of the dev client running on different ports... somehow, maybe using docker
+ - Manual test direct messaging & invitations
 
 and lots more
 

@@ -163,6 +163,21 @@ type OutInvitationResponse struct {
 	Recipient string `json:"recipient"`
 }
 
+/* -------- BLOCK & UNBLOCK / BAN & UNBAN MODELS -------- */
+
+// TYPE: BLOCK_USER/UNBLOCK_USER
+type BlockUnblockUser struct {
+	Type string `json:"TYPE"`
+	UID  string `json:"uid"`
+}
+
+// TYPE: BAN_USER/UNBAN_USER
+type BanUnbanUser struct {
+	Type   string `json:"TYPE"`
+	UID    string `json:"uid"`
+	RoomID string `json:"room_id"`
+}
+
 /* -------- MISC -------- */
 
 // TYPE: CHANGE

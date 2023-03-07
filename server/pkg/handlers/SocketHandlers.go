@@ -590,7 +590,7 @@ func directMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&recipientMessagingData); err != nil {
 		return err
 	} else {
-		wasOnlyMessage := checkAnyMessagesOrInvitesRemaining(*recipientMessagingData, uid)
+		wasOnlyMessage := checkAnyMessagesOrInvitesFrom(*recipientMessagingData, uid)
 		if wasOnlyMessage {
 			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
 				"$pull": bson.M{
@@ -777,7 +777,7 @@ func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.Object
 	}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
 		return err
 	} else {
-		if !checkAnyMessagesOrInvitesRemaining(*messagingData, messagingData.Invitations[invitationIndex].Author) {
+		if !checkAnyMessagesOrInvitesFrom(*messagingData, messagingData.Invitations[invitationIndex].Author) {
 			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
 				"$pull": bson.M{
 					"messages_received_from": messagingData.Invitations[invitationIndex].Author,
@@ -871,7 +871,7 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 		}, options.FindOneAndUpdate().SetReturnDocument(options.After)).Decode(&messagingData); err != nil {
 			return err
 		}
-		if !checkAnyMessagesOrInvitesRemaining(*messagingData, messagingData.Invitations[invitationIndex].Author) {
+		if !checkAnyMessagesOrInvitesFrom(*messagingData, messagingData.Invitations[invitationIndex].Author) {
 			if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
 				"$pull": bson.M{
 					"messages_received_from": messagingData.Invitations[invitationIndex].Author,
@@ -924,8 +924,25 @@ func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, 
 	return nil
 }
 
-// helper function
-func checkAnyMessagesOrInvitesRemaining(messagingData models.UserMessagingData, sender primitive.ObjectID) bool {
+func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.BlockUnblockUser
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
+		"$addToSet": bson.M{
+			"blocked": data.UID,
+		},
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// helper function - used to check if messages_sent_to/messages_received_from should have a uid pulled
+func checkAnyMessagesOrInvitesFrom(messagingData models.UserMessagingData, sender primitive.ObjectID) bool {
 	for _, inv := range messagingData.Invitations {
 		if inv.Author == sender {
 			return true
