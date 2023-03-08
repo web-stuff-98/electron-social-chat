@@ -69,19 +69,22 @@ onBeforeUnmount(() => {
         : {}
     "
     ref="containerRef"
-    class="container"
+    class="card"
   >
     {{ roomStore.getRoom(id)?.name }}
   </div>
 </template>
 
 <style lang="scss" scoped>
-.container {
+.card {
   display: flex;
   padding: var(--padding-medium);
   box-sizing: border-box;
   background-size: cover;
   background-position: center;
   text-align: left;
+  text-shadow: var(--shadow-medium);
+  font-weight: 600;
+  cursor: pointer;
 }
 </style>

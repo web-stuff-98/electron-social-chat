@@ -77,6 +77,7 @@ function handleUsernameInput(e: Event) {
     position: relative;
     border: 1px solid var(--base-light);
     border-radius: var(--border-radius-medium);
+    box-shadow: var(--shadow-medium);
     width: 100%;
     flex-grow: 1;
     box-sizing: border-box;

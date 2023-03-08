@@ -25,7 +25,7 @@ async function selectPfp(e: Event) {
 }
 
 onMounted(() => {
-  userStore.cacheUserData(authStore.user?.ID);
+  userStore.cacheUserData(authStore.user?.ID!);
 });
 </script>
 
@@ -81,7 +81,7 @@ onMounted(() => {
     background-size: cover;
     margin: auto;
     svg {
-      fill: white;
+      fill: var(--text-color);
       width: 80%;
       height: 80%;
     }

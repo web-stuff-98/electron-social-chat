@@ -5,6 +5,7 @@ import { authStore } from "../../store/AuthStore";
 <template>
   <div v-if="authStore.user" class="container">
     <h1>Welcome</h1>
+    <span/>
     <h2>To get started click on the menu icon in the bottom left</h2>
   </div>
 </template>
@@ -21,14 +22,17 @@ import { authStore } from "../../store/AuthStore";
   justify-content: center;
   box-sizing: border-box;
   pointer-events: none;
-  background: var(--background-radial);
-  filter: drop-shadow(0px 3px 4px black);
+  filter: drop-shadow(var(--shadow-medium));
+  span {
+    margin: 0;
+    padding: 0;
+    border-bottom: 2px solid var(--text-color);
+    width: 100%;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+  }
   h1,
   h2 {
     margin: 0;
-  }
-  h2 {
-    margin-top: var(--padding);
   }
 }
 </style>

@@ -1,23 +1,29 @@
 Todos in order
- - Fix weird ResMsg component problems
- - Do client code for messaging
+ - Fix weird ResMsg component extra space problem
+ - Automatic scroll to bottom in room & direct messages
  - Do client code for banning/blocking/inviting users & friend requests
- - Attachment uploads
- - WebRTC network for video sharing
+ - Add friends section to DirectMessages component
+ - Attachment uploads/downloads (using octet stream)
  - User online indicator
+ - Socket events for creating/updating/deleting channels
+ - WebRTC network for video sharing
  - Notifications
- - Alert sounds
  - Zod & Formik
  - Go v10 validation for socket handlers
+ - Autoadjust position of user dropdown to prevent overflow
 
 Todos; before completion
+ - Rename project to Tauri-Go-Vue-Chat, including github repo
  - Reorganise project structure
  - Clean up imports, add comments to templates, re-order functions
+ - Clean up SCSS classes
+ - Rate limiters for API routes & socket handler
+ - Alert sounds
  - Audio/Video input device selection
  - Screen sharing toggle
  - Dark/Light theme
  - UI/UX improvements
  - Styling improvements
 
-And lots more
+And lots more, probably
 

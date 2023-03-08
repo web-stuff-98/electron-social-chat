@@ -249,8 +249,9 @@ async function openChannel(id: string) {
     padding-bottom: calc(var(--padding-medium) * 2 - 1px);
     .channels {
       box-sizing: border-box;
-      border: 1px solid var(--base-light);
+      border: 2px solid var(--base-light);
       border-radius: var(--border-radius-medium);
+      box-shadow: var(--shadow-medium);
       height: 100%;
       width: 100%;
       display: flex;
@@ -271,7 +272,7 @@ async function openChannel(id: string) {
     width: 100%;
     height: 100%;
     padding: calc(var(--padding-medium) + 1px);
-    padding-bottom: var(--padding-medium);
+    padding-bottom: calc(var(--padding-medium) + 2px);
     padding-right: calc(var(--padding-medium) + 2px);
     box-sizing: border-box;
     display: flex;
@@ -284,8 +285,9 @@ async function openChannel(id: string) {
       box-sizing: border-box;
       flex-grow: 1;
       width: 100%;
-      border: 1px solid var(--base-light);
+      border: 2px solid var(--base-light);
       border-radius: var(--border-radius-medium);
+      box-shadow: var(--shadow-medium);
       overflow: hidden;
       display: flex;
       flex-direction: column;
@@ -334,6 +336,7 @@ async function openChannel(id: string) {
       input {
         flex-grow: 1;
         box-sizing: border-box;
+        border: 2px solid var(--base-light);
       }
       svg {
         height: 2rem;

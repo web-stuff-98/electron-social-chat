@@ -147,6 +147,8 @@ function promptDeleteRoom() {
     justify-content: space-between;
     align-items: center;
     .name {
+      color:white;
+      font-weight: 600;
       text-shadow: 0px 1px 2px black, 0px 0px 6px black;
     }
     .buttons {

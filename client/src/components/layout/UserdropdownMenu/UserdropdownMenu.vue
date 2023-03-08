@@ -209,7 +209,6 @@ function submitDirectMessage() {
     gap: 2px;
     .room-container {
       padding: 0;
-      width: fit-content;
     }
   }
   button {
@@ -220,7 +219,7 @@ function submitDirectMessage() {
     width: 100%;
   }
   .close-button {
-    border: 1px solid white;
+    border: 1px solid var(--text-color);
     padding: 0;
     filter: opacity(0.666);
     width: fit-content;
@@ -237,7 +236,7 @@ function submitDirectMessage() {
     }
   }
   .close-button:hover {
-    outline: 1px solid white;
+    outline: 1px solid var(--text-color);
     filter: opacity(1);
   }
 }

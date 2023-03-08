@@ -91,11 +91,10 @@ aside {
   min-width: var(--aside-width);
   width: var(--aside-width);
   height: 100vh;
-  border-right: 2px solid var(--base-light);
+  border-right: 2px solid var(--base);
   display: flex;
   flex-direction: column;
   background: var(--foreground);
-  box-shadow: 0px 0px 3px black;
   transition: transform 50ms linear;
   padding-right: 1px;
   padding-top: 2px;
@@ -116,7 +115,6 @@ aside {
       text-align: left;
       font-size: 1rem;
       position: relative;
-      box-shadow: none;
       span {
         width: 3px;
         height: 3px;
@@ -124,13 +122,13 @@ aside {
         top: 3px;
         border-radius: 50%;
         right: 3px;
-        background: white;
-        box-shadow: 0px 0px 3px white, 0px 0px 8px white;
+        background: var(--text-color);
+        box-shadow: 0px 0px 3px var(--text-color), 0px 0px 8px var(--text-color);
       }
     }
   }
   .close-button {
-    border: 1px solid white;
+    border: 1px solid var(--text-color);
     padding: 0;
     margin: var(--padding-medium);
     margin-bottom: calc(var(--padding-medium) + 1px);
@@ -149,7 +147,7 @@ aside {
     }
   }
   .close-button:hover {
-    outline: 1px solid white;
+    outline: 1px solid var(--text-color);
     filter: opacity(1);
   }
 }
@@ -170,7 +168,7 @@ aside {
   width: 1.25rem;
   height: 1.25rem;
   z-index: 99;
-  border: 2px solid white;
+  border: 2px solid var(--text-color);
   border-radius: var(--border-radius-medium);
 }
 .container {

@@ -293,8 +293,6 @@ async function handleSubmit() {
     box-sizing: border-box;
     width: fit-content;
     height: fit-content;
-    border: 2px solid var(--base-light);
-    box-shadow: var(--shadow-medium);
     display: flex;
     flex-direction: column;
     border-radius: var(--border-radius-medium);

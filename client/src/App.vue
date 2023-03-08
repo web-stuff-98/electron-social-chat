@@ -28,6 +28,7 @@ import MessageModal from "./components/messageModal/MessageModal.vue";
 import { IResMsg } from "./interfaces/GeneralInterfaces";
 import UserdropdownMenu from "./components/layout/UserdropdownMenu/UserdropdownMenu.vue";
 import { messagingStore } from "./store/MessagingStore";
+import DarkToggle from "./components/layout/DarkToggle.vue";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -283,6 +284,7 @@ onMounted(() => {
 
 <template>
   <div class="root">
+    <DarkToggle />
     <MessageModal
       :msg="modalMsg"
       :show="showModal"
@@ -290,7 +292,13 @@ onMounted(() => {
       :cancellationCallback="modalCancellation"
     />
     <UserdropdownMenu v-if="authStore.user" />
-    <main :style="showAside && authStore.user ? { 'padding-left': 'var(--aside-width)' } : {}">
+    <main
+      :style="
+        showAside && authStore.user
+          ? { 'padding-left': 'var(--aside-width)' }
+          : {}
+      "
+    >
       <router-view />
     </main>
     <AsideMenu

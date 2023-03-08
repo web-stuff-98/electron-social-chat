@@ -167,6 +167,7 @@ async function openConv(uid: string) {
     box-sizing: border-box;
     border: 1px solid var(--base-light);
     border-radius: var(--border-radius-medium);
+    box-shadow: var(--shadow-medium);
     overflow: hidden;
     .users {
       display: flex;

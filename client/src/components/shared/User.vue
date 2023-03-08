@@ -10,6 +10,7 @@ const props = defineProps<{
   menu?: boolean;
   room?: string;
   small?: boolean;
+  square?: boolean;
 }>();
 const { uid, menu, room } = toRefs(props);
 const user = useUser(uid.value);
@@ -51,9 +52,12 @@ onBeforeUnmount(() => {
   >
     <div
       :style="{
-        ...(small ? { width: '1.5rem', height: '1.5rem' } : {}),
+        ...(small ? { width: '1.666rem', height: '1.666rem' } : {}),
         ...(user?.base64pfp
           ? { backgroundImage: `url(${user?.base64pfp})` }
+          : {}),
+          ...(square
+          ? { borderRadius: 'var(--border-radius-medium)' }
           : {}),
       }"
       class="pfp"
@@ -94,7 +98,7 @@ onBeforeUnmount(() => {
   .pfp {
     width: 2rem;
     height: 2rem;
-    border: 2px solid var(--base);
+    border: 2px solid var(--text-color);
     background: var(--foreground);
     background-size: cover;
     border-radius: 50%;
@@ -103,7 +107,7 @@ onBeforeUnmount(() => {
     align-items: center;
     justify-content: center;
     svg {
-      fill: white;
+      fill: var(--text-color);
       width: 60%;
       height: 60%;
     }

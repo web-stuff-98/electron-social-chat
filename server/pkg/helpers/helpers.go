@@ -51,7 +51,6 @@ func GetClearedCookie() http.Cookie {
 	}
 }
 
-// Used by login, register and refresh to set the cookie. Cookie value is encrypted JWT containing session ID
 func GenerateCookieAndSession(ctx context.Context, uid primitive.ObjectID, collections db.Collections, redisClient *redis.Client) (http.Cookie, error) {
 	defer func() {
 		if r := recover(); r != nil {

@@ -23,6 +23,13 @@ function deleteMessageClicked(id: string) {
   );
 }
 
+function handleEditClicked() {
+  editInput.value = msg.value.content;
+  //@ts-ignore
+  editInputRef.value = msg.value.content;
+  isEditing.value = true;
+}
+
 function handleEditInput(e: Event) {
   const target = e.target as HTMLInputElement;
   if (!target || !target.value || target.value.length > 300) return;
@@ -57,6 +64,7 @@ function handleSubmitUpdate() {
         :menu="msg.author !== authStore.user?.ID"
         :reverse="msg.author !== authStore.user?.ID"
         :small="true"
+        :square="true"
         :dateTime="new Date(msg.created_at)"
         :uid="msg.author"
       />
@@ -70,7 +78,7 @@ function handleSubmitUpdate() {
           <v-icon name="md-delete-sharp" />
         </button>
         <!-- Edit button -->
-        <button @click="isEditing = true" v-show="!isEditing" type="button">
+        <button @click="handleEditClicked" v-show="!isEditing" type="button">
           <v-icon name="ri-edit-box-fill" />
         </button>
       </div>
@@ -114,7 +122,7 @@ function handleSubmitUpdate() {
   p {
     text-align: left;
     width: 100%;
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     padding: 0 var(--padding-medium);
     box-sizing: border-box;
     margin: 0;
@@ -132,7 +140,7 @@ function handleSubmitUpdate() {
   box-sizing: border-box;
   justify-content: center;
   max-width: 100%;
-  gap:2px;
+  gap: 2px;
   textarea {
     box-sizing: border-box;
     max-width: calc(var(--aside-width) - var(--padding-medium) * 14 - 2px);

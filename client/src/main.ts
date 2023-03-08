@@ -26,6 +26,7 @@ import {
   BiCheckLg,
   BiCaretLeft,
   BiCaretRight,
+  MdDarkmode,
 } from "oh-vue-icons/icons";
 import { authStore } from "./store/AuthStore";
 
@@ -47,7 +48,8 @@ addIcons(
   IoAddCircleSharp,
   BiCheckLg,
   BiCaretLeft,
-  BiCaretRight
+  BiCaretRight,
+  MdDarkmode
 );
 
 const routes = [

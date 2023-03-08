@@ -1,11 +1,11 @@
 @font-face {
-  font-family: "CqMono";
-  src: url(CqMono-mBXa.ttf);
+  font-family: "Didact Gothic";
+  src: url(didact-gothic.regular.ttf);
 }
 
 * {
-  font-family: "CqMono";
-  color: white;
+  font-family: "Didact Gothic";
+  color: var(--text-color);
 }
 
 input[type="file"] {
@@ -13,41 +13,58 @@ input[type="file"] {
 }
 
 svg {
-  fill: white;
-  color: white;
+  fill: var(--text-color);
+  color: var(--text-color);
 }
 
 :root {
-  font-family: "CqMono";
+  font-family: "Didact Gothic";
   line-height: 1;
   font-weight: 300;
 
   color-scheme: light dark;
-  color: white;
-  background-color: hsl(0, 0%, 8%);
+  color: black;
+  
+  --text-color: black;
 
-  font-synthesis:weight;
-  text-rendering:optimizeSpeed;
+  background-color: hsl(0, 0%, 97%);
+
+  font-synthesis: weight;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 
-  --foreground: hsl(0, 0%, 8%);
-  --background-radial:radial-gradient(circle at center, hsl(0, 0%, 8%) 33%, hsl(0, 0%, 5%) 150%);
-  --foreground-hover: hsl(0, 0%, 11%);
+  --foreground: hsl(0, 0%, 97%);
+  --foreground-hover: hsl(180, 3%, 93%);
 
   --aside-width: 12rem;
 
-  --shadow: 0px 1px 13px rgba(0, 0, 0, 0.5), 0px 2px 3px rgba(0, 0, 0, 0.5);
-  --shadow-medium: 0px 2px 3px rgba(0, 0, 0, 0.5);
+  --shadow: 0px 6px 3px rgba(0, 0, 0, 0.1), 0px 2px 1px rgba(0, 0, 0, 0.05);
+  --shadow-medium: 0px 1px 1px rgba(0, 0, 0, 0.1);
 
   --border-radius-medium: 0.333rem;
 
-  --base: rgba(255, 255, 255, 0.35);
-  --base-light: rgba(255, 255, 255, 0.05);
+  --base: rgba(0, 0, 0, 0.3);
+  --base-light: rgba(0, 0, 0, 0.15);
 
   --padding: 0.5rem;
   --padding-medium: 0.25rem;
+}
+
+.dark-mode {
+  color-scheme: light dark;
+  color: white;
+
+  --text-color:white;
+
+  background-color: hsl(0, 0%, 8%);
+
+  --foreground: hsl(0, 0%, 8%);
+  --foreground-hover: hsl(0, 0%, 11%);
+
+  --base: rgba(255, 255, 255, 0.0866);
+  --base-light: rgba(255, 255, 255, 0.05);
 }
 
 a {
@@ -78,6 +95,7 @@ textarea {
   padding: var(--padding-medium);
   box-sizing: border-box;
   background: none;
+  box-shadow: var(--shadow-medium);
 }
 input:focus,
 textarea:focus {
@@ -96,7 +114,7 @@ button {
   border-radius: var(--border-radius-medium);
   border: 1px solid var(--base-light);
   box-shadow: var(--shadow-medium);
-  font-weight: 300;
+  font-weight: 600;
 }
 button:hover {
   background: var(--foreground-hover);
@@ -188,7 +206,7 @@ code {
   height: 1rem;
   z-index: 99;
   padding: 0;
-  border: 2px solid white;
+  border: 2px solid var(--text-color);
   filter: opacity(0.5);
   display: flex;
   transition: filter 100ms ease;
