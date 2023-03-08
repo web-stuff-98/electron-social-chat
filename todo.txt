@@ -1,6 +1,5 @@
 Todos in order
  - Fix weird ResMsg component problems
- - Logout/Change account buttons... deleted by accident
  - Do client code for messaging
  - Do client code for banning/blocking/inviting users & friend requests
  - Attachment uploads
@@ -12,6 +11,8 @@ Todos in order
  - Go v10 validation for socket handlers
 
 Todos; before completion
+ - Reorganise project structure
+ - Clean up imports, add comments to templates, re-order functions
  - Audio/Video input device selection
  - Screen sharing toggle
  - Dark/Light theme
