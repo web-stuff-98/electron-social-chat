@@ -1,6 +1,6 @@
 export type ChangeData = {
   TYPE: "CHANGE";
-  METHOD: SocketEventChangeMethod;
+  METHOD: SocketEventChangeMethodData;
   ENTITY: SocketEventChangeEntityType;
   DATA: { ID: string };
 };
@@ -34,7 +34,93 @@ export type ResponseMessageData = Omit<
 
 export type RoomMessageDeleteData = Omit<{ ID: string }, "TYPE">;
 
-export type SocketEventChangeMethod =
+export type DirectMessageData = Omit<
+  {
+    ID: string;
+    content: string;
+    author: string;
+    recipient: string;
+  },
+  "TYPE"
+>;
+
+export type DirectMessageUpdateData = Omit<
+  {
+    ID: string;
+    content: string;
+    author: string;
+    recipient: string;
+  },
+  "TYPE"
+>;
+
+export type DirectMessageDeleteData = Omit<
+  {
+    ID: string;
+    author: string;
+    recipient: string;
+  },
+  "TYPE"
+>;
+
+export type RoomInvitationData = Omit<
+  {
+    ID: string;
+    author: string;
+    recipient: string;
+    room_id: string;
+  },
+  "TYPE"
+>;
+
+export type RoomInvitationDeleteData = Omit<
+  {
+    ID: string;
+    author: string;
+    recipient: string;
+  },
+  "TYPE"
+>;
+
+export type RoomInvitationResponseData = Omit<
+  {
+    ID: string;
+    author: string;
+    recipient: string;
+    accept: boolean;
+  },
+  "TYPE"
+>;
+
+export type FriendRequestData = Omit<
+  {
+    ID: string;
+    author: string;
+    recipient: string;
+  },
+  "TYPE"
+>;
+
+export type FriendRequestDeleteData = Omit<
+  {
+    ID: string;
+    author: string;
+    recipient: string;
+  },
+  "TYPE"
+>;
+
+export type FriendRequestResponseData = Omit<
+  {
+    ID: string;
+    author: string;
+    recipient: string;
+    accept: boolean;
+  },
+  "TYPE"
+>;
+
+export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
   | "DELETE"
@@ -60,6 +146,51 @@ export function instanceOfRoomMessageDeleteData(
   object: any
 ): object is RoomMessageUpdateData {
   return object.TYPE === "OUT_ROOM_MESSAGE_DELETE";
+}
+export function instanceOfDirectMessageData(
+  object: any
+): object is DirectMessageData {
+  return object.TYPE === "OUT_DIRECT_MESSAGE";
+}
+export function instanceOfDirectMessageUpdateData(
+  object: any
+): object is DirectMessageUpdateData {
+  return object.TYPE === "OUT_DIRECT_MESSAGE_UPDATE";
+}
+export function instanceOfDirectMessageDeleteData(
+  object: any
+): object is DirectMessageDeleteData {
+  return object.TYPE === "OUT_DIRECT_MESSAGE_DELETE";
+}
+export function instanceOfRoomInvitationData(
+  object: any
+): object is RoomInvitationData {
+  return object.TYPE === "OUT_ROOM_INVITATION";
+}
+export function instanceOfRoomInvitationResponseData(
+  object: any
+): object is RoomInvitationResponseData {
+  return object.TYPE === "OUT_ROOM_INVITATION_RESPONSE";
+}
+export function instanceOfRoomInvitationDeleteData(
+  object: any
+): object is RoomInvitationDeleteData {
+  return object.TYPE === "OUT_ROOM_INVITATION_DELETE";
+}
+export function instanceOfFriendRequestData(
+  object: any
+): object is FriendRequestData {
+  return object.TYPE === "OUT_FRIEND_REQUEST";
+}
+export function instanceOfFriendRequestDeleteData(
+  object: any
+): object is FriendRequestDeleteData {
+  return object.TYPE === "OUT_FRIEND_REQUEST_DELETE";
+}
+export function instanceOfFriendRequestResponseData(
+  object: any
+): object is FriendRequestResponseData {
+  return object.TYPE === "OUT_FRIEND_REQUEST_RESPONSE";
 }
 export function instanceOfResponseMessageData(
   object: any

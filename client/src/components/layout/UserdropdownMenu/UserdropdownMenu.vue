@@ -3,8 +3,7 @@ import { getOwnRoomIDs } from "../../../services/Rooms";
 import { onMounted, watch, ref, onBeforeUnmount } from "vue";
 import { socketStore } from "../../../store/SocketStore";
 import { userdropdownStore } from "../../../store/UserDropdownStore";
-import { IResMsg, IRoomCard } from "../../../interfaces/GeneralInterfaces";
-import { roomStore } from "../../../store/RoomStore";
+import { IResMsg } from "../../../interfaces/GeneralInterfaces";
 import ResMsg from "../ResMsg.vue";
 import InviteToRoomCard from "../InviteToRoomCard.vue";
 

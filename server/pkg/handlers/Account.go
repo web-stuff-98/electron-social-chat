@@ -358,7 +358,7 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conversations := []primitive.ObjectID{}
+	conversationsUnique := make(map[primitive.ObjectID]struct{})
 
 	messagingData := &models.UserMessagingData{}
 	if h.Collections.UserMessagingDataCollection.FindOne(r.Context(), bson.M{"_id": user.ID}).Decode(&messagingData); err != nil {
@@ -371,9 +371,14 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, oi := range messagingData.MessagesReceivedFrom {
-		conversations = append(conversations, oi)
+		conversationsUnique[oi] = struct{}{}
 	}
 	for _, oi := range messagingData.MessagesSentTo {
+		conversationsUnique[oi] = struct{}{}
+	}
+
+	conversations := []primitive.ObjectID{}
+	for oi := range conversationsUnique {
 		conversations = append(conversations, oi)
 	}
 

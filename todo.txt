@@ -8,6 +8,8 @@ Todos in order
  - User online indicator
  - Notifications
  - Alert sounds
+ - Zod & Formik
+ - Go v10 validation for socket handlers
 
 Todos; before completion
  - Audio/Video input device selection

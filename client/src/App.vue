@@ -12,12 +12,22 @@ import {
   parseSocketEventData,
   instanceOfChangeData,
   instanceOfResponseMessageData,
+  instanceOfDirectMessageData,
+  instanceOfDirectMessageUpdateData,
+  instanceOfDirectMessageDeleteData,
+  instanceOfRoomInvitationData,
+  instanceOfRoomInvitationDeleteData,
+  instanceOfRoomInvitationResponseData,
+  instanceOfFriendRequestData,
+  instanceOfFriendRequestDeleteData,
+  instanceOfFriendRequestResponseData,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
 import MessageModal from "./components/messageModal/MessageModal.vue";
 import { IResMsg } from "./interfaces/GeneralInterfaces";
 import UserdropdownMenu from "./components/layout/UserdropdownMenu/UserdropdownMenu.vue";
+import { messagingStore } from "./store/MessagingStore";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -80,7 +90,120 @@ const watchForRoomChanges = (e: MessageEvent) => {
   }
 };
 
-/* ------- Watch for response messages from the socket connection ------- */
+/* ------- Watch for direct messages, invites & friend requests on the socket connection ------- */
+const watchMessaging = (e: MessageEvent) => {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfDirectMessageData(data)) {
+    const convI = messagingStore.conversations.findIndex(
+      (c) =>
+        c.uid ===
+        (data.author = authStore.user?.ID ? data.recipient : data.author)
+    );
+    console.log(convI);
+    if (convI !== -1)
+      messagingStore.conversations[convI].messages.push({
+        ...data,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    else
+      messagingStore.conversations.push({
+        uid: data.author === authStore.user?.ID ? data.recipient : data.author,
+        messages: [
+          {
+            ...data,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ],
+        friend_requests: [],
+        invitations: [],
+      });
+  }
+  if (instanceOfDirectMessageUpdateData(data)) {
+    const convI = messagingStore.conversations.findIndex(
+      (c) =>
+        c.uid ===
+        (data.author = authStore.user?.ID ? data.recipient : data.author)
+    );
+    const msgI = messagingStore.conversations[convI].messages.findIndex(
+      (m) => m.ID === data.ID
+    );
+    messagingStore.conversations[convI].messages[msgI].content = data.content;
+    messagingStore.conversations[convI].messages[msgI].updated_at =
+      new Date().toISOString();
+  }
+  if (instanceOfDirectMessageDeleteData(data)) {
+    const convI = messagingStore.conversations.findIndex(
+      (c) =>
+        c.uid ===
+        (data.author = authStore.user?.ID ? data.recipient : data.author)
+    );
+    const msgI = messagingStore.conversations[convI].messages.findIndex(
+      (m) => m.ID === data.ID
+    );
+    messagingStore.conversations[convI].messages.splice(msgI, 1);
+  }
+  if (instanceOfRoomInvitationData(data)) {
+    const convI = messagingStore.conversations.findIndex(
+      (c) =>
+        c.uid ===
+        (data.author = authStore.user?.ID ? data.recipient : data.author)
+    );
+    if (convI !== -1)
+      messagingStore.conversations[convI].invitations = [
+        ...messagingStore.conversations[convI].invitations,
+        {
+          ...data,
+          accepted: false,
+          declined: false,
+          created_at: new Date().toISOString(),
+        },
+      ];
+    else
+      messagingStore.conversations.push({
+        uid: data.author === authStore.user?.ID ? data.recipient : data.author,
+        messages: [],
+        invitations: [
+          {
+            ...data,
+            accepted: false,
+            declined: false,
+            created_at: new Date().toISOString(),
+          },
+        ],
+        friend_requests: [],
+      });
+  }
+  if (instanceOfRoomInvitationDeleteData(data)) {
+    const convI = messagingStore.conversations.findIndex(
+      (c) =>
+        c.uid ===
+        (data.author = authStore.user?.ID ? data.recipient : data.author)
+    );
+    const invI = messagingStore.conversations[convI].invitations.findIndex(
+      (r) => r.ID === data.ID
+    );
+    messagingStore.conversations[convI].invitations.splice(invI, 1);
+  }
+  if (instanceOfRoomInvitationResponseData(data)) {
+    const convI = messagingStore.conversations.findIndex(
+      (c) =>
+        c.uid ===
+        (data.author = authStore.user?.ID ? data.recipient : data.author)
+    );
+    const invI = messagingStore.conversations[convI].friend_requests.findIndex(
+      (r) => r.ID === data.ID
+    );
+    messagingStore.conversations[convI].invitations[invI].accepted =
+      data.accept;
+    messagingStore.conversations[convI].invitations[invI].declined =
+      !data.accept;
+  }
+};
+
+/* ------- Watch for response messages on the socket connection ------- */
 const watchForResponseMessages = (e: MessageEvent) => {
   const data = parseSocketEventData(e);
   if (!data) return;
@@ -92,7 +215,7 @@ const watchForResponseMessages = (e: MessageEvent) => {
     };
     modalConfirmation.value = () => (showModal.value = false);
     modalCancellation.value = undefined;
-    showModal.value = true
+    showModal.value = true;
   }
 };
 
@@ -101,6 +224,7 @@ watch(socketStore, (_, newVal) => {
     socketStore.socket?.addEventListener("message", watchForUserChanges);
     socketStore.socket?.addEventListener("message", watchForRoomChanges);
     socketStore.socket?.addEventListener("message", watchForResponseMessages);
+    socketStore.socket?.addEventListener("message", watchMessaging);
   } else {
     socketStore.connectSocket(authStore.user?.ID!);
   }
@@ -120,6 +244,7 @@ onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchForUserChanges);
   socketStore.socket?.removeEventListener("message", watchForRoomChanges);
   socketStore.socket?.removeEventListener("message", watchForResponseMessages);
+  socketStore.socket?.removeEventListener("message", watchMessaging);
 });
 
 onMounted(() => {

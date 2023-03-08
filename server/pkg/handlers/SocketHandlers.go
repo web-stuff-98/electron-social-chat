@@ -58,6 +58,9 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "FRIEND_REQUEST":
 		err := friendRequest(data, conn, uid, ss, colls)
 		return err
+	case "FRIEND_REQUEST_DELETE":
+		err := deleteFriendRequest(data, conn, uid, ss, colls)
+		return err
 	case "FRIEND_REQUEST_RESPONSE":
 		err := friendRequestResponse(data, conn, uid, ss, colls)
 		return err
@@ -541,13 +544,11 @@ func directMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 		Author:    uid.Hex(),
 		Recipient: recipientId.Hex(),
 	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  uid,
-		Type: "OUT_DIRECT_MESSAGE",
-		Data: msg,
-	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  recipientId,
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[recipientId] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
 		Type: "OUT_DIRECT_MESSAGE",
 		Data: msg,
 	}
@@ -592,13 +593,11 @@ func directMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 		Author:    uid.Hex(),
 		Recipient: recipientId.Hex(),
 	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  uid,
-		Type: "OUT_DIRECT_MESSAGE_UPDATE",
-		Data: msg,
-	}
-	ss.SendDataToUser <- socketserver.UserDataMessage{
-		Uid:  recipientId,
+	Uids := make(map[primitive.ObjectID]struct{})
+	Uids[uid] = struct{}{}
+	Uids[recipientId] = struct{}{}
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: Uids,
 		Type: "OUT_DIRECT_MESSAGE_UPDATE",
 		Data: msg,
 	}
@@ -773,7 +772,7 @@ func inviteToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *so
 	Uids[recipientId] = struct{}{}
 	ss.SendDataToUsers <- socketserver.UsersDataMessage{
 		Uids: Uids,
-		Type: "OUT_DIRECT_MESSAGE",
+		Type: "OUT_ROOM_INVITATION",
 		Data: msg,
 	}
 
@@ -833,15 +832,16 @@ func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.Object
 	}
 
 	msg := &socketmodels.OutRoomInvitationDelete{
-		ID:     invitationId.Hex(),
-		Author: uid.Hex(),
+		ID:        invitationId.Hex(),
+		Author:    uid.Hex(),
+		Recipient: data.Recipient,
 	}
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}
 	Uids[messagingData.Invitations[invitationIndex].Author] = struct{}{}
 	ss.SendDataToUsers <- socketserver.UsersDataMessage{
 		Uids: Uids,
-		Type: "OUT_INVITATION_DELETE",
+		Type: "OUT_ROOM_INVITATION_DELETE",
 		Data: msg,
 	}
 
@@ -925,15 +925,16 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 			}
 		}
 		msg := &socketmodels.OutRoomInvitationDelete{
-			ID:     invitationId.Hex(),
-			Author: uid.Hex(),
+			ID:        invitationId.Hex(),
+			Author:    messagingData.Invitations[invitationIndex].Author.Hex(),
+			Recipient: uid.Hex(),
 		}
 		Uids := make(map[primitive.ObjectID]struct{})
 		Uids[uid] = struct{}{}
 		Uids[messagingData.Invitations[invitationIndex].Author] = struct{}{}
 		ss.SendDataToUsers <- socketserver.UsersDataMessage{
 			Uids: Uids,
-			Type: "OUT_INVITATION_DELETE",
+			Type: "OUT_ROOM_INVITATION_DELETE",
 			Data: msg,
 		}
 		return deleteIfErr
@@ -953,15 +954,15 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 
 	inv := &socketmodels.OutRoomInvitationResponse{
 		ID:        invitationId.Hex(),
-		Author:    uid.Hex(),
-		Recipient: messagingData.Invitations[invitationIndex].Author.Hex(),
+		Author:    messagingData.Invitations[invitationIndex].Author.Hex(),
+		Recipient: uid.Hex(),
 	}
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}
 	Uids[messagingData.Invitations[invitationIndex].Author] = struct{}{}
 	ss.SendDataToUsers <- socketserver.UsersDataMessage{
 		Uids: Uids,
-		Type: "OUT_INVITATION_RESPONSE",
+		Type: "OUT_ROOM_INVITATION_RESPONSE",
 		Data: inv,
 	}
 
@@ -1013,7 +1014,7 @@ func friendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 			},
 		},
 		"$addToSet": bson.M{
-			// invitations count as messages, even though they are stored in a seperate array
+			// friend requests count as messages, even though they are stored in a seperate array
 			"messages_received_from": uid,
 		},
 	}); err != nil {
@@ -1022,7 +1023,7 @@ func friendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 
 	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
 		"$addToSet": bson.M{
-			// invitations count as messages, even though they are stored in a seperate array
+			// friend requests as messages, even though they are stored in a seperate array
 			"messages_sent_to": recipientId,
 		},
 	}); err != nil {
@@ -1072,7 +1073,6 @@ func deleteFriendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 	if friendRequestIndex == -1 {
 		return fmt.Errorf("Friend request not found")
 	}
-
 	if messagingData.FriendRequests[friendRequestIndex].Author != uid {
 		return fmt.Errorf("Unauthorized")
 	}
@@ -1098,9 +1098,10 @@ func deleteFriendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 		}
 	}
 
-	msg := &socketmodels.OutRoomInvitationDelete{
-		ID:     friendRequestId.Hex(),
-		Author: uid.Hex(),
+	msg := &socketmodels.OutFriendRequestDelete{
+		ID:        friendRequestId.Hex(),
+		Author:    uid.Hex(),
+		Recipient: data.Recipient,
 	}
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}
@@ -1174,8 +1175,9 @@ func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectI
 			}
 		}
 		msg := &socketmodels.OutFriendRequestResponse{
-			ID:     friendRequestId.Hex(),
-			Author: uid.Hex(),
+			ID:        friendRequestId.Hex(),
+			Author:    uid.Hex(),
+			Recipient: data.Recipient,
 		}
 		Uids := make(map[primitive.ObjectID]struct{})
 		Uids[uid] = struct{}{}

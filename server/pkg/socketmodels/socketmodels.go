@@ -154,9 +154,10 @@ type OutInvite struct {
 
 // TYPE: OUT_ROOM_INVITATION_DELETE
 type OutRoomInvitationDelete struct {
-	Type   string `json:"TYPE"`
-	ID     string `json:"ID"`
-	Author string `json:"author"`
+	Type      string `json:"TYPE"`
+	ID        string `json:"ID"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
 }
 
 // TYPE: OUT_ROOM_INVITATION_RESPONSE
@@ -177,9 +178,10 @@ type OutFriendRequest struct {
 
 // TYPE: OUT_FRIEND_REQUEST_DELETE
 type OutFriendRequestDelete struct {
-	Type   string `json:"TYPE"`
-	ID     string `json:"ID"`
-	Author string `json:"author"`
+	Type      string `json:"TYPE"`
+	ID        string `json:"ID"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
 }
 
 // TYPE: OUT_FRIEND_REQUEST_RESPONSE

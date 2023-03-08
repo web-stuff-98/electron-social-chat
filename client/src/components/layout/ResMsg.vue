@@ -28,6 +28,7 @@ defineProps<{ resMsg: IResMsg }>();
   filter: drop-shadow(var(--shadow-medium));
   p {
     margin: 0;
+    padding: 0;
   }
   .res-msg-err-icon {
     width: 1.5rem;
