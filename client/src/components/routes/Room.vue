@@ -235,7 +235,9 @@ function handleMessageSubmit() {
           @input="handleMessageInput"
           type="text"
         />
-        <v-icon name="md-send" />
+        <button type="submit">
+          <v-icon name="md-send" />
+        </button>
       </form>
     </div>
   </div>
@@ -258,7 +260,6 @@ function handleMessageSubmit() {
       border-radius: var(--border-radius-medium);
       height: 100%;
       width: 100%;
-      background: var(--foreground);
       display: flex;
       flex-direction: column;
       padding: var(--padding-medium);
@@ -269,6 +270,7 @@ function handleMessageSubmit() {
         padding: 2px var(--padding-medium);
         width: 100%;
         text-align: left;
+        border: 2px solid var(--base-light);
       }
     }
   }
@@ -292,7 +294,6 @@ function handleMessageSubmit() {
       border: 1px solid var(--base-light);
       border-radius: var(--border-radius-medium);
       overflow: hidden;
-      background: var(--foreground);
       display: flex;
       flex-direction: column;
       .messages-list-container {
@@ -331,10 +332,15 @@ function handleMessageSubmit() {
       gap: var(--padding-medium);
       align-items: center;
       box-sizing: border-box;
+      button {
+        border: none;
+        background: none;
+        box-shadow: none;
+        padding: 0;
+      }
       input {
         flex-grow: 1;
         box-sizing: border-box;
-        background: var(--foreground);
       }
       svg {
         height: 2rem;

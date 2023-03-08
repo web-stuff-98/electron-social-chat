@@ -23,34 +23,6 @@ type Conversation = {
   friend_requests: IFriendRequest[];
 };
 
-watch(currentConversationUid, async (_, newVal) => {
-  if (!newVal) return;
-  const abortController = new AbortController();
-  try {
-    resMsg.value = { msg: "", err: false, pen: true };
-    const data: Conversation = await getConversation(newVal);
-    const convI = messagingStore.conversations.findIndex(
-      (c) => c.uid === newVal
-    );
-    if (convI === -1)
-      messagingStore.conversations.push({
-        uid: newVal,
-        ...data,
-      });
-    else if (newVal !== "")
-      messagingStore.conversations[convI] = {
-        uid: newVal,
-        ...data,
-      };
-    resMsg.value = { msg: "", err: false, pen: false };
-  } catch (e) {
-    resMsg.value = { msg: `${e}`, err: false, pen: false };
-  }
-  return () => {
-    abortController.abort();
-  };
-});
-
 onMounted(async () => {
   const abortController = new AbortController();
   try {
@@ -96,6 +68,32 @@ function handleFormSubmit() {
   msgInputRef.value = "";
   msgInput.value = "";
 }
+
+async function openConv(uid: string) {
+  const abortController = new AbortController();
+  try {
+    resMsg.value = { msg: "", err: false, pen: true };
+    const data: Conversation = await getConversation(uid);
+    const convI = messagingStore.conversations.findIndex((c) => c.uid === uid);
+    if (convI === -1)
+      messagingStore.conversations.push({
+        uid,
+        ...data,
+      });
+    else if (uid !== "")
+      messagingStore.conversations[convI] = {
+        uid,
+        ...data,
+      };
+    currentConversationUid.value = uid;
+    resMsg.value = { msg: "", err: false, pen: false };
+  } catch (e) {
+    resMsg.value = { msg: `${e}`, err: false, pen: false };
+  }
+  return () => {
+    abortController.abort();
+  };
+}
 </script>
 
 <template>
@@ -103,7 +101,7 @@ function handleFormSubmit() {
     <div class="messaging-container">
       <div v-if="!currentConversationUid" class="users">
         <button
-          @click="currentConversationUid = uid"
+          @click="() => openConv(uid)"
           class="user"
           v-for="{ uid } in messagingStore.conversations"
         >
@@ -172,7 +170,6 @@ function handleFormSubmit() {
     flex-direction: column;
     width: 100%;
     flex-grow: 1;
-    padding: 3px;
     box-sizing: border-box;
     border: 1px solid var(--base-light);
     border-radius: var(--border-radius-medium);
@@ -184,6 +181,7 @@ function handleFormSubmit() {
       width: 100%;
       box-sizing: border-box;
       overflow-y: auto;
+      padding: 3px;
       .user {
         padding: 0;
         cursor: pointer;
@@ -198,8 +196,9 @@ function handleFormSubmit() {
       gap: var(--padding-medium);
       align-items: center;
       box-sizing: border-box;
-      padding: 0;
       width: 100%;
+      padding: 3px;
+      box-sizing: border-box;
       input {
         flex-grow: 1;
         box-sizing: border-box;
@@ -226,6 +225,7 @@ function handleFormSubmit() {
       flex-grow: 1;
       width: 100%;
       position: relative;
+      box-sizing: border-box;
       .messages-list {
         display: flex;
         flex-direction: column;

@@ -43,7 +43,7 @@ const watchForUserChanges = (e: MessageEvent) => {
   if (!data) return;
   if (instanceOfChangeData(data)) {
     if (data.ENTITY === "USER") {
-      if (data.METHOD === "UPDATE" || "UPDATE_IMAGE") {
+      if (data.METHOD === "UPDATE") {
         if (data.DATA.ID === authStore.user?.ID) {
           authStore.user = {
             ...authStore.user,
@@ -53,6 +53,8 @@ const watchForUserChanges = (e: MessageEvent) => {
           const i = userStore.users.findIndex((u) => u.ID === data.DATA.ID);
           userStore.users[i] = { ...userStore.users[i], ...data.DATA };
         }
+      } else if (data.METHOD === "UPDATE_IMAGE") {
+        userStore.cacheUserData(data.DATA.ID, true);
       }
     }
   }
@@ -98,7 +100,7 @@ const watchMessaging = (e: MessageEvent) => {
     const convI = messagingStore.conversations.findIndex(
       (c) =>
         c.uid ===
-        (data.author = authStore.user?.ID ? data.recipient : data.author)
+        (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
     console.log(convI);
     if (convI !== -1)
@@ -125,7 +127,7 @@ const watchMessaging = (e: MessageEvent) => {
     const convI = messagingStore.conversations.findIndex(
       (c) =>
         c.uid ===
-        (data.author = authStore.user?.ID ? data.recipient : data.author)
+        (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
     const msgI = messagingStore.conversations[convI].messages.findIndex(
       (m) => m.ID === data.ID
@@ -138,7 +140,7 @@ const watchMessaging = (e: MessageEvent) => {
     const convI = messagingStore.conversations.findIndex(
       (c) =>
         c.uid ===
-        (data.author = authStore.user?.ID ? data.recipient : data.author)
+        (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
     const msgI = messagingStore.conversations[convI].messages.findIndex(
       (m) => m.ID === data.ID
@@ -149,7 +151,7 @@ const watchMessaging = (e: MessageEvent) => {
     const convI = messagingStore.conversations.findIndex(
       (c) =>
         c.uid ===
-        (data.author = authStore.user?.ID ? data.recipient : data.author)
+        (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
     if (convI !== -1)
       messagingStore.conversations[convI].invitations = [
@@ -180,7 +182,7 @@ const watchMessaging = (e: MessageEvent) => {
     const convI = messagingStore.conversations.findIndex(
       (c) =>
         c.uid ===
-        (data.author = authStore.user?.ID ? data.recipient : data.author)
+        (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
     const invI = messagingStore.conversations[convI].invitations.findIndex(
       (r) => r.ID === data.ID
@@ -191,7 +193,7 @@ const watchMessaging = (e: MessageEvent) => {
     const convI = messagingStore.conversations.findIndex(
       (c) =>
         c.uid ===
-        (data.author = authStore.user?.ID ? data.recipient : data.author)
+        (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
     const invI = messagingStore.conversations[convI].friend_requests.findIndex(
       (r) => r.ID === data.ID

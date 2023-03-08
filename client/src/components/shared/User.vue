@@ -50,25 +50,25 @@ onBeforeUnmount(() => {
     class="user"
   >
     <div
-      :style="small ? { width: '1.5rem', height: '1.5rem' } : {}"
-      v-bind:style="{ backgroundImage: `url(${user?.base64pfp})` }"
+      :style="{
+        ...(small ? { width: '1.5rem', height: '1.5rem' } : {}),
+        ...(user?.base64pfp
+          ? { backgroundImage: `url(${user?.base64pfp})` }
+          : {}),
+      }"
       class="pfp"
     >
       <v-icon v-if="!user?.base64pfp" name="la-user" />
     </div>
     <div class="name-date-time">
-      <div
-      :style="small ? { fontSize:'0.7rem'} : {}"
-       class="name">
+      <div :style="small ? { fontSize: '0.7rem' } : {}" class="name">
         {{ user?.username }}
       </div>
       <div v-if="dateTime" class="date-time">
-        <span
-        :style="small ? { fontSize:'0.55rem'} : {}"
-        >{{ new Intl.DateTimeFormat("en-GB").format(dateTime) }}</span>
-        <span
-        :style="small ? { fontSize:'0.55rem'} : {}"
-        >{{
+        <span :style="small ? { fontSize: '0.55rem' } : {}">{{
+          new Intl.DateTimeFormat("en-GB").format(dateTime)
+        }}</span>
+        <span :style="small ? { fontSize: '0.55rem' } : {}">{{
           new Intl.DateTimeFormat("default", {
             hour: "numeric",
             minute: "numeric",
