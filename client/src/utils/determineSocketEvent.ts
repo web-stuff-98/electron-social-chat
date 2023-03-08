@@ -24,8 +24,10 @@ export type RoomMessageUpdateData = Omit<
 
 export type ResponseMessageData = Omit<
   {
-    msg: string;
-    err: boolean;
+    DATA: {
+      msg: string;
+      err: boolean;
+    };
   },
   "TYPE"
 >;

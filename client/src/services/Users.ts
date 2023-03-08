@@ -6,3 +6,13 @@ export const searchUsers = (username: string) =>
     method: "POST",
     data: { username },
   });
+
+export const getConversation = (uid: string) =>
+  makeRequest(`/api/acc/conversation/${uid}`, {
+    withCredentials: true,
+  });
+
+export const getConversations = () =>
+  makeRequest("/api/acc/conversations", {
+    withCredentials: true,
+  });

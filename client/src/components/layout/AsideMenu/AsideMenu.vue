@@ -111,6 +111,7 @@ aside {
       text-align: left;
       font-size: 1rem;
       position: relative;
+      box-shadow: none;
       span {
         width: 3px;
         height: 3px;

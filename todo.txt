@@ -1,14 +1,20 @@
 Todos in order
+ - Fix weird ResMsg component problems
+ - Logout/Change account buttons... deleted by accident
+ - Do client code for messaging
+ - Do client code for banning/blocking/inviting users & friend requests
+ - Attachment uploads
+ - WebRTC network for video sharing
+ - User online indicator
+ - Notifications
+ - Alert sounds
 
-Problem:
- - Figure out how to get 2 instances of the dev client running
+Todos; before completion
+ - Audio/Video input device selection
+ - Screen sharing toggle
+ - Dark/Light theme
+ - UI/UX improvements
+ - Styling improvements
 
-First:
- - Do client code for banning/blocking/inviting users and sending friend requests
-
-Future:
- - User actions dropdown menu
- - Manual test direct messaging & invitations
-
-and lots more
+And lots more
 

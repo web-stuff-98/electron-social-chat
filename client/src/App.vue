@@ -17,7 +17,7 @@ import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
 import MessageModal from "./components/messageModal/MessageModal.vue";
 import { IResMsg } from "./interfaces/GeneralInterfaces";
-import UserdropdownMenu from "./components/layout/UserdropdownMenu.vue";
+import UserdropdownMenu from "./components/layout/UserdropdownMenu/UserdropdownMenu.vue";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -86,8 +86,8 @@ const watchForResponseMessages = (e: MessageEvent) => {
   if (!data) return;
   if (instanceOfResponseMessageData(data)) {
     modalMsg.value = {
-      msg: data.msg,
-      err: data.err,
+      msg: data.DATA.msg,
+      err: data.DATA.err,
       pen: false,
     };
     modalConfirmation.value = () => (showModal.value = false);

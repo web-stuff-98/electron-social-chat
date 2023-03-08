@@ -338,7 +338,6 @@ function handleMessageSubmit() {
       }
       svg {
         height: 2rem;
-        widows: 2rem;
         filter: drop-shadow(var(--shadow-medium));
       }
     }

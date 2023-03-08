@@ -32,7 +32,7 @@ import { authStore } from "../../store/AuthStore";
     margin: 0;
     border: none;
     border-bottom: 2px solid var(--base);
-    -webkit-mask-image: linear-gradient(
+    --webkit-mask-image: linear-gradient(
       to right,
       transparent 0%,
       black 50%,

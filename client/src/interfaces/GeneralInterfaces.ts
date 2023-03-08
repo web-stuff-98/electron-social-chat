@@ -28,3 +28,25 @@ export interface IRoom extends IRoomCard {
   main_channel: string;
   is_private: boolean;
 }
+export interface IDirectMessage {
+  ID: string;
+  content: string;
+  author: string;
+  created_at: string;
+  updated_at: string;
+}
+export interface IInvitation {
+  ID: string;
+  author: string;
+  room_id: string;
+  created_at: string;
+  accepted: boolean;
+  declined: boolean;
+}
+export interface IFriendRequest {
+  ID: string;
+  author: string;
+  created_at: string;
+  accepted: boolean;
+  declined: boolean;
+}

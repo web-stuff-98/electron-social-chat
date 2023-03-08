@@ -67,6 +67,15 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "UNBLOCK_USER":
 		err := unblockUser(data, conn, uid, ss, colls)
 		return err
+	case "ROOM_INVITATION":
+		err := inviteToRoom(data, conn, uid, ss, colls)
+		return err
+	case "ROOM_INVITATION_RESPONSE":
+		err := invitationToRoomResponse(data, conn, uid, ss, colls)
+		return err
+	case "ROOM_INVITATION_DELETE":
+		err := deleteInvitationToRoom(data, conn, uid, ss, colls)
+		return err
 	}
 	return fmt.Errorf("Unrecognized event type")
 }
@@ -170,22 +179,28 @@ func openRoomChannel(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss 
 	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&roomExternalData); err != nil {
 		return err
 	}
-
-	for _, oi := range roomExternalData.Banned {
-		if oi == uid {
-			return fmt.Errorf("Banned")
-		}
+	room := &models.Room{}
+	if err := colls.RoomCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&room); err != nil {
+		return err
 	}
-	if roomExternalData.Private {
-		member := false
-		for _, oi := range roomExternalData.Members {
+
+	if uid != room.Author {
+		for _, oi := range roomExternalData.Banned {
 			if oi == uid {
-				member = true
-				break
+				return fmt.Errorf("Banned")
 			}
 		}
-		if !member {
-			return fmt.Errorf("Not a member")
+		if roomExternalData.Private {
+			member := false
+			for _, oi := range roomExternalData.Members {
+				if oi == uid {
+					member = true
+					break
+				}
+			}
+			if !member {
+				return fmt.Errorf("Not a member")
+			}
 		}
 	}
 
@@ -253,22 +268,28 @@ func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *soc
 	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&roomExternalData); err != nil {
 		return err
 	}
-
-	for _, oi := range roomExternalData.Banned {
-		if oi == uid {
-			return fmt.Errorf("Banned")
-		}
+	room := &models.Room{}
+	if err := colls.RoomCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&room); err != nil {
+		return err
 	}
-	if roomExternalData.Private {
-		member := false
-		for _, oi := range roomExternalData.Members {
+
+	if room.Author != uid {
+		for _, oi := range roomExternalData.Banned {
 			if oi == uid {
-				member = true
-				break
+				return fmt.Errorf("Banned")
 			}
 		}
-		if !member {
-			return fmt.Errorf("Not a member")
+		if roomExternalData.Private {
+			member := false
+			for _, oi := range roomExternalData.Members {
+				if oi == uid {
+					member = true
+					break
+				}
+			}
+			if !member {
+				return fmt.Errorf("Not a member")
+			}
 		}
 	}
 
@@ -333,22 +354,28 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&roomExternalData); err != nil {
 		return err
 	}
-
-	for _, oi := range roomExternalData.Banned {
-		if oi == uid {
-			return fmt.Errorf("Banned")
-		}
+	room := &models.Room{}
+	if err := colls.RoomChannelCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&room); err != nil {
+		return err
 	}
-	if roomExternalData.Private {
-		member := false
-		for _, oi := range roomExternalData.Members {
+
+	if room.Author != uid {
+		for _, oi := range roomExternalData.Banned {
 			if oi == uid {
-				member = true
-				break
+				return fmt.Errorf("Banned")
 			}
 		}
-		if !member {
-			return fmt.Errorf("Not a member")
+		if roomExternalData.Private {
+			member := false
+			for _, oi := range roomExternalData.Members {
+				if oi == uid {
+					member = true
+					break
+				}
+			}
+			if !member {
+				return fmt.Errorf("Not a member")
+			}
 		}
 	}
 
@@ -408,22 +435,28 @@ func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&roomExternalData); err != nil {
 		return err
 	}
-
-	for _, oi := range roomExternalData.Banned {
-		if oi == uid {
-			return fmt.Errorf("Banned")
-		}
+	room := &models.Room{}
+	if err := colls.RoomCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&room); err != nil {
+		return err
 	}
-	if roomExternalData.Private {
-		member := false
-		for _, oi := range roomExternalData.Members {
+
+	if room.Author != uid {
+		for _, oi := range roomExternalData.Banned {
 			if oi == uid {
-				member = true
-				break
+				return fmt.Errorf("Banned")
 			}
 		}
-		if !member {
-			return fmt.Errorf("Not a member")
+		if roomExternalData.Private {
+			member := false
+			for _, oi := range roomExternalData.Members {
+				if oi == uid {
+					member = true
+					break
+				}
+			}
+			if !member {
+				return fmt.Errorf("Not a member")
+			}
 		}
 	}
 
@@ -815,7 +848,7 @@ func deleteInvitationToRoom(b []byte, conn *websocket.Conn, uid primitive.Object
 	return nil
 }
 
-func invitationResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
 	var data socketmodels.RoomInvitationResponse
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err

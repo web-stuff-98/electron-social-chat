@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import { getOwnRoomIDs } from "../../services/Rooms";
+import { getOwnRoomIDs } from "../../../services/Rooms";
 import { onMounted, watch, ref, onBeforeUnmount } from "vue";
-import { socketStore } from "../../store/SocketStore";
-import { userdropdownStore } from "../../store/UserDropdownStore";
-import { IResMsg, IRoomCard } from "../../interfaces/GeneralInterfaces";
-import { roomStore } from "../../store/RoomStore";
-import ResMsg from "./ResMsg.vue";
-import InviteToRoomCard from "./InviteToRoomCard.vue";
+import { socketStore } from "../../../store/SocketStore";
+import { userdropdownStore } from "../../../store/UserDropdownStore";
+import { IResMsg, IRoomCard } from "../../../interfaces/GeneralInterfaces";
+import { roomStore } from "../../../store/RoomStore";
+import ResMsg from "../ResMsg.vue";
+import InviteToRoomCard from "../InviteToRoomCard.vue";
 
 enum EUserdropdownMenuSection {
   "MENU" = "Menu",
@@ -96,6 +96,28 @@ function banClicked() {
   );
   userdropdownStore.open = false;
 }
+
+const msgInputRef = ref<HTMLCanvasElement | null>();
+const msgInput = ref("");
+function handleMsgInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (!target || !target.value || target.value.length > 300) return;
+  msgInput.value = target.value;
+}
+function submitDirectMessage() {
+  if (msgInput.value == "" || msgInput.value.length > 300) return;
+  socketStore.send(
+    JSON.stringify({
+      event_type: "DIRECT_MESSAGE",
+      content: msgInput.value,
+      recipient: userdropdownStore.subject,
+    })
+  );
+  // @ts-ignore
+  msgInputRef.value = "";
+  msgInput.value = "";
+  userdropdownStore.open = false;
+}
 </script>
 
 <template>
@@ -115,13 +137,16 @@ function banClicked() {
       <button v-if="userdropdownStore.roomId" @click="banClicked">Ban</button>
     </div>
     <!-- Direct message section -->
-    <div
+    <form
+      @submit.prevent="submitDirectMessage"
       v-if="section === EUserdropdownMenuSection.DIRECT_MESSAGE"
       class="direct-message"
     >
-      <input />
-      <v-icon name="md-send" />
-    </div>
+      <input maxlength="300" @input="handleMsgInput" ref="msgInputRef" />
+      <button type="submit">
+        <v-icon name="md-send" />
+      </button>
+    </form>
     <!-- Invite to room section -->
     <div
       v-if="section === EUserdropdownMenuSection.INVITE_TO_ROOM"
@@ -163,10 +188,14 @@ function banClicked() {
     display: flex;
     flex-direction: column;
     gap: 2px;
-  }
-  .direct-message {
     flex-direction: row;
     align-items: center;
+    button {
+      display: flex;
+      border: none;
+      box-shadow: none;
+      background: none;
+    }
   }
   .invite-to-room {
     display: flex;
