@@ -21,6 +21,7 @@ import { authStore } from "../../store/AuthStore";
   justify-content: center;
   box-sizing: border-box;
   pointer-events: none;
+  background: var(--background-radial);
   filter: drop-shadow(0px 3px 4px black);
   h1,
   h2 {

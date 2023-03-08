@@ -53,6 +53,7 @@ function handleDeleteMessage() {
   >
     <div class="user-container">
       <User
+        :menu="msg.author !== authStore.user?.ID"
         :dateTime="new Date(msg.created_at)"
         :reverse="reverse"
         :uid="msg.author"
@@ -140,10 +141,6 @@ function handleDeleteMessage() {
         width: 90%;
         height: 90%;
       }
-    }
-    .delete-button {
-    }
-    .edit-button {
     }
   }
 }

@@ -13,8 +13,8 @@ import ResMsg from "../../ResMsg.vue";
 import { userStore } from "../../../../store/UserStore";
 import { socketStore } from "../../../../store/SocketStore";
 import { messagingStore } from "../../../../store/MessagingStore";
+import DirectMessage from "../../DirectMessage.vue";
 
-const currentConversationUid = ref("");
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 type Conversation = {
@@ -61,7 +61,7 @@ function handleFormSubmit() {
     JSON.stringify({
       event_type: "DIRECT_MESSAGE",
       content: msgInput.value,
-      recipient: currentConversationUid.value,
+      recipient: messagingStore.currentConversationUid,
     })
   );
   // @ts-ignore
@@ -85,7 +85,7 @@ async function openConv(uid: string) {
         uid,
         ...data,
       };
-    currentConversationUid.value = uid;
+    messagingStore.currentConversationUid = uid;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: false, pen: false };
@@ -99,7 +99,7 @@ async function openConv(uid: string) {
 <template>
   <div class="container">
     <div class="messaging-container">
-      <div v-if="!currentConversationUid" class="users">
+      <div v-if="!messagingStore.currentConversationUid" class="users">
         <button
           @click="() => openConv(uid)"
           class="user"
@@ -108,29 +108,23 @@ async function openConv(uid: string) {
           <User :uid="uid" />
         </button>
       </div>
-      <div v-if="currentConversationUid" class="messages-container">
+      <div
+        v-if="messagingStore.currentConversationUid"
+        class="messages-container"
+      >
         <div class="messages-list">
-          <div
+          <DirectMessage
             v-for="msg in messagingStore.conversations.find(
-              (c) => c.uid === currentConversationUid
+              (c) => c.uid === messagingStore.currentConversationUid
             )?.messages || []"
-            :class="
-              msg.author === authStore.user?.ID ? 'message' : 'message-reversed'
-            "
-          >
-            <User
-              :reverse="msg.author !== authStore.user?.ID"
-              :small="true"
-              :dateTime="new Date(msg.created_at)"
-              :uid="msg.author"
-            />
-            <p>
-              {{ msg.content }}
-            </p>
-          </div>
+            :msg="msg"
+          />
         </div>
       </div>
-      <form @submit.prevent="handleFormSubmit" v-if="currentConversationUid">
+      <form
+        @submit.prevent="handleFormSubmit"
+        v-if="messagingStore.currentConversationUid"
+      >
         <input
           ref="msgInputRef"
           @input="handleFormInput"
@@ -144,8 +138,8 @@ async function openConv(uid: string) {
       </form>
     </div>
     <button
-      v-if="currentConversationUid"
-      @click="currentConversationUid = ''"
+      v-if="messagingStore.currentConversationUid"
+      @click="messagingStore.currentConversationUid = ''"
       type="button"
     >
       All conversations
@@ -237,29 +231,6 @@ async function openConv(uid: string) {
         overflow-y: auto;
         box-sizing: border-box;
         padding-bottom: var(--padding-medium);
-        .message,
-        .message-reversed {
-          width: 100%;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          box-sizing: border-box;
-          text-align: left;
-          p {
-            text-align: left;
-            font-size: 0.6rem;
-            padding: 0 var(--padding-medium);
-            margin: 0;
-          }
-        }
-        .message-reversed {
-          align-items: flex-end;
-          text-align: right;
-          p {
-            text-align: right;
-          }
-        }
       }
     }
   }

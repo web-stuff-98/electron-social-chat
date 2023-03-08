@@ -154,15 +154,12 @@ const watchMessaging = (e: MessageEvent) => {
         (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
     if (convI !== -1)
-      messagingStore.conversations[convI].invitations = [
-        ...messagingStore.conversations[convI].invitations,
-        {
-          ...data,
-          accepted: false,
-          declined: false,
-          created_at: new Date().toISOString(),
-        },
-      ];
+      messagingStore.conversations[convI].invitations.push({
+        ...data,
+        accepted: false,
+        declined: false,
+        created_at: new Date().toISOString(),
+      });
     else
       messagingStore.conversations.push({
         uid: data.author === authStore.user?.ID ? data.recipient : data.author,
@@ -293,7 +290,7 @@ onMounted(() => {
       :cancellationCallback="modalCancellation"
     />
     <UserdropdownMenu v-if="authStore.user" />
-    <main :style="showAside ? { 'padding-left': 'var(--aside-width)' } : {}">
+    <main :style="showAside && authStore.user ? { 'padding-left': 'var(--aside-width)' } : {}">
       <router-view />
     </main>
     <AsideMenu
@@ -310,7 +307,7 @@ onMounted(() => {
   display: flex;
   height: 100%;
   box-sizing: border-box;
-  background: var(--background-radial);
+  background: var(--background);
 
   main {
     display: flex;

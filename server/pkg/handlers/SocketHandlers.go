@@ -358,7 +358,7 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 		return err
 	}
 	room := &models.Room{}
-	if err := colls.RoomChannelCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&room); err != nil {
+	if err := colls.RoomCollection.FindOne(context.Background(), bson.M{"_id": channel.RoomID}).Decode(&room); err != nil {
 		return err
 	}
 
@@ -402,7 +402,6 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 		Content: data.Content,
 		ID:      msgId.Hex(),
 	})
-
 	if err != nil {
 		return err
 	}
@@ -560,6 +559,14 @@ func directMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 	var data socketmodels.DirectMessageUpdate
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
+	}
+
+	if strings.TrimSpace(data.Content) == "" {
+		return fmt.Errorf("Cannot submit an empty message")
+	}
+
+	if len(data.Content) > 300 {
+		return fmt.Errorf("Max 300 characters")
 	}
 
 	recipientId, err := primitive.ObjectIDFromHex(data.Recipient)
@@ -1252,6 +1259,32 @@ func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 		},
 	}); err != nil {
 		return nil
+	}
+
+	rooms := []models.Room{}
+	if cursor, err := colls.RoomCollection.Find(context.Background(), bson.M{"author": uid}); err != nil {
+		cursor.Close(context.Background())
+		return err
+	} else {
+		cursor.All(context.Background(), rooms)
+		cursor.Close(context.Background())
+		roomIds := []primitive.ObjectID{}
+		for _, r := range rooms {
+			roomIds = append(roomIds, r.ID)
+		}
+		if _, err := colls.RoomExternalDataCollection.UpdateMany(context.Background(), bson.M{"_id": bson.M{"$in": roomIds}}, bson.M{
+			"$pull": bson.M{
+				"messages": bson.M{
+					"author": uid,
+				},
+				"members": uid,
+			},
+			"$addToSet": bson.M{
+				"banned": uid,
+			},
+		}); err != nil {
+			return err
+		}
 	}
 
 	return nil

@@ -1,14 +1,10 @@
 <script lang="ts" setup>
 import { useRoute } from "vue-router";
-import {
-  IRoom,
-  IResMsg,
-  IRoomChannel,
-} from "../../interfaces/GeneralInterfaces";
+import { IResMsg } from "../../interfaces/GeneralInterfaces";
 import ResMsg from "../layout/ResMsg.vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
 import { roomStore } from "../../store/RoomStore";
-import { ref, watch, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { socketStore } from "../../store/SocketStore";
 import RoomMessage from "../layout/RoomMessage.vue";
 import { authStore } from "../../store/AuthStore";
@@ -101,37 +97,6 @@ onBeforeUnmount(async () => {
   socketStore.socket?.removeEventListener("message", messageEventListener);
 });
 
-watch(roomChannelStore, async (oldVal, newVal) => {
-  if (!newVal.currentChannel) return;
-  if (oldVal.currentChannel === newVal.currentChannel) return;
-  try {
-    if (oldVal.currentChannel) {
-      socketStore.send(
-        JSON.stringify({
-          event_type: "ROOM_EXIT_CHANNEL",
-          channel: oldVal.currentChannel,
-        })
-      );
-    }
-    await roomChannelStore.getFullDataForChannel(
-      newVal.currentChannel,
-      route.params.id as string
-    );
-    socketStore.send(
-      JSON.stringify({
-        event_type: "ROOM_OPEN_CHANNEL",
-        channel: newVal.currentChannel,
-      })
-    );
-  } catch (e) {
-    resMsg.value = {
-      msg: `Error retreiving channel data: ${e}`,
-      err: true,
-      pen: false,
-    };
-  }
-});
-
 function handleMessageInput(e: Event) {
   const target = e.target as HTMLInputElement;
   if (target.value.length > 300 || !target.value.trim()) return;
@@ -147,6 +112,34 @@ function handleMessageSubmit() {
     })
   );
   messageInput.value = "";
+}
+
+async function openChannel(id: string) {
+  if (roomChannelStore.currentChannel === id) return;
+  try {
+    if (roomChannelStore.currentChannel) {
+      socketStore.send(
+        JSON.stringify({
+          event_type: "ROOM_EXIT_CHANNEL",
+          channel: roomChannelStore.currentChannel,
+        })
+      );
+    }
+    await roomChannelStore.getFullDataForChannel(id, route.params.id as string);
+    roomChannelStore.currentChannel = id;
+    socketStore.send(
+      JSON.stringify({
+        event_type: "ROOM_OPEN_CHANNEL",
+        channel: id,
+      })
+    );
+  } catch (e) {
+    resMsg.value = {
+      msg: `Error retreiving channel data: ${e}`,
+      err: true,
+      pen: false,
+    };
+  }
 }
 </script>
 
@@ -189,7 +182,7 @@ function handleMessageSubmit() {
           )"
         >
           <button
-            @click="roomChannelStore.currentChannel = channel.ID"
+            @click="openChannel(channel.ID)"
             type="button"
             class="channel"
             :style="

@@ -27,6 +27,7 @@ import {
   BiCaretLeft,
   BiCaretRight,
 } from "oh-vue-icons/icons";
+import { authStore } from "./store/AuthStore";
 
 addIcons(
   IoClose,
@@ -58,6 +59,13 @@ const routes = [
 const router = createRouter({
   history: createWebHashHistory(),
   routes,
+});
+
+router.beforeEach(async (to) => {
+  if (!authStore.user && to.path !== "/") {
+    router.push("/")
+    return "/";
+  }
 });
 
 createApp(App)

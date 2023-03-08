@@ -180,14 +180,21 @@ function submitDirectMessage() {
   align-items: flex-end;
   border-radius: var(--border-radius-medium);
   z-index: 100;
-  .menu,
-  .direct-message {
+  .menu {
     padding: 0;
     width: fit-content;
     display: flex;
-    flex-direction: column;
     gap: 2px;
-    flex-direction: row;
+    flex-direction: column;
+    align-items: center;
+    button {
+      display: flex;
+    }
+  }
+  .direct-message {
+    display: flex;
+    gap: 2px;
+    display: flex;
     align-items: center;
     button {
       display: flex;

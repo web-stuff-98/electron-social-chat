@@ -6,7 +6,7 @@ import CreateRoom from "./sections/CreateRoom.vue";
 import ExploreRooms from "./sections/ExploreRooms.vue";
 import DirectMessages from "./sections/DirectMessages.vue";
 import FindUser from "./sections/FindUser.vue";
-import Settings from "./sections/Settings.vue";
+import { authStore } from "../../../store/AuthStore";
 
 enum EAsideSection {
   "PROFILE" = "Profile",
@@ -19,6 +19,10 @@ enum EAsideSection {
 
 const section = ref<EAsideSection>(EAsideSection.PROFILE);
 defineProps<{ showAside: boolean; toggleShowAside: Function }>();
+
+function logout() {
+  authStore.logout();
+}
 </script>
 
 <template>
@@ -53,6 +57,7 @@ defineProps<{ showAside: boolean; toggleShowAside: Function }>();
         Find user
         <span v-if="section === EAsideSection.FIND_USER" />
       </button>
+      <button @click="logout">Log out</button>
     </div>
     <div class="container">
       <div class="content">

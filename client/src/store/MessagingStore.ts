@@ -12,8 +12,10 @@ interface IMessagingStore {
     friend_requests: IFriendRequest[];
     invitations: IInvitation[];
   }[];
+  currentConversationUid: string;
 }
 
 export const messagingStore: IMessagingStore = reactive({
   conversations: [],
+  currentConversationUid: "",
 });
