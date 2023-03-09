@@ -1,6 +1,13 @@
 <script lang="ts" setup>
 import { authStore } from "../../../../store/AuthStore";
-import { ref, onMounted, onBeforeUnmount, watch } from "vue";
+import {
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  watchEffect,
+  nextTick,
+} from "vue";
 import {
   IResMsg,
   IDirectMessage,
@@ -14,36 +21,84 @@ import { userStore } from "../../../../store/UserStore";
 import { socketStore } from "../../../../store/SocketStore";
 import { messagingStore } from "../../../../store/MessagingStore";
 import DirectMessage from "../../DirectMessage.vue";
+import {
+  instanceOfDirectMessageData,
+  parseSocketEventData,
+} from "../../../../utils/determineSocketEvent";
+import FriendRequest from "../../FriendRequest.vue";
+import Invitation from "../../Invitation.vue";
 
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
-type Conversation = {
-  messages: IDirectMessage[];
-  invitations: IInvitation[];
-  friend_requests: IFriendRequest[];
-};
+enum EListSection {
+  "MESSAGING" = "Messaging",
+  "FRIEND_REQUESTS" = "Friend requests",
+  "INVITATIONS" = "Invitations",
+}
+const listSection = ref(EListSection.MESSAGING);
+const listBottomRef = ref<HTMLCanvasElement | null>();
 
 onMounted(async () => {
   const abortController = new AbortController();
+  messagingStore.currentConversationUid = "";
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const uids: string[] = await getConversations();
+    const {
+      conversations: uids,
+      friend_requests,
+      invitations,
+    }: {
+      conversations: string[];
+      friend_requests: IFriendRequest[];
+      invitations: IInvitation[];
+    } = await getConversations();
     uids.forEach((uid) => {
-      userStore.cacheUserData(uid);
+      userStore.cacheUserData(uid, true);
     });
     messagingStore.conversations = uids.map((uid) => ({
       uid,
       messages: [],
-      invitations: [],
-      friend_requests: [],
     }));
+    messagingStore.friend_requests = friend_requests;
+    messagingStore.invitations = invitations;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
+
+  socketStore.socket?.addEventListener("message", messageEventListener);
+
   return () => {
     abortController.abort();
   };
+});
+
+watch(listBottomRef, async () => {
+  await nextTick(() => {
+    // @ts-ignore
+    listBottomRef.value?.scrollIntoView({ behavior: "auto" });
+  });
+});
+
+async function messageEventListener(e: MessageEvent) {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfDirectMessageData(data)) {
+    if (
+      data.author === authStore.user?.ID ||
+      data.author === messagingStore.currentConversationUid
+    ) {
+      if (listBottomRef) {
+        await nextTick(() => {
+          listBottomRef.value?.scrollIntoView({ behavior: "auto" });
+        });
+      }
+    }
+  }
+}
+
+onBeforeUnmount(() => {
+  socketStore.socket?.removeEventListener("message", messageEventListener);
 });
 
 const msgInput = ref("");
@@ -73,17 +128,17 @@ async function openConv(uid: string) {
   const abortController = new AbortController();
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const data: Conversation = await getConversation(uid);
+    const messages: IDirectMessage[] = await getConversation(uid);
     const convI = messagingStore.conversations.findIndex((c) => c.uid === uid);
     if (convI === -1)
       messagingStore.conversations.push({
         uid,
-        ...data,
+        messages,
       });
     else if (uid !== "")
       messagingStore.conversations[convI] = {
         uid,
-        ...data,
+        messages,
       };
     messagingStore.currentConversationUid = uid;
     resMsg.value = { msg: "", err: false, pen: false };
@@ -99,7 +154,36 @@ async function openConv(uid: string) {
 <template>
   <div class="container">
     <div class="messaging-container">
-      <div v-if="!messagingStore.currentConversationUid" class="users">
+      <div class="friend-requests-invitations-buttons">
+        <button
+          @click="listSection = EListSection.MESSAGING"
+          v-if="listSection !== EListSection.MESSAGING"
+          :style="{ width: '100%', fontSize: '0.75rem' }"
+        >
+          Back to direct messages
+        </button>
+        <button
+          @click="listSection = EListSection.FRIEND_REQUESTS"
+          v-if="listSection === EListSection.MESSAGING"
+          :style="{ width: '50%' }"
+        >
+          Friend requests
+        </button>
+        <button
+          @click="listSection = EListSection.INVITATIONS"
+          v-if="listSection === EListSection.MESSAGING"
+          :style="{ width: '50%' }"
+        >
+          Room invitations
+        </button>
+      </div>
+      <div
+        v-if="
+          !messagingStore.currentConversationUid &&
+          listSection === EListSection.MESSAGING
+        "
+        class="users"
+      >
         <button
           @click="() => openConv(uid)"
           class="user"
@@ -108,11 +192,8 @@ async function openConv(uid: string) {
           <User :uid="uid" />
         </button>
       </div>
-      <div
-        v-if="messagingStore.currentConversationUid"
-        class="messages-container"
-      >
-        <div class="messages-list">
+      <div v-if="messagingStore.currentConversationUid" class="list-container">
+        <div v-if="listSection === EListSection.MESSAGING" class="list">
           <DirectMessage
             v-for="msg in messagingStore.conversations.find(
               (c) => c.uid === messagingStore.currentConversationUid
@@ -120,10 +201,24 @@ async function openConv(uid: string) {
             :msg="msg"
           />
         </div>
+        <div v-if="listSection === EListSection.FRIEND_REQUESTS" class="list">
+          <FriendRequest
+            :frq="frq"
+            v-for="frq in messagingStore.friend_requests"
+          />
+        </div>
+        <div v-if="listSection === EListSection.INVITATIONS" class="list">
+          <Invitation :inv="inv" v-for="inv in messagingStore.invitations" />
+        </div>
+        <div ref="listBottomRef" class="list-bottom" />
       </div>
       <form
+        class="message-form"
         @submit.prevent="handleFormSubmit"
-        v-if="messagingStore.currentConversationUid"
+        v-if="
+          messagingStore.currentConversationUid &&
+          listSection === EListSection.MESSAGING
+        "
       >
         <input
           ref="msgInputRef"
@@ -138,7 +233,11 @@ async function openConv(uid: string) {
       </form>
     </div>
     <button
-      v-if="messagingStore.currentConversationUid"
+      class="all-conversations-button"
+      v-if="
+        messagingStore.currentConversationUid &&
+        listSection === EListSection.MESSAGING
+      "
       @click="messagingStore.currentConversationUid = ''"
       type="button"
     >
@@ -159,13 +258,26 @@ async function openConv(uid: string) {
   box-sizing: border-box;
   top: 0;
   left: 0;
+  .friend-requests-invitations-buttons {
+    display: flex;
+    width: 100%;
+    button:nth-child(2) {
+      border-left: 1px solid var(--base-light);
+    }
+    button {
+      font-size: 0.7rem;
+      border: none;
+      border-bottom: 2px solid var(--base-light);
+      border-radius: 0;
+    }
+  }
   .messaging-container {
     display: flex;
     flex-direction: column;
     width: 100%;
     flex-grow: 1;
     box-sizing: border-box;
-    border: 1px solid var(--base-light);
+    border: 2px solid var(--base);
     border-radius: var(--border-radius-medium);
     box-shadow: var(--shadow-medium);
     overflow: hidden;
@@ -176,7 +288,6 @@ async function openConv(uid: string) {
       width: 100%;
       box-sizing: border-box;
       overflow-y: auto;
-      padding: 3px;
       .user {
         padding: 0;
         cursor: pointer;
@@ -184,9 +295,16 @@ async function openConv(uid: string) {
         padding: 3px;
         display: flex;
         justify-content: flex-start;
+        border: none;
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
+      }
+      .user:hover {
+        background: var(--foreground-hover);
       }
     }
-    form {
+    .message-form {
       display: flex;
       gap: var(--padding-medium);
       align-items: center;
@@ -194,6 +312,7 @@ async function openConv(uid: string) {
       width: 100%;
       padding: 3px;
       box-sizing: border-box;
+      border-top: 1px solid var(--base-light);
       input {
         flex-grow: 1;
         box-sizing: border-box;
@@ -216,12 +335,12 @@ async function openConv(uid: string) {
         }
       }
     }
-    .messages-container {
+    .list-container {
       flex-grow: 1;
       width: 100%;
       position: relative;
       box-sizing: border-box;
-      .messages-list {
+      .list {
         display: flex;
         flex-direction: column;
         width: 100%;
@@ -238,6 +357,9 @@ async function openConv(uid: string) {
   button {
     width: 100%;
     padding: var(--padding-medium) var(--padding);
+  }
+  .all-conversations-button {
+    border: 2px solid var(--base-light);
   }
 }
 </style>

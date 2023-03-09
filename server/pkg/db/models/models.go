@@ -32,6 +32,7 @@ type Invitation struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
 	Author    primitive.ObjectID `bson:"author" json:"author"`
+	Recipient primitive.ObjectID `bson:"-" json:"recipient"`
 	RoomID    primitive.ObjectID `bson:"room_id" json:"room_id"`
 	Accepted  bool               `bson:"accepted" json:"accepted"`
 	Declined  bool               `bson:"declined" json:"declined"`
@@ -41,6 +42,7 @@ type FriendRequest struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
 	Author    primitive.ObjectID `bson:"author" json:"author"`
+	Recipient primitive.ObjectID `bson:"-" json:"recipient"`
 	Accepted  bool               `bson:"accepted" json:"accepted"`
 	Declined  bool               `bson:"declined" json:"declined"`
 }

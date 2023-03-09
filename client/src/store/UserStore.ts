@@ -23,6 +23,8 @@ interface IUserStore {
   userEnteredView: (uid: string) => void;
   userLeftView: (uid: string) => void;
 
+  getUser: (uid: string) => IUser | undefined;
+
   cacheUserData: (uid: string, force?: boolean) => void;
 }
 
@@ -51,6 +53,8 @@ export const userStore: IUserStore = reactive({
       );
     }
   },
+
+  getUser: (uid: string) => userStore.users.find((u) => u.ID === uid),
 
   cacheUserData: async (uid: string, force?: boolean) => {
     const found = userStore.users.find((u) => u.ID === uid);

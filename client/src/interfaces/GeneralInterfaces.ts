@@ -38,6 +38,7 @@ export interface IDirectMessage {
 export interface IInvitation {
   ID: string;
   author: string;
+  recipient:string;
   room_id: string;
   created_at: string;
   accepted: boolean;
@@ -46,6 +47,7 @@ export interface IInvitation {
 export interface IFriendRequest {
   ID: string;
   author: string;
+  recipient:string;
   created_at: string;
   accepted: boolean;
   declined: boolean;

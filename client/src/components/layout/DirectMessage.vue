@@ -122,7 +122,7 @@ function handleSubmitUpdate() {
   p {
     text-align: left;
     width: 100%;
-    font-size: 0.7rem;
+    font-size: 0.8rem;
     padding: 0 var(--padding-medium);
     box-sizing: border-box;
     margin: 0;

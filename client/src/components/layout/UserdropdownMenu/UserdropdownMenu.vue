@@ -48,7 +48,7 @@ async function inviteToRoomClicked() {
     getOwnRoomIDsResMsg.value = { msg: "", err: false, pen: true };
     const ids: string[] = await getOwnRoomIDs();
     ownRoomIDs.value = ids;
-    getOwnRoomIDsResMsg.value = { msg: "", err: false, pen: false };
+    getOwnRoomIDsResMsg.value = { msg: ids.length > 0 ? "" : "You have no rooms", err: false, pen: false };
   } catch (e) {
     getOwnRoomIDsResMsg.value = { msg: `${e}`, err: true, pen: false };
   }

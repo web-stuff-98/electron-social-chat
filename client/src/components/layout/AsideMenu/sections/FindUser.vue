@@ -75,7 +75,7 @@ function handleUsernameInput(e: Event) {
   gap: var(--padding-medium);
   .results-container {
     position: relative;
-    border: 1px solid var(--base-light);
+    border: 2px solid var(--base);
     border-radius: var(--border-radius-medium);
     box-shadow: var(--shadow-medium);
     width: 100%;
@@ -105,6 +105,7 @@ function handleUsernameInput(e: Event) {
       margin: 0;
       box-sizing: border-box;
       width: calc(100% - 1.5rem);
+      border: 2px solid var(--base);
     }
     svg {
       width: 1.5rem;

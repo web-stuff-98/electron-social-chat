@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -48,6 +49,11 @@ func (h handler) SearchUsers(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	defer cursor.Close(r.Context())
+	if err != nil {
+		log.Println(err)
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	}
 	for cursor.Next(r.Context()) {
 		var user models.User
 		cursor.Decode(&user)

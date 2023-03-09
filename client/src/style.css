@@ -1,10 +1,10 @@
 @font-face {
-  font-family: "Didact Gothic";
-  src: url(didact-gothic.regular.ttf);
+  font-family: "Entangled";
+  src: url(CqMono-mBXa.ttf);
 }
 
 * {
-  font-family: "Didact Gothic";
+  font-family: "Entangled";
   color: var(--text-color);
 }
 
@@ -18,13 +18,13 @@ svg {
 }
 
 :root {
-  font-family: "Didact Gothic";
+  font-family: "Entangled";
   line-height: 1;
   font-weight: 300;
 
-  color-scheme: light dark;
+  color-scheme: light;
   color: black;
-  
+
   --text-color: black;
 
   background-color: hsl(0, 0%, 97%);
@@ -40,7 +40,7 @@ svg {
 
   --aside-width: 12rem;
 
-  --shadow: 0px 6px 3px rgba(0, 0, 0, 0.1), 0px 2px 1px rgba(0, 0, 0, 0.05);
+  --shadow: 0px 3px 2px rgba(0, 0, 0, 0.1), 0px 2px 1px rgba(0, 0, 0, 0.05);
   --shadow-medium: 0px 1px 1px rgba(0, 0, 0, 0.1);
 
   --border-radius-medium: 0.333rem;
@@ -53,18 +53,18 @@ svg {
 }
 
 .dark-mode {
-  color-scheme: light dark;
+  color-scheme: dark;
   color: white;
 
-  --text-color:white;
+  --text-color: white;
 
-  background-color: hsl(0, 0%, 8%);
+  background-color: hsl(0, 4%, 9%);
 
-  --foreground: hsl(0, 0%, 8%);
-  --foreground-hover: hsl(0, 0%, 11%);
+  --foreground: hsl(0, 4%, 9%);
+  --foreground-hover: hsl(0, 3%, 11%);
 
-  --base: rgba(255, 255, 255, 0.0866);
-  --base-light: rgba(255, 255, 255, 0.05);
+  --base: rgba(255, 255, 255, 0.0966);
+  --base-light: rgba(255, 255, 255, 0.066);
 }
 
 a {
@@ -76,6 +76,13 @@ a:hover {
   color: #535bf2;
 }
 
+.messages-bottom {
+  margin: 0;
+  width: 100%;
+  height: 0;
+  padding: 0;
+}
+
 body {
   margin: 0;
   display: flex;
@@ -85,6 +92,26 @@ body {
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+}
+
+/* width */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: var(--base-light);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: var(--base);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 input,
@@ -170,8 +197,8 @@ code {
   top: 0;
   position: fixed;
   background: rgba(0, 0, 0, 0.05);
-  backdrop-filter: blur(1.5px);
-  filter: opacity(0.5);
+  backdrop-filter: blur(1px);
+  filter: opacity(0.8);
   z-index: 99;
 }
 .modal-container {

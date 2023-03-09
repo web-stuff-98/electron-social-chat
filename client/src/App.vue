@@ -25,14 +25,14 @@ import {
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
 import MessageModal from "./components/messageModal/MessageModal.vue";
-import { IResMsg } from "./interfaces/GeneralInterfaces";
+import { IFriendRequest, IResMsg } from "./interfaces/GeneralInterfaces";
 import UserdropdownMenu from "./components/layout/UserdropdownMenu/UserdropdownMenu.vue";
 import { messagingStore } from "./store/MessagingStore";
 import DarkToggle from "./components/layout/DarkToggle.vue";
+import CreateEditRoomModal from "./components/layout/AsideMenu/sections/CreateEditRoomModal.vue";
 
 const router = useRouter();
 const showAside = ref(false);
-
 const modalConfirmation = ref(() => {});
 const modalCancellation = ref<Function | undefined>(() => {});
 const showModal = ref(false);
@@ -120,8 +120,6 @@ const watchMessaging = (e: MessageEvent) => {
             updated_at: new Date().toISOString(),
           },
         ],
-        friend_requests: [],
-        invitations: [],
       });
   }
   if (instanceOfDirectMessageUpdateData(data)) {
@@ -149,57 +147,38 @@ const watchMessaging = (e: MessageEvent) => {
     messagingStore.conversations[convI].messages.splice(msgI, 1);
   }
   if (instanceOfRoomInvitationData(data)) {
-    const convI = messagingStore.conversations.findIndex(
-      (c) =>
-        c.uid ===
-        (data.author === authStore.user?.ID ? data.recipient : data.author)
-    );
-    if (convI !== -1)
-      messagingStore.conversations[convI].invitations.push({
-        ...data,
-        accepted: false,
-        declined: false,
-        created_at: new Date().toISOString(),
-      });
-    else
-      messagingStore.conversations.push({
-        uid: data.author === authStore.user?.ID ? data.recipient : data.author,
-        messages: [],
-        invitations: [
-          {
-            ...data,
-            accepted: false,
-            declined: false,
-            created_at: new Date().toISOString(),
-          },
-        ],
-        friend_requests: [],
-      });
+    messagingStore.invitations.push({
+      ...data,
+      accepted: false,
+      declined: false,
+      created_at: new Date().toISOString(),
+    });
   }
   if (instanceOfRoomInvitationDeleteData(data)) {
-    const convI = messagingStore.conversations.findIndex(
-      (c) =>
-        c.uid ===
-        (data.author === authStore.user?.ID ? data.recipient : data.author)
-    );
-    const invI = messagingStore.conversations[convI].invitations.findIndex(
-      (r) => r.ID === data.ID
-    );
-    messagingStore.conversations[convI].invitations.splice(invI, 1);
+    const i = messagingStore.invitations.findIndex((i) => i.ID === data.ID);
+    messagingStore.invitations.splice(i, 1);
   }
   if (instanceOfRoomInvitationResponseData(data)) {
-    const convI = messagingStore.conversations.findIndex(
-      (c) =>
-        c.uid ===
-        (data.author === authStore.user?.ID ? data.recipient : data.author)
-    );
-    const invI = messagingStore.conversations[convI].friend_requests.findIndex(
-      (r) => r.ID === data.ID
-    );
-    messagingStore.conversations[convI].invitations[invI].accepted =
-      data.accept;
-    messagingStore.conversations[convI].invitations[invI].declined =
-      !data.accept;
+    const i = messagingStore.invitations.findIndex((i) => i.ID === data.ID);
+    messagingStore.invitations[i].accepted = data.accept;
+    messagingStore.invitations[i].declined = !data.accept;
+  }
+  if (instanceOfFriendRequestData(data)) {
+    messagingStore.friend_requests.push({
+      ...data,
+      created_at: new Date().toISOString(),
+      accepted: false,
+      declined: false,
+    });
+  }
+  if (instanceOfFriendRequestDeleteData(data)) {
+    const i = messagingStore.friend_requests.findIndex((i) => i.ID === data.ID);
+    messagingStore.friend_requests.splice(i, 1);
+  }
+  if (instanceOfFriendRequestResponseData(data)) {
+    const i = messagingStore.friend_requests.findIndex((i) => i.ID === data.ID);
+    messagingStore.friend_requests[i].accepted = data.accept;
+    messagingStore.friend_requests[i].declined = !data.accept;
   }
 };
 
@@ -284,7 +263,6 @@ onMounted(() => {
 
 <template>
   <div class="root">
-    <DarkToggle />
     <MessageModal
       :msg="modalMsg"
       :show="showModal"
@@ -307,6 +285,8 @@ onMounted(() => {
       v-if="authStore.user"
     />
     <WelcomeModal v-else />
+    <CreateEditRoomModal />
+    <DarkToggle />
   </div>
 </template>
 

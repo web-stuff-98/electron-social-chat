@@ -1,19 +1,18 @@
 <script lang="ts" setup>
-import { useRoute } from "vue-router";
-import { IRoom, IResMsg } from "../../interfaces/GeneralInterfaces";
-import ResMsg from "../layout/ResMsg.vue";
-import Toggle from "../shared/Toggle.vue";
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { IRoom, IResMsg } from "../../../../interfaces/GeneralInterfaces";
+import ResMsg from "../../ResMsg.vue";
+import Toggle from "../../../shared/Toggle.vue";
+import { onMounted, ref } from "vue";
 import {
-  getRoom,
   updateRoom,
   updateRoomChannelsData,
   uploadRoomImage,
-} from "../../services/Rooms";
-import EditRoomChannelCard from "../layout/EditRoomChannelCard.vue";
-import { roomStore } from "../../store/RoomStore";
-import { roomChannelStore } from "../../store/RoomChannelStore";
-import { editRoomChannelsData } from "../../store/EditRoomChannelsData";
+} from "../../../../services/Rooms";
+import EditRoomChannelCard from "../../EditRoomChannelCard.vue";
+import { roomChannelStore } from "../../../../store/RoomChannelStore";
+import { editRoomChannelsData } from "../../../../store/EditRoomChannelsData";
+import { roomStore } from "../../../../store/RoomStore";
+import { editRoomId } from "../../../../store/CreateEditRoomStore";
 
 enum EEditRoomSection {
   "BASIC" = "Basic room settings",
@@ -22,7 +21,6 @@ enum EEditRoomSection {
 }
 
 const section = ref<EEditRoomSection>(EEditRoomSection.BASIC);
-const route = useRoute();
 const room = ref<IRoom>({
   ID: "",
   name: "",
@@ -48,6 +46,13 @@ function selectImage(e: Event) {
   roomImageURL.value = URL.createObjectURL(file);
 }
 
+const addChannelInput = ref("");
+function handleAddChannelInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (target.value.length > 24 || !target.value.trim()) return;
+  addChannelInput.value = target.value;
+}
+
 onMounted(async () => {
   const abortController = new AbortController();
   editRoomChannelsData.delete_ids = [];
@@ -56,14 +61,9 @@ onMounted(async () => {
   editRoomChannelsData.update_data = [];
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const data = await roomStore.cacheRoomData(
-      route.params.id as string,
-      true,
-      true
-    );
+    const data = await roomStore.cacheRoomData(editRoomId.value, true, true);
     room.value = data as IRoom;
-    await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
-    roomStore.currentRoom = data.ID as string;
+    await roomChannelStore.getDisplayDataForChannels(editRoomId.value);
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
@@ -72,17 +72,6 @@ onMounted(async () => {
     abortController.abort();
   };
 });
-
-onBeforeUnmount(async () => {
-  roomStore.currentRoom = "";
-});
-
-const addChannelInput = ref("");
-function handleAddChannelInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  if (target.value.length > 24 || !target.value.trim()) return;
-  addChannelInput.value = target.value;
-}
 
 function handleAddChannelClicked() {
   if (addChannelInput.value.trim() === "" || addChannelInput.value.length > 24)
@@ -138,7 +127,7 @@ async function handleSubmit() {
       editRoomChannelsData.promote_to_main = "";
     }
     if (roomImage.value) {
-      await uploadRoomImage(roomImage.value, route.params.id as string);
+      await uploadRoomImage(roomImage.value, editRoomId.value);
     }
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
@@ -152,7 +141,6 @@ async function handleSubmit() {
 
 <template>
   <form @submit.prevent="handleSubmit" class="container">
-    <ResMsg :resMsg="resMsg" />
     <div v-if="!resMsg.pen && !resMsg.err && !resMsg.msg" class="content">
       <!-- Basic settings section -->
       <span v-if="section === EEditRoomSection.BASIC">
@@ -251,6 +239,7 @@ async function handleSubmit() {
       <button type="submit">Update room</button>
       <img v-if="roomImageURL" :src="roomImageURL" />
     </div>
+    <ResMsg :resMsg="resMsg" />
   </form>
 </template>
 
@@ -258,7 +247,6 @@ async function handleSubmit() {
 .container {
   width: 100%;
   height: 100%;
-  padding: calc(var(--padding-medium) + 1px);
   box-sizing: border-box;
   display: flex;
   gap: var(--padding-medium);
@@ -357,7 +345,7 @@ async function handleSubmit() {
       justify-content: center;
       text-align: center;
       border-bottom: 1px solid var(--base-light);
-      background: rgba(0, 0, 0, 0.166);
+      background: rgba(0, 0, 0, 0.1);
     }
   }
 }

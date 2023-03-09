@@ -6,10 +6,11 @@ import {
 </script>
 
 <template>
-  <h1>Electron Social Chat</h1>
+  <h1>Tauri-Go-Vue-Chat</h1>
+  <span />
   <p>
-    This is my electron, Vue & Golang social app. You may log in using an
-    existing example account or register a new one.
+    This is my Tauri, Vue & Go social app. You may log in using an existing
+    example account or register a new one.
   </p>
   <div class="buttons">
     <button @click="welcomeModalStore.modalType = EWelcomeModalType.LOGIN">
@@ -24,11 +25,30 @@ import {
 <style lang="scss" scoped>
 h1 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 1.666rem;
   font-weight: 600;
+}
+span {
+  margin: 0;
+  padding: 0;
+  border-bottom: 2px solid var(--base);
+  width: 100%;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 50%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 50%,
+    transparent 100%
+  );
 }
 p {
   margin: 0;
+  font-size: 1.125rem;
 }
 .buttons {
   display: flex;
@@ -39,6 +59,7 @@ p {
   button {
     margin: 0;
     flex-grow: 1;
+    font-size: 1.25rem;
     padding: 0 var(--padding-medium);
   }
 }

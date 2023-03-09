@@ -56,23 +56,24 @@ onBeforeUnmount(() => {
         ...(user?.base64pfp
           ? { backgroundImage: `url(${user?.base64pfp})` }
           : {}),
-          ...(square
-          ? { borderRadius: 'var(--border-radius-medium)' }
-          : {}),
+        ...(square ? { borderRadius: 'var(--border-radius-medium)' } : {}),
       }"
       class="pfp"
     >
       <v-icon v-if="!user?.base64pfp" name="la-user" />
     </div>
     <div class="name-date-time">
-      <div :style="small ? { fontSize: '0.7rem' } : {}" class="name">
+      <div
+        :style="small ? { fontSize: '0.75rem', fontWeight: 300 } : {}"
+        class="name"
+      >
         {{ user?.username }}
       </div>
       <div v-if="dateTime" class="date-time">
-        <span :style="small ? { fontSize: '0.55rem' } : {}">{{
+        <span :style="small ? { fontSize: '0.666rem' } : {}">{{
           new Intl.DateTimeFormat("en-GB").format(dateTime)
         }}</span>
-        <span :style="small ? { fontSize: '0.55rem' } : {}">{{
+        <span :style="small ? { fontSize: '0.666rem' } : {}">{{
           new Intl.DateTimeFormat("default", {
             hour: "numeric",
             minute: "numeric",
@@ -90,7 +91,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  font-size: 0.833rem;
+  font-size: 0.866rem;
   width: fit-content;
   height: fit-content;
   padding: var(--padding-medium);
@@ -116,12 +117,14 @@ onBeforeUnmount(() => {
     padding: 0;
     display: flex;
     flex-direction: column;
+    font-weight: 600;
     .date-time {
       display: flex;
       flex-direction: column;
       span {
+        font-weight: 300;
         padding: 0;
-        font-size: 0.666rem;
+        font-size: 0.65rem;
       }
     }
   }

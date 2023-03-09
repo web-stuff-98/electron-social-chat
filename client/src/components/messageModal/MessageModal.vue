@@ -14,7 +14,6 @@ defineProps<{
   <div v-if="show" class="modal-container">
     <div class="modal">
       <ResMsg :resMsg="msg" />
-      <p v-if="msg.msg">{{ msg.msg }}</p>
       <div v-if="!msg.pen" class="buttons">
         <button
           v-if="cancellationCallback"

@@ -5,6 +5,7 @@ import { toRefs, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { deleteRoom } from "../../services/Rooms";
 import { roomStore } from "../../store/RoomStore";
 import axios from "axios";
+import { editRoomId, showEditRoom } from "../../store/CreateEditRoomStore";
 
 const props = defineProps<{ id: string }>();
 const { id } = toRefs(props);
@@ -14,7 +15,6 @@ const modalCancellation = ref(() => {});
 const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 const imgObjectURL = ref("");
-
 const containerRef = ref<HTMLCanvasElement | null>(null);
 
 const observer = new IntersectionObserver(async ([entry]) => {
@@ -114,7 +114,17 @@ function promptDeleteRoom() {
         :confirmationCallback="modalConfirmation"
         :cancellationCallback="modalCancellation"
       />
-      <div class="name">
+      <div
+        :style="
+          roomStore.getRoom(id)?.blur
+            ? {
+                color: 'white',
+                textShadow: '0px 1px 2px black, 0px 0px 6px black',
+              }
+            : {}
+        "
+        class="name"
+      >
         {{ roomStore.getRoom(id)?.name }}
       </div>
       <div class="buttons">
@@ -124,9 +134,16 @@ function promptDeleteRoom() {
         <router-link :to="`/room/${id}`">
           <button><v-icon name="bi-door-closed-fill" /></button>
         </router-link>
-        <router-link :to="`/room/edit/${id}`">
-          <button><v-icon name="ri-edit-box-fill" /></button>
-        </router-link>
+        <button
+          @click="
+            {
+              showEditRoom = true;
+              editRoomId = id;
+            }
+          "
+        >
+          <v-icon name="ri-edit-box-fill" />
+        </button>
       </div>
     </div>
   </div>
@@ -142,14 +159,14 @@ function promptDeleteRoom() {
   background-size: cover;
   background-position: center;
   text-align: left;
+  border-bottom: 1px solid var(--base-light);
   .inner {
     display: flex;
     justify-content: space-between;
     align-items: center;
     .name {
-      color:white;
+      color: var(--text-color);
       font-weight: 600;
-      text-shadow: 0px 1px 2px black, 0px 0px 6px black;
     }
     .buttons {
       background: rgba(0, 0, 0, 0.5);

@@ -5,6 +5,7 @@ import { ref, toRefs } from "vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
 import { authStore } from "../../store/AuthStore";
 import { socketStore } from "../../store/SocketStore";
+import { roomStore } from "../../store/RoomStore";
 const props = defineProps<{
   msg: IRoomMessage;
   reverse?: boolean;
@@ -53,6 +54,7 @@ function handleDeleteMessage() {
   >
     <div class="user-container">
       <User
+        :room="roomStore.currentRoom"
         :menu="msg.author !== authStore.user?.ID"
         :dateTime="new Date(msg.created_at)"
         :reverse="reverse"

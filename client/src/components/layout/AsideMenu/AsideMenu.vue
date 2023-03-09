@@ -7,10 +7,10 @@ import ExploreRooms from "./sections/ExploreRooms.vue";
 import DirectMessages from "./sections/DirectMessages.vue";
 import FindUser from "./sections/FindUser.vue";
 import { authStore } from "../../../store/AuthStore";
+import { showCreateRoom } from "../../../store/CreateEditRoomStore";
 
 enum EAsideSection {
   "PROFILE" = "Profile",
-  "CREATE_ROOM" = "Create room",
   "EXPLORE_ROOMS" = "Explore rooms",
   "YOUR_ROOMS" = "Your rooms",
   "DIRECT_MESSAGES" = "Direct messages",
@@ -45,9 +45,9 @@ function logout() {
         Your rooms
         <span v-if="section === EAsideSection.YOUR_ROOMS" />
       </button>
-      <button @click="section = EAsideSection.CREATE_ROOM">
+      <button @click="showCreateRoom = true">
         Create room
-        <span v-if="section === EAsideSection.CREATE_ROOM" />
+        <span v-if="showCreateRoom" />
       </button>
       <button @click="section = EAsideSection.PROFILE">
         Profile
@@ -66,7 +66,6 @@ function logout() {
           :own="false"
           v-if="section === EAsideSection.EXPLORE_ROOMS"
         />
-        <CreateRoom v-if="section === EAsideSection.CREATE_ROOM" />
         <Profile v-if="section === EAsideSection.PROFILE" />
         <FindUser v-if="section === EAsideSection.FIND_USER" />
         <ExploreRooms :own="true" v-if="section === EAsideSection.YOUR_ROOMS" />
@@ -91,11 +90,12 @@ aside {
   min-width: var(--aside-width);
   width: var(--aside-width);
   height: 100vh;
-  border-right: 2px solid var(--base);
+  border-right: 2px solid var(--base-light);
   display: flex;
   flex-direction: column;
   background: var(--foreground);
   transition: transform 50ms linear;
+  box-shadow: 2px 0px 2px rgba(0, 0, 0, 0.07);
   padding-right: 1px;
   padding-top: 2px;
   position: fixed;

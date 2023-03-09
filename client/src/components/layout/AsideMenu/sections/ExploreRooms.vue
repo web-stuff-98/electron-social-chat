@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
   height: 100%;
   .results-container {
     position: relative;
-    border: 1px solid var(--base-light);
+    border: 2px solid var(--base);
     border-radius: var(--border-radius-medium);
     overflow: hidden;
     box-shadow: var(--shadow-medium);

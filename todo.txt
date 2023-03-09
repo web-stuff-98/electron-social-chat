@@ -1,8 +1,5 @@
 Todos in order
- - Fix weird ResMsg component extra space problem
- - Automatic scroll to bottom in room & direct messages
- - Do client code for banning/blocking/inviting users & friend requests
- - Add friends section to DirectMessages component
+ - Do client code for sending/accepting friend requests & invites
  - Attachment uploads/downloads (using octet stream)
  - User online indicator
  - Socket events for creating/updating/deleting channels
@@ -21,7 +18,6 @@ Todos; before completion
  - Alert sounds
  - Audio/Video input device selection
  - Screen sharing toggle
- - Dark/Light theme
  - UI/UX improvements
  - Styling improvements
 

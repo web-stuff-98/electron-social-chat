@@ -88,6 +88,15 @@ type FriendRequest struct {
 	Recipient string `json:"recipient"`
 }
 
+// TYPE: FRIEND_REQUEST_RESPONSE
+type FriendRequestResponse struct {
+	Type      string `json:"TYPE"`
+	ID        string `json:"ID"`
+	Accept    bool   `json:"accept"`
+	Author    string `json:"author"`
+	Recipient string `json:"recipient"`
+}
+
 // TYPE: ROOM_INVITATION_RESPONSE
 type RoomInvitationResponse struct {
 	Type   string `json:"TYPE"`

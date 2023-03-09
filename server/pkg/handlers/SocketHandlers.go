@@ -1123,7 +1123,7 @@ func deleteFriendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID,
 }
 
 func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.OutFriendRequestResponse
+	var data socketmodels.FriendRequestResponse
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}

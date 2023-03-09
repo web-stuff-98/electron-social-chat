@@ -4,7 +4,7 @@ import { IResMsg } from "../../interfaces/GeneralInterfaces";
 import ResMsg from "../layout/ResMsg.vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
 import { roomStore } from "../../store/RoomStore";
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
 import { socketStore } from "../../store/SocketStore";
 import RoomMessage from "../layout/RoomMessage.vue";
 import { authStore } from "../../store/AuthStore";
@@ -17,10 +17,11 @@ import {
 
 const route = useRoute();
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+const messagesBottomRef = ref<HTMLCanvasElement | null>();
 
 const messageInput = ref("");
 
-function messageEventListener(e: MessageEvent) {
+async function messageEventListener(e: MessageEvent) {
   const data = parseSocketEventData(e);
   if (!data) return;
   const i = roomChannelStore.channels.findIndex(
@@ -34,6 +35,11 @@ function messageEventListener(e: MessageEvent) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
+    if (messagesBottomRef) {
+      await nextTick(() => {
+        messagesBottomRef.value?.scrollIntoView({ behavior: "auto" });
+      });
+    }
     return;
   }
   if (instanceOfRoomMessageUpdateData(data)) {
@@ -79,7 +85,9 @@ onMounted(async () => {
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
   }
+
   socketStore.socket?.addEventListener("message", messageEventListener);
+
   return () => {
     abortController.abort();
   };
@@ -214,6 +222,7 @@ async function openChannel(id: string) {
                 :reverse="message.author !== authStore.user?.ID"
                 :msg="message"
               />
+              <div ref="messagesBottomRef" class="messages-bottom" />
             </div>
           </div>
         </div>
@@ -272,7 +281,7 @@ async function openChannel(id: string) {
     width: 100%;
     height: 100%;
     padding: calc(var(--padding-medium) + 1px);
-    padding-bottom: calc(var(--padding-medium) + 2px);
+    padding-bottom: var(--padding-medium);
     padding-right: calc(var(--padding-medium) + 2px);
     box-sizing: border-box;
     display: flex;
@@ -317,8 +326,8 @@ async function openChannel(id: string) {
         align-items: center;
         justify-content: center;
         text-align: center;
-        border-bottom: 1px solid var(--base-light);
-        background: rgba(0, 0, 0, 0.166);
+        background: rgba(0, 0, 0, 0.1);
+        font-weight: 600;
       }
     }
     form {

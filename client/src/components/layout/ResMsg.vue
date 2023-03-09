@@ -25,6 +25,7 @@ defineProps<{ resMsg: IResMsg }>();
   gap: var(--padding-medium);
   min-width: 3rem;
   height: fit-content;
+  text-align: center;
   filter: drop-shadow(var(--shadow-medium));
   p {
     margin: 0;

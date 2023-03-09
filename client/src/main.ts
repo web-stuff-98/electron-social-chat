@@ -1,10 +1,10 @@
-import { createApp } from "vue";
+import { createApp, watch } from "vue";
 import { createRouter, createWebHashHistory } from "vue-router";
 import "./style.css";
 import App from "./App.vue";
 import Home from "./components/routes/Home.vue";
 import Room from "./components/routes/Room.vue";
-import EditRoom from "./components/routes/EditRoom.vue";
+import EditRoom from "./components/layout/AsideMenu/sections/EditRoom.vue";
 
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import {
@@ -65,8 +65,14 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   if (!authStore.user && to.path !== "/") {
-    router.push("/")
+    router.push("/");
     return "/";
+  }
+});
+
+watch(authStore, (_, newVal) => {
+  if (!newVal.user) {
+    router.push("/");
   }
 });
 

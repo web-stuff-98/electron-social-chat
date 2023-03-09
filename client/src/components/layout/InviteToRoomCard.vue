@@ -83,8 +83,11 @@ onBeforeUnmount(() => {
   background-size: cover;
   background-position: center;
   text-align: left;
-  text-shadow: var(--shadow-medium);
+  text-shadow: 0px 2px 3px black, 0px 1px 7px black;
   font-weight: 600;
+  color:white;
+  border-radius: var(--border-radius-medium);
+  border: 1px solid var(--base-light);
   cursor: pointer;
 }
 </style>

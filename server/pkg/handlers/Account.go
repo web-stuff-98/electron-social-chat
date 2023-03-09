@@ -138,6 +138,8 @@ func (h handler) Register(w http.ResponseWriter, r *http.Request) {
 		MessagesReceivedFrom: []primitive.ObjectID{},
 		Blocked:              []primitive.ObjectID{},
 		Friends:              []primitive.ObjectID{},
+		FriendRequests:       []models.FriendRequest{},
+		Invitations:          []models.Invitation{},
 	}
 
 	if _, err := h.Collections.UserCollection.InsertOne(r.Context(), user); err != nil {
@@ -332,23 +334,10 @@ func (h handler) GetConversation(w http.ResponseWriter, r *http.Request) {
 			messages = append(messages, dm)
 		}
 	}
-	invitations := []models.Invitation{}
-	for _, inv := range messagingData.Invitations {
-		invitations = append(invitations, inv)
-	}
-	friendRequests := []models.FriendRequest{}
-	for _, req := range messagingData.FriendRequests {
-		friendRequests = append(friendRequests, req)
-	}
-
-	out := make(map[string]interface{})
-	out["messages"] = messages
-	out["invitations"] = invitations
-	out["friend_requests"] = friendRequests
 
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(out)
+	json.NewEncoder(w).Encode(messages)
 }
 
 func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
@@ -382,7 +371,46 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 		conversations = append(conversations, oi)
 	}
 
+	invitations := []models.Invitation{}
+	friendRequests := []models.FriendRequest{}
+
+	invitations = append(invitations, messagingData.Invitations...)
+	friendRequests = append(friendRequests, messagingData.FriendRequests...)
+
+	if cursor, err := h.Collections.UserMessagingDataCollection.Find(r.Context(), bson.M{"id": bson.M{"$in": messagingData.MessagesSentTo}}); err != nil {
+		cursor.Close(r.Context())
+		responseMessage(w, http.StatusInternalServerError, "Internal error")
+		return
+	} else {
+		otherUsersMessagingData := []models.UserMessagingData{}
+		if err := cursor.All(r.Context(), &otherUsersMessagingData); err != nil {
+			cursor.Close(r.Context())
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
+		}
+		for _, umd := range otherUsersMessagingData {
+			for _, frq := range umd.FriendRequests {
+				if frq.Author == user.ID {
+					frq.Recipient = umd.ID
+					friendRequests = append(friendRequests, frq)
+				}
+			}
+			for _, inv := range umd.Invitations {
+				if inv.Author == user.ID {
+					inv.Recipient = umd.ID
+					invitations = append(invitations, inv)
+				}
+			}
+		}
+		cursor.Close(r.Context())
+	}
+
+	out := make(map[string]interface{})
+	out["conversations"] = conversations
+	out["friend_requests"] = friendRequests
+	out["invitations"] = invitations
+
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(conversations)
+	json.NewEncoder(w).Encode(out)
 }
