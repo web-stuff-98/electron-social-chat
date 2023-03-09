@@ -87,7 +87,6 @@ type RoomChannelMessages struct {
 
 // Changes to room channel docs triggers changestream events
 type RoomChannel struct {
-	// ID for the corresponding RoomChannelMessages doc will be the same
 	ID       primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
 	RoomID   primitive.ObjectID   `bson:"room_id" json:"-"`
 	Name     string               `bson:"name" json:"name"`
@@ -101,7 +100,7 @@ type Room struct {
 	ID     primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
 	Name   string             `bson:"name" json:"name,maxlength=16"`
 	Author primitive.ObjectID `bson:"author" json:"author"`
-	// blur will not be present if the room has no image
+	// blur will be an empty string if the room has no image
 	Blur string `bson:"blur" json:"blur"`
 
 	Private bool                 `bson:"-" json:"is_private"`

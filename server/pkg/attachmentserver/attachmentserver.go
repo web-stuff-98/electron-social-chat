@@ -186,6 +186,19 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 			as.Uploaders.mutex.Unlock()
 		}
 	}()
+
+	/* ------- Watch for disconnects from the socketServer to clear uploaders & delete incomplete attachments ------- */
+	go func() {
+		for {
+			uid := <-ss.AttachmentServerRemoveUploaderChan
+			as.Uploaders.mutex.Lock()
+			for msgId := range as.Uploaders.data[uid] {
+				deleteAttachmentChunks(msgId, uid, msgId, as, colls)
+			}
+			delete(as.Uploaders.data, uid)
+			as.Uploaders.mutex.Unlock()
+		}
+	}()
 }
 
 func deleteAttachmentChunks(chunkId primitive.ObjectID, uid primitive.ObjectID, msgId primitive.ObjectID, as *AttachmentServer, colls *db.Collections) {

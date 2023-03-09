@@ -18,8 +18,9 @@ type SocketServer struct {
 	Subscriptions               Subscriptions
 	ConnectionSubscriptionCount ConnectionsSubscriptionCount
 
-	RegisterConn   chan ConnectionInfo
-	UnregisterConn chan ConnectionInfo
+	RegisterConn                       chan ConnectionInfo
+	UnregisterConn                     chan ConnectionInfo
+	AttachmentServerRemoveUploaderChan chan primitive.ObjectID
 
 	RegisterSubscriptionConn   chan SubscriptionConnectionInfo
 	UnregisterSubscriptionConn chan SubscriptionConnectionInfo
@@ -119,8 +120,10 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 		ConnectionSubscriptionCount: ConnectionsSubscriptionCount{
 			data: make(map[*websocket.Conn]uint8),
 		},
-		RegisterConn:   make(chan ConnectionInfo),
-		UnregisterConn: make(chan ConnectionInfo),
+
+		RegisterConn:                       make(chan ConnectionInfo),
+		UnregisterConn:                     make(chan ConnectionInfo),
+		AttachmentServerRemoveUploaderChan: make(chan primitive.ObjectID),
 
 		RegisterSubscriptionConn:   make(chan SubscriptionConnectionInfo),
 		UnregisterSubscriptionConn: make(chan SubscriptionConnectionInfo),
@@ -198,6 +201,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 					break
 				}
 			}
+			socketServer.AttachmentServerRemoveUploaderChan <- connData.Uid
 			if connData.Uid != primitive.NilObjectID {
 				outBytes, err := json.Marshal(socketmodels.OutChangeMessage{
 					Type:   "CHANGE",

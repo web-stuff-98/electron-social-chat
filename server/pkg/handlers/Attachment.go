@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
@@ -39,7 +41,7 @@ func (h handler) UploadAttachmentChunk(w http.ResponseWriter, r *http.Request) {
 		channel := &models.RoomChannel{}
 		if err := h.Collections.RoomChannelCollection.FindOne(r.Context(), bson.M{"_id": recipient}).Decode(&channel); err != nil {
 			if err == mongo.ErrNoDocuments {
-				responseMessage(w, http.StatusNotFound, "User not found")
+				responseMessage(w, http.StatusNotFound, "Channel not found")
 			} else {
 				responseMessage(w, http.StatusInternalServerError, "Internal error")
 			}
@@ -118,4 +120,62 @@ func (h handler) UploadAttachmentChunk(w http.ResponseWriter, r *http.Request) {
 	}
 
 	responseMessage(w, http.StatusOK, "Chunk created")
+}
+
+// Download attachment as a file using octet stream
+func (h handler) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
+	rawMsgId := mux.Vars(r)["id"]
+	msgId, err := primitive.ObjectIDFromHex(rawMsgId)
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	var metaData models.AttachmentData
+	if h.Collections.AttachmentMetadataCollection.FindOne(r.Context(), bson.M{"_id": msgId}).Decode(&metaData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	var firstChunk models.AttachmentChunk
+	if err := h.Collections.AttachmentChunkCollection.FindOne(r.Context(), bson.M{"_id": msgId}).Decode(&firstChunk); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/octet-stream")
+	w.Header().Add("Content-Length", strconv.Itoa(metaData.Size))
+	w.Header().Add("Content-Disposition", `attachment; filename="`+metaData.Name+`"`)
+
+	w.Write(firstChunk.Data.Data)
+
+	if firstChunk.NextChunkID != primitive.NilObjectID {
+		recursivelyWriteAttachmentChunksToResponse(w, firstChunk.NextChunkID, h.Collections.AttachmentChunkCollection, r.Context())
+	}
+}
+
+func recursivelyWriteAttachmentChunksToResponse(w http.ResponseWriter, NextChunkID primitive.ObjectID, chunkColl *mongo.Collection, ctx context.Context) error {
+	var chunk models.AttachmentChunk
+	if err := chunkColl.FindOne(ctx, bson.M{"_id": NextChunkID}).Decode(&chunk); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil
+		} else {
+			return err
+		}
+	} else {
+		w.Write(chunk.Data.Data)
+		if chunk.NextChunkID != primitive.NilObjectID {
+			return recursivelyWriteAttachmentChunksToResponse(w, chunk.NextChunkID, chunkColl, ctx)
+		} else {
+			return nil
+		}
+	}
 }
