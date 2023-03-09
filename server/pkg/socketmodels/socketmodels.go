@@ -227,3 +227,9 @@ type OutChangeMessage struct {
 	Data   string `json:"DATA"`
 	Entity string `json:"ENTITY"`
 }
+
+// TYPE: ATTACHMENT_PROGRESS (no type needed in socket model, its set elsewhere)
+type AttachmentProgress struct {
+	Ratio  float32 `json:"ratio"`
+	Failed bool    `json:"err"`
+}

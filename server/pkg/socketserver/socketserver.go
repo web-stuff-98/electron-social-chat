@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-/*--------------- SOCKET SERVER STRUCT ---------------*/
+/* --------------- SOCKET SERVER STRUCT --------------- */
 type SocketServer struct {
 	Connections                 Connections
 	Subscriptions               Subscriptions
@@ -29,17 +29,18 @@ type SocketServer struct {
 	SendDataToSubscriptions          chan SubscriptionDataMessageMulti
 	SendDataToSubscriptionsExclusive chan ExclusiveSubscriptionDataMessageMulti
 	RemoveUserFromSubscription       chan RemoveUserFromSubscription
+	DestroySubscription              chan string
+	GetSubscriptionUids              chan GetSubscriptionUids
 
-	// websocket Write/Read must be done from 1 goroutine. Queue all of them to be executed in a loop.
+	// Websocket Write/Read must be done from 1 goroutine. Queue all of them to be executed in a loop.
+	// Not the best way to do it... Should be a seperate queue for each connection
 	MessageSendQueue chan QueuedMessage
 
 	SendDataToUser  chan UserDataMessage
 	SendDataToUsers chan UsersDataMessage
-
-	DestroySubscription chan string
 }
 
-/*--------------- MUTEX PROTECTED MAPS ---------------*/
+/* --------------- MUTEX PROTECTED MAPS --------------- */
 type Connections struct {
 	data  map[*websocket.Conn]primitive.ObjectID
 	mutex sync.Mutex
@@ -49,7 +50,7 @@ type Subscriptions struct {
 	mutex sync.Mutex
 }
 
-/*--------------- OTHER STRUCTS ---------------*/
+/* --------------- OTHER STRUCTS --------------- */
 type ConnectionInfo struct {
 	Conn   *websocket.Conn
 	Uid    primitive.ObjectID
@@ -101,6 +102,12 @@ type RemoveUserFromSubscription struct {
 	Uid  primitive.ObjectID
 }
 
+/* --------------- RECV CHAN STRUCTS --------------- */
+type GetSubscriptionUids struct {
+	RecvChan chan<- map[primitive.ObjectID]struct{}
+	Name     string
+}
+
 func Init(colls *db.Collections) (*SocketServer, error) {
 	socketServer := &SocketServer{
 		Connections: Connections{
@@ -123,13 +130,13 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 		SendDataToSubscriptions:          make(chan SubscriptionDataMessageMulti),
 		SendDataToSubscriptionsExclusive: make(chan ExclusiveSubscriptionDataMessageMulti),
 		RemoveUserFromSubscription:       make(chan RemoveUserFromSubscription),
+		DestroySubscription:              make(chan string),
+		GetSubscriptionUids:              make(chan GetSubscriptionUids),
 
 		MessageSendQueue: make(chan QueuedMessage),
 
 		SendDataToUser:  make(chan UserDataMessage),
 		SendDataToUsers: make(chan UsersDataMessage),
-
-		DestroySubscription: make(chan string),
 	}
 	RunServer(socketServer, colls)
 	return socketServer, nil
@@ -292,7 +299,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in subscription data channel :", r)
+					log.Println("Recovered from panic in subscription data channel:", r)
 				}
 			}()
 			subsData := <-socketServer.SendDataToSubscription
@@ -317,7 +324,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in exclusive subscription data channel :", r)
+					log.Println("Recovered from panic in exclusive subscription data channel:", r)
 				}
 			}()
 			subsData := <-socketServer.SendDataToSubscriptionExclusive
@@ -344,7 +351,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in subscription data channel :", r)
+					log.Println("Recovered from panic in subscription data channel:", r)
 				}
 			}()
 			subsData := <-socketServer.SendDataToSubscriptions
@@ -371,7 +378,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in exclusive subscription data channel :", r)
+					log.Println("Recovered from panic in exclusive subscription data channel:", r)
 				}
 			}()
 			subsData := <-socketServer.SendDataToSubscriptionsExclusive
@@ -394,13 +401,32 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			socketServer.Subscriptions.mutex.Unlock()
 		}
 	}()
+	/* ----- Get uids of users using subscription ----- */
+	go func() {
+		for {
+			defer func() {
+				r := recover()
+				if r != nil {
+					log.Println("Recovered from panic getting uids from subscription channel:", r)
+				}
+			}()
+			subsData := <-socketServer.GetSubscriptionUids
+			socketServer.Subscriptions.mutex.Lock()
+			uids := make(map[primitive.ObjectID]struct{})
+			for _, oi := range socketServer.Subscriptions.data[subsData.Name] {
+				uids[oi] = struct{}{}
+			}
+			subsData.RecvChan <- uids
+			socketServer.Subscriptions.mutex.Unlock()
+		}
+	}()
 	/* ----- Send data to a specific user ----- */
 	go func() {
 		for {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in send data to user channel :", r)
+					log.Println("Recovered from panic in send data to user channel:", r)
 				}
 			}()
 			data := <-socketServer.SendDataToUser
@@ -432,7 +458,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in send data to users channel :", r)
+					log.Println("Recovered from panic in send data to users channel:", r)
 				}
 			}()
 			data := <-socketServer.SendDataToUsers
@@ -464,7 +490,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in remove user from subscription channel :", r)
+					log.Println("Recovered from panic in remove user from subscription channel:", r)
 				}
 			}()
 			data := <-socketServer.RemoveUserFromSubscription
@@ -490,7 +516,7 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 			defer func() {
 				r := recover()
 				if r != nil {
-					log.Println("Recovered from panic in destroy subscription channel :", r)
+					log.Println("Recovered from panic in destroy subscription channel:", r)
 				}
 			}()
 			subsName := <-socketServer.DestroySubscription

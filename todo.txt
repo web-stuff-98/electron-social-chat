@@ -2,8 +2,7 @@ Todos in order
  - Fix code for friend requests & invites
  - Fix user data sometimes not being fetched when component visible
  - Friends & blocked list aside section
- - Socket events for messages_sent_to and messages_received_from
- - Socket events for creating/updating/deleting channels
+ - Socket CHANGE events for creating/updating/deleting channels
  - Attachment uploads/downloads (using octet stream)
  - User online indicator
  - WebRTC network for video sharing

@@ -2,11 +2,14 @@ package attachmentserver
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"sync"
 
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
+	"github.com/web-stuff-98/electron-social-chat/pkg/socketmodels"
+	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -21,7 +24,7 @@ type AttachmentServer struct {
 	Uploaders Uploaders
 
 	ChunkChan  chan InChunk
-	DeleteChan chan primitive.ObjectID
+	DeleteChan chan Delete
 }
 
 type Uploaders struct {
@@ -31,30 +34,37 @@ type Uploaders struct {
 }
 
 type Upload struct {
-	Index  uint16
-	NextId primitive.ObjectID
+	Index      uint16
+	TotalBytes uint32
+	NextId     primitive.ObjectID
 }
 
 type InChunk struct {
-	Uid   primitive.ObjectID
-	MsgId primitive.ObjectID
-	Data  []byte
+	Uid           primitive.ObjectID
+	MsgId         primitive.ObjectID
+	SendUpdatesTo map[primitive.ObjectID]struct{}
+	Data          []byte
 }
 
-func Init(colls *db.Collections) *AttachmentServer {
+type Delete struct {
+	MsgId primitive.ObjectID
+	Uid   primitive.ObjectID
+}
+
+func Init(ss *socketserver.SocketServer, colls *db.Collections) *AttachmentServer {
 	as := &AttachmentServer{
 		Uploaders: Uploaders{
 			data: make(map[primitive.ObjectID]map[primitive.ObjectID]Upload),
 		},
 
 		ChunkChan:  make(chan InChunk),
-		DeleteChan: make(chan primitive.ObjectID),
+		DeleteChan: make(chan Delete),
 	}
-	runServer(as, colls)
+	runServer(as, ss, colls)
 	return as
 }
 
-func runServer(as *AttachmentServer, colls *db.Collections) {
+func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Collections) {
 	/* ------- Chunk loop ------- */
 	go func() {
 		for {
@@ -88,7 +98,10 @@ func runServer(as *AttachmentServer, colls *db.Collections) {
 			}); err != nil {
 				log.Println("Attachment chunk error:", err)
 				as.Uploaders.mutex.Unlock()
-				as.DeleteChan <- chunk.MsgId
+				as.DeleteChan <- Delete{
+					MsgId: chunk.MsgId,
+					Uid:   chunk.Uid,
+				}
 				continue
 			}
 			if lastChunk {
@@ -97,8 +110,54 @@ func runServer(as *AttachmentServer, colls *db.Collections) {
 				if len(as.Uploaders.data[chunk.Uid]) == 0 {
 					delete(as.Uploaders.data, chunk.Uid)
 				}
+				// Send progress update
+				if outBytes, err := json.Marshal(socketmodels.AttachmentProgress{
+					Ratio:  float32(1),
+					Failed: false,
+				}); err != nil {
+					log.Println("Attachment progress update JSON marshal error:", err)
+					delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
+					if len(as.Uploaders.data[chunk.Uid]) == 0 {
+						delete(as.Uploaders.data, chunk.Uid)
+					}
+					as.Uploaders.mutex.Unlock()
+					as.DeleteChan <- Delete{
+						MsgId: chunk.MsgId,
+						Uid:   chunk.Uid,
+					}
+					continue
+				} else {
+					ss.SendDataToUsers <- socketserver.UsersDataMessage{
+						Uids: chunk.SendUpdatesTo,
+						Data: outBytes,
+						Type: "ATTACHMENT_PROGRESS",
+					}
+				}
 			} else {
 				if _, ok := as.Uploaders.data[chunk.MsgId][chunk.MsgId]; ok {
+					// Send progress update
+					if outBytes, err := json.Marshal(socketmodels.AttachmentProgress{
+						Ratio:  (float32(as.Uploaders.data[chunk.Uid][chunk.MsgId].Index) * (4 * 1024 * 1024)) / float32(as.Uploaders.data[chunk.Uid][chunk.MsgId].TotalBytes),
+						Failed: false,
+					}); err != nil {
+						log.Println("Attachment progress update JSON marshal error:", err)
+						delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
+						if len(as.Uploaders.data[chunk.Uid]) == 0 {
+							delete(as.Uploaders.data, chunk.Uid)
+						}
+						as.Uploaders.mutex.Unlock()
+						as.DeleteChan <- Delete{
+							MsgId: chunk.MsgId,
+							Uid:   chunk.Uid,
+						}
+						continue
+					} else {
+						ss.SendDataToUsers <- socketserver.UsersDataMessage{
+							Uids: chunk.SendUpdatesTo,
+							Data: outBytes,
+							Type: "ATTACHMENT_PROGRESS",
+						}
+					}
 					// Increment chunk index
 					as.Uploaders.data[chunk.Uid][chunk.MsgId] = Upload{
 						Index:  as.Uploaders.data[chunk.Uid][chunk.MsgId].Index + 1,
@@ -113,32 +172,44 @@ func runServer(as *AttachmentServer, colls *db.Collections) {
 	/* ------- Delete loop ------- */
 	go func() {
 		for {
-			msgId := <-as.DeleteChan
+			deleteData := <-as.DeleteChan
 			as.Uploaders.mutex.Lock()
-			if _, err := colls.AttachmentMetadataCollection.DeleteOne(context.Background(), bson.M{"_id": msgId}); err != nil {
+			if _, err := colls.AttachmentMetadataCollection.DeleteOne(context.Background(), bson.M{"_id": deleteData.MsgId}); err != nil {
 				log.Println("Error deleting attachment metadata:", err)
+				delete(as.Uploaders.data[deleteData.Uid], deleteData.MsgId)
+				if len(as.Uploaders.data[deleteData.Uid]) == 0 {
+					delete(as.Uploaders.data, deleteData.Uid)
+				}
 				continue
 			}
-			deleteAttachmentChunks(msgId, colls)
+			deleteAttachmentChunks(deleteData.MsgId, deleteData.Uid, deleteData.MsgId, as, colls)
 			as.Uploaders.mutex.Unlock()
 		}
 	}()
 }
 
-func deleteAttachmentChunks(chunkId primitive.ObjectID, colls *db.Collections) {
+func deleteAttachmentChunks(chunkId primitive.ObjectID, uid primitive.ObjectID, msgId primitive.ObjectID, as *AttachmentServer, colls *db.Collections) {
 	chunkData := &models.AttachmentChunk{}
 	if err := colls.AttachmentChunkCollection.FindOne(context.Background(), bson.M{"_id": chunkId}).Decode(&chunkData); err != nil {
 		if err != mongo.ErrNoDocuments {
 			log.Println("Error finding attachment chunk:", err)
+			delete(as.Uploaders.data[uid], msgId)
+			if len(as.Uploaders.data[uid]) == 0 {
+				delete(as.Uploaders.data, uid)
+			}
 		}
 		return
 	}
 	if _, err := colls.AttachmentChunkCollection.DeleteOne(context.Background(), bson.M{"_id": chunkId}); err != nil {
 		log.Println("Error deleting attachment chunk:", err)
+		delete(as.Uploaders.data[uid], msgId)
+		if len(as.Uploaders.data[uid]) == 0 {
+			delete(as.Uploaders.data, uid)
+		}
 		return
 	}
 	if chunkData.NextChunkID == primitive.NilObjectID {
 		return
 	}
-	deleteAttachmentChunks(chunkData.NextChunkID, colls)
+	deleteAttachmentChunks(chunkData.NextChunkID, uid, msgId, as, colls)
 }

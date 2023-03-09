@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 
@@ -21,12 +22,13 @@ func responseMessage(w http.ResponseWriter, c int, m string) {
 }
 
 type handler struct {
-	DB           *mongo.Database
-	Collections  *db.Collections
-	RedisClient  *redis.Client
-	SocketServer *socketserver.SocketServer
+	DB               *mongo.Database
+	Collections      *db.Collections
+	RedisClient      *redis.Client
+	SocketServer     *socketserver.SocketServer
+	AttachmentServer *attachmentserver.AttachmentServer
 }
 
-func New(db *mongo.Database, collections *db.Collections, redisClient *redis.Client, socketServer *socketserver.SocketServer) handler {
-	return handler{db, collections, redisClient, socketServer}
+func New(db *mongo.Database, collections *db.Collections, redisClient *redis.Client, socketServer *socketserver.SocketServer, attachmentServer *attachmentserver.AttachmentServer) handler {
+	return handler{db, collections, redisClient, socketServer, attachmentServer}
 }

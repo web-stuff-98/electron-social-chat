@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
+	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/changestreams"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/handlers"
@@ -25,11 +26,12 @@ func main() {
 	router := mux.NewRouter()
 	redis := rdb.Init()
 	socketServer, err := socketserver.Init(colls)
+	attachmentServer := attachmentserver.Init(socketServer, colls)
 	if err != nil {
 		log.Fatal("Error setting up socket server: ", err)
 	}
 
-	h := handlers.New(DB, colls, redis, socketServer)
+	h := handlers.New(DB, colls, redis, socketServer, attachmentServer)
 
 	var origins []string
 	if os.Getenv("PRODUCTION") == "true" {

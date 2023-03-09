@@ -142,8 +142,9 @@ type AttachmentChunk struct {
 	NextChunkID primitive.ObjectID `bson:"next_chunk_id" json:"next_chunk_id"`
 }
 type AttachmentData struct {
-	ID   primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
-	Meta string             `bson:"meta" json:"meta"`
-	Name string             `bson:"name" json:"name"`
-	Size int                `bson:"size" json:"size"`
+	ID    primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Meta  string             `bson:"meta" json:"meta"`
+	Name  string             `bson:"name" json:"name"`
+	Size  int                `bson:"size" json:"size"`
+	Ratio float32            `bson:"ratio" json:"ratio"`
 }
