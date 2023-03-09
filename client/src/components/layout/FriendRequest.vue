@@ -81,7 +81,10 @@ function decline() {
       {{ " " + userStore.getUser(frq.author)?.username + "'s " }}
       friend request
     </div>
-    <div class="buttons">
+    <div
+      v-if="frq.author !== authStore.user?.ID && !frq.accepted && !frq.declined"
+      class="buttons"
+    >
       <button type="button" @click="accept">Accept</button>
       <button type="button" @click="decline">Decline</button>
     </div>

@@ -87,7 +87,10 @@ function decline() {
       {{ " " + userStore.getUser(inv.author)?.username + "'s " }}
       invitation
     </div>
-    <div class="buttons">
+    <div
+      v-if="inv.author !== authStore.user?.ID && !inv.accepted && !inv.declined"
+      class="buttons"
+    >
       <button type="button" @click="accept">Accept</button>
       <button type="button" @click="decline">Decline</button>
     </div>
