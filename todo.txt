@@ -1,13 +1,17 @@
 Todos in order
- - Do client code for sending/accepting friend requests & invites
+ - Fix code for friend requests & invites
+ - Fix user data sometimes not being fetched when component visible
+ - Friends & blocked list aside section
+ - Socket events for messages_sent_to and messages_received_from
+ - Socket events for creating/updating/deleting channels
  - Attachment uploads/downloads (using octet stream)
  - User online indicator
- - Socket events for creating/updating/deleting channels
  - WebRTC network for video sharing
  - Notifications
  - Zod & Formik
  - Go v10 validation for socket handlers
  - Autoadjust position of user dropdown to prevent overflow
+ - Clicking outside the user dropdown should close it
 
 Todos; before completion
  - Rename project to Tauri-Go-Vue-Chat, including github repo

@@ -997,6 +997,12 @@ func friendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 		}
 	}
 
+	for _, fr := range messagingData.FriendRequests {
+		if fr.Author == recipientId {
+			return fmt.Errorf("This user has already sent you a friend request")
+		}
+	}
+
 	recipientMessagingData := &models.UserMessagingData{}
 	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": recipientId}).Decode(&recipientMessagingData); err != nil {
 		return err
