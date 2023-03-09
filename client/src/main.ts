@@ -14,7 +14,7 @@ import {
   CoMenu,
   PrSpinner,
   MdErrorRound,
-  LaUser,
+  FaUser,
   HiSearch,
   MdDeleteSharp,
   BiDoorClosedFill,
@@ -27,6 +27,7 @@ import {
   BiCaretLeft,
   BiCaretRight,
   MdDarkmode,
+  MdAttachfileRound,
 } from "oh-vue-icons/icons";
 import { authStore } from "./store/AuthStore";
 
@@ -37,7 +38,7 @@ addIcons(
   CoMenu,
   PrSpinner,
   MdErrorRound,
-  LaUser,
+  FaUser,
   HiSearch,
   MdDeleteSharp,
   BiDoorClosedFill,
@@ -49,7 +50,8 @@ addIcons(
   BiCheckLg,
   BiCaretLeft,
   BiCaretRight,
-  MdDarkmode
+  MdDarkmode,
+  MdAttachfileRound
 );
 
 const routes = [

@@ -43,7 +43,7 @@ onMounted(() => {
       class="pfp"
       @click="clickPfpHiddenInput"
     >
-      <v-icon v-if="!authStore.user?.base64pfp" name="la-user" />
+      <v-icon v-if="!authStore.user?.base64pfp" name="fa-user" />
     </button>
     <div class="username">
       {{ authStore.user?.username }}

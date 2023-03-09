@@ -95,7 +95,7 @@ aside {
   flex-direction: column;
   background: var(--foreground);
   transition: transform 50ms linear;
-  box-shadow: 2px 0px 2px rgba(0, 0, 0, 0.07);
+  box-shadow: 2px 0px 2px rgba(0, 0, 0, 0.02);
   padding-right: 1px;
   padding-top: 2px;
   position: fixed;

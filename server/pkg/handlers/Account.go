@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -347,8 +348,6 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conversationsUnique := make(map[primitive.ObjectID]struct{})
-
 	messagingData := &models.UserMessagingData{}
 	if h.Collections.UserMessagingDataCollection.FindOne(r.Context(), bson.M{"_id": user.ID}).Decode(&messagingData); err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -359,25 +358,32 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	conversationsUnique := make(map[primitive.ObjectID]struct{})
+	conversations := []primitive.ObjectID{}
 	for _, oi := range messagingData.MessagesReceivedFrom {
 		conversationsUnique[oi] = struct{}{}
 	}
 	for _, oi := range messagingData.MessagesSentTo {
 		conversationsUnique[oi] = struct{}{}
 	}
-
-	conversations := []primitive.ObjectID{}
 	for oi := range conversationsUnique {
 		conversations = append(conversations, oi)
 	}
 
 	invitations := []models.Invitation{}
 	friendRequests := []models.FriendRequest{}
-
 	invitations = append(invitations, messagingData.Invitations...)
 	friendRequests = append(friendRequests, messagingData.FriendRequests...)
 
-	if cursor, err := h.Collections.UserMessagingDataCollection.Find(r.Context(), bson.M{"id": bson.M{"$in": messagingData.MessagesSentTo}}); err != nil {
+	sentAndReceived := []primitive.ObjectID{}
+	for _, oi := range messagingData.MessagesSentTo {
+		sentAndReceived = append(sentAndReceived, oi)
+	}
+	for _, oi := range messagingData.MessagesReceivedFrom {
+		sentAndReceived = append(sentAndReceived, oi)
+	}
+
+	if cursor, err := h.Collections.UserMessagingDataCollection.Find(r.Context(), bson.M{"id": bson.M{"$in": sentAndReceived}}); err != nil {
 		cursor.Close(r.Context())
 		responseMessage(w, http.StatusInternalServerError, "Internal error")
 		return
@@ -388,6 +394,7 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 			return
 		}
+		log.Println("LEN:", len(otherUsersMessagingData))
 		for _, umd := range otherUsersMessagingData {
 			for _, frq := range umd.FriendRequests {
 				if frq.Author == user.ID {

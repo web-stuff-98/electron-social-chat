@@ -36,17 +36,17 @@ svg {
   -webkit-text-size-adjust: 100%;
 
   --foreground: hsl(0, 0%, 97%);
-  --foreground-hover: hsl(180, 3%, 93%);
+  --foreground-hover: hsl(180, 0%, 93%);
 
-  --aside-width: 12rem;
+  --aside-width: 10rem;
 
   --shadow: 0px 3px 2px rgba(0, 0, 0, 0.1), 0px 2px 1px rgba(0, 0, 0, 0.05);
   --shadow-medium: 0px 1px 1px rgba(0, 0, 0, 0.1);
 
-  --border-radius-medium: 0.333rem;
+  --border-radius-medium: 0.25rem;
 
-  --base: rgba(0, 0, 0, 0.3);
-  --base-light: rgba(0, 0, 0, 0.15);
+  --base: rgba(0, 0, 0, 0.366);
+  --base-light: rgba(0, 0, 0, 0.175);
 
   --padding: 0.5rem;
   --padding-medium: 0.25rem;
@@ -58,13 +58,13 @@ svg {
 
   --text-color: white;
 
-  background-color: hsl(0, 4%, 9%);
+  background-color: hsl(180, 0%, 5%);
 
-  --foreground: hsl(0, 4%, 9%);
-  --foreground-hover: hsl(0, 3%, 11%);
+  --foreground: hsl(180, 0%, 5%);
+  --foreground-hover: hsl(180, 0%, 10%);
 
-  --base: rgba(255, 255, 255, 0.0966);
-  --base-light: rgba(255, 255, 255, 0.066);
+  --base: rgba(255, 255, 255, 0.06);
+  --base-light: rgba(255, 255, 255, 0.0365);
 }
 
 a {

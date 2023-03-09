@@ -42,7 +42,7 @@ function handleSubmitUpdate() {
       event_type: "DIRECT_MESSAGE_UPDATE",
       content: editInput.value,
       recipient: messagingStore.currentConversationUid,
-      id: msg.value.ID,
+      ID: msg.value.ID,
     })
   );
   isEditing.value = false;
@@ -91,7 +91,7 @@ function handleSubmitUpdate() {
         autofocus="true"
         ref="editInputRef"
         maxlength="300"
-        @value="editInput"
+        :value="editInput"
         @input="handleEditInput"
         v-show="isEditing"
       />
@@ -140,10 +140,11 @@ function handleSubmitUpdate() {
   box-sizing: border-box;
   justify-content: center;
   max-width: 100%;
-  gap: 2px;
+  gap: 7px;
+  padding: var(--padding-medium);
   textarea {
     box-sizing: border-box;
-    max-width: calc(var(--aside-width) - var(--padding-medium) * 14 - 2px);
+    max-width: calc(var(--aside-width) - var(--padding-medium) * 10 - 2px);
   }
 }
 .buttons {

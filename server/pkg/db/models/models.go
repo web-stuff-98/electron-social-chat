@@ -5,8 +5,12 @@ import "go.mongodb.org/mongo-driver/bson/primitive"
 /*
 A lot of things are split up into seperate collections, mainly
 so that changestreams don't get triggered by every minor change,
-such as messages being added. Changestreams should only be triggered
-in certain cases.
+such as messages being added. Also because it's not necessary to send
+all associated data on every request.
+
+IDs for things like "UserMessagingData", "Pfp" and so on will be the
+same as the document it refers to. For example the ID of a RoomImage
+will be the same ID as the room it is for.
 */
 
 /*---------------- User structs (session in redis) ----------------*/
@@ -126,4 +130,20 @@ type RoomExternalData struct {
 	Private bool                 `bson:"private" json:"private"`
 	Members []primitive.ObjectID `bson:"members" json:"members"`
 	Banned  []primitive.ObjectID `bson:"banned" json:"banned"`
+}
+
+/*---------------- Attachment structs ----------------*/
+
+type AttachmentChunk struct {
+	// First chunk ID will be message ID
+	ID   primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Data primitive.Binary   `bson:"data" json:"data"`
+	// If its the last chunk this will be nil object ID
+	NextChunkID primitive.ObjectID `bson:"next_chunk_id" json:"next_chunk_id"`
+}
+type AttachmentData struct {
+	ID   primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Meta string             `bson:"meta" json:"meta"`
+	Name string             `bson:"name" json:"name"`
+	Size int                `bson:"size" json:"size"`
 }

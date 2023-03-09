@@ -41,10 +41,10 @@
         "fullscreen": false,
         "resizable": true,
         "title": "client",
-        "width": 800,
+        "width": 500,
         "height": 600,
         "minWidth": 500,
-        "minHeight": 500
+        "minHeight": 600
       }
     ]
   }

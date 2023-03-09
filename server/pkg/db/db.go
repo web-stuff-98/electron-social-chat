@@ -16,6 +16,9 @@ type Collections struct {
 	UserMessagingDataCollection *mongo.Collection
 	PfpCollection               *mongo.Collection
 
+	AttachmentChunkCollection    *mongo.Collection
+	AttachmentMetadataCollection *mongo.Collection
+
 	RoomCollection                *mongo.Collection
 	RoomInternalDataCollection    *mongo.Collection
 	RoomExternalDataCollection    *mongo.Collection
@@ -43,6 +46,9 @@ func Init() (*mongo.Database, *Collections) {
 		UserMessagingDataCollection: DB.Collection("user_messaging_data"),
 		PfpCollection:               DB.Collection("pfps"),
 
+		AttachmentChunkCollection:    DB.Collection("attachment_chunks"),
+		AttachmentMetadataCollection: DB.Collection("attachment_metadata"),
+
 		RoomCollection:                DB.Collection("rooms"),
 		RoomInternalDataCollection:    DB.Collection("room_internal_data"),
 		RoomExternalDataCollection:    DB.Collection("room_external_data"),
@@ -50,6 +56,8 @@ func Init() (*mongo.Database, *Collections) {
 		RoomChannelCollection:         DB.Collection("room_channels"),
 		RoomChannelMessagesCollection: DB.Collection("room_channel_messages"),
 	}
+
+	//DB.Drop(context.Background())
 
 	colls.UserCollection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
 		Keys: bson.M{

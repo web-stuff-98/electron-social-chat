@@ -16,6 +16,7 @@ Todos in order
 Todos; before completion
  - Rename project to Tauri-Go-Vue-Chat, including github repo
  - Reorganise project structure
+ - Change v-ifs to v-shows
  - Clean up imports, add comments to templates, re-order functions
  - Clean up SCSS classes
  - Rate limiters for API routes & socket handler

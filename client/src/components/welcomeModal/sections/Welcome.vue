@@ -48,7 +48,6 @@ span {
 }
 p {
   margin: 0;
-  font-size: 1.125rem;
 }
 .buttons {
   display: flex;

@@ -93,6 +93,5 @@ func (h handler) WebSocketEndpoint(w http.ResponseWriter, r *http.Request) {
 			Online: false,
 		}
 	}()
-	log.Println("Connection")
 	reader(ws, h.SocketServer, &uid, h.Collections)
 }

@@ -54,6 +54,8 @@ function handleDeleteMessage() {
   >
     <div class="user-container">
       <User
+        :small="true"
+        :square="true"
         :room="roomStore.currentRoom"
         :menu="msg.author !== authStore.user?.ID"
         :dateTime="new Date(msg.created_at)"

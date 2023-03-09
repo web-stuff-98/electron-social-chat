@@ -60,7 +60,7 @@ onBeforeUnmount(() => {
       }"
       class="pfp"
     >
-      <v-icon v-if="!user?.base64pfp" name="la-user" />
+      <v-icon v-if="!user?.base64pfp" name="fa-user" />
     </div>
     <div class="name-date-time">
       <div

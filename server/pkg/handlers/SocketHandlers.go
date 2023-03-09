@@ -886,7 +886,6 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.Invitations[invitationIndex].Author}).Decode(&authorMessagingData); err != nil {
 		return err
 	}
-
 	roomExternalData := &models.RoomExternalData{}
 	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.Invitations[invitationIndex].RoomID}).Decode(&roomExternalData); err != nil {
 		return err
@@ -948,7 +947,7 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 	}
 
 	if _, err := colls.RoomExternalDataCollection.UpdateOne(context.Background(), bson.M{
-		"_id":             messagingData.Invitations[invitationIndex].ID,
+		"_id":             messagingData.Invitations[invitationIndex].RoomID,
 		"invitations._id": invitationId,
 	}, bson.M{
 		"$set": bson.M{
@@ -963,6 +962,7 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 		ID:        invitationId.Hex(),
 		Author:    messagingData.Invitations[invitationIndex].Author.Hex(),
 		Recipient: uid.Hex(),
+		Accept:    data.Accept,
 	}
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}
@@ -1010,6 +1010,11 @@ func friendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 		for _, oi := range recipientMessagingData.Blocked {
 			if oi == uid {
 				return fmt.Errorf("This user has blocked your account, you cannot send them friend requests")
+			}
+		}
+		for _, fr := range recipientMessagingData.FriendRequests {
+			if fr.Author == uid && !fr.Accepted && !fr.Declined {
+				return fmt.Errorf("You have already sent this user a friend request")
 			}
 		}
 	}
@@ -1219,6 +1224,7 @@ func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectI
 		ID:        friendRequestId.Hex(),
 		Author:    uid.Hex(),
 		Recipient: messagingData.FriendRequests[friendRequestIndex].Author.Hex(),
+		Accept:    data.Accept,
 	}
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}

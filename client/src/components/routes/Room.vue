@@ -240,6 +240,9 @@ async function openChannel(id: string) {
         <button type="submit">
           <v-icon name="md-send" />
         </button>
+        <button type="button">
+          <v-icon name="md-attachfile-round" />
+        </button>
       </form>
     </div>
   </div>

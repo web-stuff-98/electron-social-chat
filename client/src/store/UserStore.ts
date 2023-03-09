@@ -64,7 +64,7 @@ export const userStore: IUserStore = reactive({
         method: "GET",
         withCredentials: true,
       });
-      userStore.users = [...userStore.users.filter((u) => u.ID !== uid), u];
+      userStore.users.push(u);
     } catch (e) {
       console.warn(`Failed to cache user data for ${uid}: ${e}`);
     }

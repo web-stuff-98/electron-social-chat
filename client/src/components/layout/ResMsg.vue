@@ -6,7 +6,9 @@ defineProps<{ resMsg: IResMsg }>();
 <template>
   <div v-show="resMsg.pen || resMsg.err || resMsg.msg" class="res-msg">
     <v-icon v-if="resMsg.err" class="res-msg-err-icon" name="md-error-round" />
-    <p v-if="resMsg.msg">{{ resMsg.msg }}</p>
+    <p :style="resMsg.err ? { color: 'red' } : {}" v-if="resMsg.msg">
+      {{ resMsg.msg }}
+    </p>
     <v-icon
       v-if="resMsg.pen"
       name="pr-spinner"
@@ -30,12 +32,13 @@ defineProps<{ resMsg: IResMsg }>();
   p {
     margin: 0;
     padding: 0;
+    font-weight: 600;
   }
   .res-msg-err-icon {
     width: 1.5rem;
     height: 1.5rem;
     color: red;
-    fill:red;
+    fill: red;
   }
   .res-msg-spinner {
     width: 2.5rem;

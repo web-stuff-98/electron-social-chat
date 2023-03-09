@@ -94,8 +94,8 @@ func (h handler) GetUser(w http.ResponseWriter, r *http.Request) {
 	if err := h.Collections.PfpCollection.FindOne(r.Context(), bson.M{"_id": uid}).Decode(&pfp); err != nil {
 		if err != mongo.ErrNoDocuments {
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
+			return
 		}
-		return
 	} else {
 		user.Base64pfp = "data:image/jpeg;base64," + base64.StdEncoding.EncodeToString(pfp.Binary.Data)
 	}

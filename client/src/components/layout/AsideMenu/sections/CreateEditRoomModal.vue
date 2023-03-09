@@ -14,7 +14,7 @@ import CreateRoom from "./CreateRoom.vue";
     <div
       v-show="showCreateRoom || showEditRoom"
       class="modal"
-      :style="{ padding: '0', paddingTop: '1rem' }"
+      :style="{ padding: '0', paddingTop: 'calc(var(--padding-medium) + 9px)' }"
     >
       <button
         @click="

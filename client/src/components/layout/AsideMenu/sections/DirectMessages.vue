@@ -230,6 +230,9 @@ async function openConv(uid: string) {
         <button type="submit">
           <v-icon name="md-send" />
         </button>
+        <button type="button">
+          <v-icon name="md-attachfile-round"/>
+        </button>
       </form>
     </div>
     <button
@@ -329,8 +332,8 @@ async function openConv(uid: string) {
         margin: 0;
         width: fit-content;
         svg {
-          height: 1.25rem;
-          width: 1.25rem;
+          height: 1rem;
+          width: 1rem;
           filter: drop-shadow(var(--shadow-medium));
         }
       }

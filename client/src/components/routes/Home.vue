@@ -5,7 +5,7 @@ import { authStore } from "../../store/AuthStore";
 <template>
   <div v-if="authStore.user" class="container">
     <h1>Welcome</h1>
-    <span/>
+    <span />
     <h2>To get started click on the menu icon in the bottom left</h2>
   </div>
 </template>
@@ -28,7 +28,18 @@ import { authStore } from "../../store/AuthStore";
     padding: 0;
     border-bottom: 2px solid var(--text-color);
     width: 100%;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 50%, transparent 100%);
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 50%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      black 50%,
+      transparent 100%
+    );
   }
   h1,
   h2 {

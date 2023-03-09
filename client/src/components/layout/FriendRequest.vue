@@ -103,13 +103,20 @@ function decline() {
   box-sizing: border-box;
   .message {
     text-align: center;
+    font-size: 0.7rem;
+    box-sizing: border-box;
+    font-weight: 600;
   }
   .buttons {
     width: 100%;
     display: flex;
     gap: var(--padding-medium);
+    box-sizing: border-box;
     button {
+      padding: 3px;
       width: 50%;
+      font-size: 0.7rem;
+      border: 2px solid var(--base-light);
     }
   }
 }

@@ -175,6 +175,7 @@ type OutRoomInvitationResponse struct {
 	ID        string `json:"ID"`
 	Author    string `json:"author"`
 	Recipient string `json:"recipient"`
+	Accept    bool   `json:"accept"`
 }
 
 // TYPE: OUT_FRIEND_REQUEST
