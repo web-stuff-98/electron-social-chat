@@ -3,6 +3,7 @@ package attachmentserver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 
@@ -44,6 +45,7 @@ type InChunk struct {
 	MsgId         primitive.ObjectID
 	SendUpdatesTo map[primitive.ObjectID]struct{}
 	Data          []byte
+	RecvChan      chan<- bool
 }
 
 type Delete struct {
@@ -70,13 +72,24 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 		for {
 			chunk := <-as.ChunkChan
 			as.Uploaders.mutex.Lock()
+			metaData := &models.AttachmentData{}
+			if err := colls.AttachmentMetadataCollection.FindOne(context.Background(), bson.M{"_id": chunk.MsgId}).Decode(&metaData); err != nil {
+				as.Uploaders.mutex.Unlock()
+				as.DeleteChan <- Delete{
+					MsgId: chunk.MsgId,
+					Uid:   chunk.Uid,
+				}
+				chunk.RecvChan <- false
+				continue
+			}
 			nextId := primitive.NewObjectID()
 			if _, ok := as.Uploaders.data[chunk.Uid]; !ok {
 				// Create uploader data
 				uploaderData := make(map[primitive.ObjectID]Upload)
 				uploaderData[chunk.MsgId] = Upload{
-					Index:  0,
-					NextId: nextId,
+					Index:      0,
+					NextId:     nextId,
+					TotalBytes: uint32(metaData.Size),
 				}
 				as.Uploaders.data[chunk.Uid] = uploaderData
 			}
@@ -102,6 +115,7 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 					MsgId: chunk.MsgId,
 					Uid:   chunk.Uid,
 				}
+				chunk.RecvChan <- false
 				continue
 			}
 			if lastChunk {
@@ -125,6 +139,7 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 						MsgId: chunk.MsgId,
 						Uid:   chunk.Uid,
 					}
+					chunk.RecvChan <- false
 					continue
 				} else {
 					ss.SendDataToUsers <- socketserver.UsersDataMessage{
@@ -134,10 +149,13 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 					}
 				}
 			} else {
-				if _, ok := as.Uploaders.data[chunk.MsgId][chunk.MsgId]; ok {
+				if upload, ok := as.Uploaders.data[chunk.Uid][chunk.MsgId]; ok {
 					// Send progress update
+					ratio := (float32(upload.Index) * (4 * 1024 * 1024)) / float32(upload.TotalBytes)
+					log.Println("UPLOAD:", fmt.Sprint(upload))
+					log.Println("RATIO:", ratio)
 					if outBytes, err := json.Marshal(socketmodels.AttachmentProgress{
-						Ratio:  (float32(as.Uploaders.data[chunk.Uid][chunk.MsgId].Index) * (4 * 1024 * 1024)) / float32(as.Uploaders.data[chunk.Uid][chunk.MsgId].TotalBytes),
+						Ratio:  ratio,
 						Failed: false,
 					}); err != nil {
 						log.Println("Attachment progress update JSON marshal error:", err)
@@ -150,8 +168,10 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 							MsgId: chunk.MsgId,
 							Uid:   chunk.Uid,
 						}
+						chunk.RecvChan <- false
 						continue
 					} else {
+						log.Println("Send updates to:", chunk.SendUpdatesTo)
 						ss.SendDataToUsers <- socketserver.UsersDataMessage{
 							Uids: chunk.SendUpdatesTo,
 							Data: outBytes,
@@ -160,11 +180,13 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 					}
 					// Increment chunk index
 					as.Uploaders.data[chunk.Uid][chunk.MsgId] = Upload{
-						Index:  as.Uploaders.data[chunk.Uid][chunk.MsgId].Index + 1,
-						NextId: nextId,
+						Index:      upload.Index + 1,
+						TotalBytes: upload.TotalBytes,
+						NextId:     nextId,
 					}
 				}
 			}
+			chunk.RecvChan <- true
 			as.Uploaders.mutex.Unlock()
 		}
 	}()

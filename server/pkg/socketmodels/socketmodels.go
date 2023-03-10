@@ -25,9 +25,10 @@ type RoomOpenExitChannel struct {
 
 // TYPE: ROOM_MESSAGE
 type RoomMessage struct {
-	Type    string `json:"TYPE"`
-	Content string `json:"content"`
-	Channel string `json:"channel"`
+	Type          string `json:"TYPE"`
+	Content       string `json:"content"`
+	Channel       string `json:"channel"`
+	HasAttachment bool   `json:"has_attachment"`
 }
 
 // TYPE: ROOM_MESSAGE_UPDATE
@@ -47,10 +48,11 @@ type RoomMessageDelete struct {
 
 // TYPE: OUT_ROOM_MESSAGE
 type OutRoomMessage struct {
-	Type    string `json:"TYPE"`
-	Content string `json:"content"`
-	ID      string `json:"ID"`
-	Author  string `json:"author"`
+	Type          string `json:"TYPE"`
+	Content       string `json:"content"`
+	ID            string `json:"ID"`
+	Author        string `json:"author"`
+	HasAttachment bool   `json:"has_attachment"`
 }
 
 // TYPE: OUT_ROOM_MESSAGE_UPDATE
@@ -70,9 +72,10 @@ type OutRoomMessageDelete struct {
 
 // TYPE: DIRECT_MESSAGE
 type DirectMessage struct {
-	Type      string `json:"TYPE"`
-	Content   string `json:"content"`
-	Recipient string `json:"recipient"`
+	Type          string `json:"TYPE"`
+	Content       string `json:"content"`
+	Recipient     string `json:"recipient"`
+	HasAttachment bool   `json:"has_attachment"`
 }
 
 // TYPE: ROOM_INVITATION
@@ -126,13 +129,13 @@ type DirectMessageDelete struct {
 	ID        string `json:"ID"`
 }
 
-// TYPE: OUT_DIRECT_MESSAGE
+// TYPE: OUT_DIRECT_MESSAGE (no "TYPE" needed in model)
 type OutDirectMessage struct {
-	Type      string `json:"TYPE"`
-	Content   string `json:"content"`
-	ID        string `json:"ID"`
-	Author    string `json:"author"`
-	Recipient string `json:"recipient"`
+	Content       string `json:"content"`
+	ID            string `json:"ID"`
+	Author        string `json:"author"`
+	Recipient     string `json:"recipient"`
+	HasAttachment bool   `json:"has_attachment"`
 }
 
 // TYPE: OUT_DIRECT_MESSAGE_UPDATE
@@ -228,8 +231,14 @@ type OutChangeMessage struct {
 	Entity string `json:"ENTITY"`
 }
 
-// TYPE: ATTACHMENT_PROGRESS (no type needed in socket model, its set elsewhere)
+// TYPE: ATTACHMENT_PROGRESS (no "TYPE" needed in model)
 type AttachmentProgress struct {
 	Ratio  float32 `json:"ratio"`
 	Failed bool    `json:"err"`
+}
+
+// TYPE: ATTACHMENT_REQUEST (no "TYPE" needed in model)
+type AttachmentRequest struct {
+	MsgID  string `json:"ID"`
+	IsRoom bool   `json:"is_room"`
 }

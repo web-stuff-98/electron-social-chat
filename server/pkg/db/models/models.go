@@ -25,11 +25,12 @@ type User struct {
 }
 
 type DirectMessage struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
-	Content   string             `bson:"content,maxlength=300" json:"content"`
-	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
-	UpdatedAt primitive.DateTime `bson:"updated_at" json:"updated_at"`
-	Author    primitive.ObjectID `bson:"author" json:"author"`
+	ID            primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Content       string             `bson:"content,maxlength=300" json:"content"`
+	CreatedAt     primitive.DateTime `bson:"created_at" json:"created_at"`
+	UpdatedAt     primitive.DateTime `bson:"updated_at" json:"updated_at"`
+	Author        primitive.ObjectID `bson:"author" json:"author"`
+	HasAttachment bool               `bson:"has_attachment" json:"has_attachment"`
 }
 
 type Invitation struct {
@@ -73,11 +74,12 @@ type Pfp struct {
 /*---------------- Room structs ----------------*/
 
 type RoomChannelMessage struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
-	Content   string             `bson:"content,maxlength=300" json:"content"`
-	CreatedAt primitive.DateTime `bson:"created_at" json:"created_at"`
-	UpdatedAt primitive.DateTime `bson:"updated_at" json:"updated_at"`
-	Author    primitive.ObjectID `bson:"author" json:"author"`
+	ID            primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Content       string             `bson:"content,maxlength=300" json:"content"`
+	CreatedAt     primitive.DateTime `bson:"created_at" json:"created_at"`
+	UpdatedAt     primitive.DateTime `bson:"updated_at" json:"updated_at"`
+	Author        primitive.ObjectID `bson:"author" json:"author"`
+	HasAttachment bool               `bson:"has_attachment" json:"has_attachment"`
 }
 
 type RoomChannelMessages struct {
@@ -141,9 +143,10 @@ type AttachmentChunk struct {
 	NextChunkID primitive.ObjectID `bson:"next_chunk_id" json:"next_chunk_id"`
 }
 type AttachmentData struct {
-	ID    primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
-	Meta  string             `bson:"meta" json:"meta"`
-	Name  string             `bson:"name" json:"name"`
-	Size  int                `bson:"size" json:"size"`
-	Ratio float32            `bson:"ratio" json:"ratio"`
+	ID     primitive.ObjectID `bson:"_id,omitempty" json:"ID"`
+	Meta   string             `bson:"meta" json:"meta"`
+	Name   string             `bson:"name" json:"name"`
+	Size   int                `bson:"size" json:"size"`
+	Ratio  float32            `bson:"ratio" json:"ratio"`
+	Failed bool               `bson:"failed" json:"failed"`
 }

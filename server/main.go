@@ -73,6 +73,9 @@ func main() {
 	api.HandleFunc("/room/page/{page}", h.GetRoomPage).Methods(http.MethodGet)
 	api.HandleFunc("/rooms/own/ids", h.GetOwnRoomIDs).Methods(http.MethodGet)
 
+	api.HandleFunc("/attachment/chunk/{msgId}", h.UploadAttachmentChunk).Methods(http.MethodPost)
+	api.HandleFunc("/attachment/meta", h.CreateAttachmentMetadata).Methods(http.MethodPost)
+
 	api.HandleFunc("/ws", h.WebSocketEndpoint)
 
 	log.Println("Watching collections...")

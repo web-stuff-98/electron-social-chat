@@ -301,27 +301,40 @@ func roomMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *soc
 	if _, err := colls.RoomChannelMessagesCollection.UpdateByID(context.Background(), channel.ID, bson.M{
 		"$push": bson.M{
 			"messages": models.RoomChannelMessage{
-				ID:        msgId,
-				Content:   data.Content,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				Author:    uid,
+				ID:            msgId,
+				Content:       data.Content,
+				CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+				Author:        uid,
+				HasAttachment: data.HasAttachment,
 			},
 		},
 	}); err != nil {
 		return err
 	}
 
-	outBytes, err := json.Marshal(socketmodels.OutRoomMessage{
-		Type:    "OUT_ROOM_MESSAGE",
-		Content: data.Content,
-		ID:      msgId.Hex(),
-		Author:  uid.Hex(),
-	})
+	if outBytes, err := json.Marshal(socketmodels.OutRoomMessage{
+		Type:          "OUT_ROOM_MESSAGE",
+		Content:       data.Content,
+		ID:            msgId.Hex(),
+		Author:        uid.Hex(),
+		HasAttachment: data.HasAttachment,
+	}); err == nil {
+		ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
+			Name: "channel:" + channelId.Hex(),
+			Data: outBytes,
+		}
+	}
 
-	ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
-		Name: "channel:" + channelId.Hex(),
-		Data: outBytes,
+	if data.HasAttachment {
+		ss.SendDataToUser <- socketserver.UserDataMessage{
+			Type: "ATTACHMENT_REQUEST",
+			Uid:  uid,
+			Data: socketmodels.AttachmentRequest{
+				MsgID:  msgId.Hex(),
+				IsRoom: true,
+			},
+		}
 	}
 
 	return nil
@@ -515,11 +528,12 @@ func directMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), recipientId, bson.M{
 		"$push": bson.M{
 			"messages": models.DirectMessage{
-				ID:        msgId,
-				CreatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				UpdatedAt: primitive.NewDateTimeFromTime(time.Now()),
-				Author:    uid,
-				Content:   data.Content,
+				ID:            msgId,
+				CreatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+				UpdatedAt:     primitive.NewDateTimeFromTime(time.Now()),
+				Author:        uid,
+				Content:       data.Content,
+				HasAttachment: data.HasAttachment,
 			},
 		},
 		"$addToSet": bson.M{
@@ -537,19 +551,29 @@ func directMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 		return err
 	}
 
-	msg := &socketmodels.OutDirectMessage{
-		ID:        msgId.Hex(),
-		Content:   data.Content,
-		Author:    uid.Hex(),
-		Recipient: recipientId.Hex(),
-	}
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}
 	Uids[recipientId] = struct{}{}
 	ss.SendDataToUsers <- socketserver.UsersDataMessage{
 		Uids: Uids,
 		Type: "OUT_DIRECT_MESSAGE",
-		Data: msg,
+		Data: socketmodels.OutDirectMessage{
+			ID:            msgId.Hex(),
+			Content:       data.Content,
+			Author:        uid.Hex(),
+			Recipient:     recipientId.Hex(),
+			HasAttachment: data.HasAttachment,
+		},
+	}
+
+	if data.HasAttachment {
+		ss.SendDataToUser <- socketserver.UserDataMessage{
+			Type: "ATTACHMENT_REQUEST",
+			Data: socketmodels.AttachmentRequest{
+				MsgID:  msgId.Hex(),
+				IsRoom: false,
+			},
+		}
 	}
 
 	return nil

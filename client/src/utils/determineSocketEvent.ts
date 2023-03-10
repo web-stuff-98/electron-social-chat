@@ -120,6 +120,14 @@ export type FriendRequestResponseData = Omit<
   "TYPE"
 >;
 
+export type AttachmentRequestData = Omit<
+  {
+    ID: string;
+    is_room: boolean;
+  },
+  "TYPE"
+>;
+
 export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
@@ -196,6 +204,11 @@ export function instanceOfResponseMessageData(
   object: any
 ): object is ResponseMessageData {
   return object.TYPE === "RESPONSE_MESSAGE";
+}
+export function instanceOfAttachmentRequestData(
+  object: any
+): object is AttachmentRequestData {
+  return object.TYPE === "ATTACHMENT_REQUEST";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {

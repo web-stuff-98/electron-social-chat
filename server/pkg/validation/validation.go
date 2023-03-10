@@ -28,3 +28,10 @@ type UpdateRoomChannelsData struct {
 	Delete        []string                `json:"delete_ids"`
 	PromoteToMain string                  `json:"promote_to_main"`
 }
+
+type AttachmentMetadata struct {
+	ID       string `json:"ID"`
+	MimeType string `json:"mime_type"`
+	Name     string `json:"name"`
+	Size     int    `json:"size"`
+}

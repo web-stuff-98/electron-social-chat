@@ -226,8 +226,12 @@ func (h handler) UpdateRoomChannelsData(w http.ResponseWriter, r *http.Request) 
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+		return
+	}
 	var updateRoomChannelsData validation.UpdateRoomChannelsData
-	if json.Unmarshal(body, &updateRoomChannelsData); err != nil {
+	if err := json.Unmarshal(body, &updateRoomChannelsData); err != nil {
 		responseMessage(w, http.StatusBadRequest, "Bad request")
 		return
 	}

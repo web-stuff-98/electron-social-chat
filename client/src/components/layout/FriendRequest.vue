@@ -36,7 +36,7 @@ function decline() {
 </script>
 
 <template>
-  <div class="container">
+  <div class="request">
     <div
       v-if="!frq.accepted && !frq.declined && frq.author !== authStore.user?.ID"
       class="message"
@@ -92,7 +92,7 @@ function decline() {
 </template>
 
 <style lang="scss" scoped>
-.container {
+.request {
   display: flex;
   flex-direction: column;
   align-items: center;

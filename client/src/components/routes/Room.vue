@@ -13,12 +13,22 @@ import {
   instanceOfRoomMessageData,
   instanceOfRoomMessageUpdateData,
   instanceOfRoomMessageDeleteData,
+  instanceOfAttachmentRequestData,
 } from "../../utils/determineSocketEvent";
+import MessageModal from "../messageModal/MessageModal.vue";
+import { uploadAttachment } from "../../services/Attachment";
 
 const route = useRoute();
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 const messagesBottomRef = ref<HTMLCanvasElement | null>();
 
+const modalConfirmation = ref(() => {});
+const modalCancellation = ref<Function | undefined>(() => {});
+const showModal = ref(false);
+const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+
+const attachmentFile = ref<File | null>();
+const attachmentInputRef = ref<HTMLCanvasElement | null>();
 const messageInput = ref("");
 
 async function messageEventListener(e: MessageEvent) {
@@ -117,9 +127,43 @@ function handleMessageSubmit() {
       event_type: "ROOM_MESSAGE",
       content: messageInput.value,
       channel: roomChannelStore.currentChannel,
+      has_attachment: attachmentFile.value ? true : false,
     })
   );
   messageInput.value = "";
+}
+
+async function uploadRequestedAttachment(msgId: string) {
+  const file = attachmentFile.value;
+  attachmentFile.value = undefined;
+  if (file) {
+    try {
+      await uploadAttachment(
+        file,
+        msgId,
+        roomChannelStore.currentChannel,
+        true
+      );
+    } catch (e) {
+      showModal.value = true;
+      modalMsg.value = {
+        msg: `${e}`,
+        err: true,
+        pen: false,
+      };
+      modalCancellation.value = undefined;
+      modalConfirmation.value = () => (showModal.value = false);
+    }
+  } else {
+    showModal.value = true;
+    modalMsg.value = {
+      msg: `No file selected`,
+      err: true,
+      pen: false,
+    };
+    modalCancellation.value = undefined;
+    modalConfirmation.value = () => (showModal.value = false);
+  }
 }
 
 async function openChannel(id: string) {
@@ -149,6 +193,40 @@ async function openChannel(id: string) {
     };
   }
 }
+
+function watchForAttachmentRequest(e: MessageEvent) {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfAttachmentRequestData(data)) {
+    if (data.is_room) {
+      uploadRequestedAttachment(data.ID);
+    }
+  }
+}
+
+function selectAttachment(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (!target.files || !target.files[0]) return;
+  if (target.files[0].size > 20 * 1024 * 1024) {
+    modalMsg.value = {
+      msg: "File too large. Max 20mb.",
+      err: true,
+      pen: false,
+    };
+    showModal.value = true;
+    modalCancellation.value = undefined;
+    modalConfirmation.value = () => (showModal.value = false);
+    return;
+  }
+  attachmentFile.value = target.files[0];
+}
+
+onMounted(() => {
+  socketStore.socket?.addEventListener("message", watchForAttachmentRequest);
+});
+onBeforeUnmount(() => {
+  socketStore.socket?.removeEventListener("message", watchForAttachmentRequest);
+});
 </script>
 
 <template>
@@ -205,6 +283,12 @@ async function openChannel(id: string) {
       </div>
     </div>
     <div class="messaging-container">
+      <MessageModal
+        :msg="modalMsg"
+        :show="showModal"
+        :confirmationCallback="modalConfirmation"
+        :cancellationCallback="modalCancellation"
+      />
       <ResMsg :resMsg="resMsg" />
       <div v-if="!resMsg.pen && !resMsg.err && !resMsg.msg" class="content">
         <div class="header">
@@ -240,9 +324,14 @@ async function openChannel(id: string) {
         <button type="submit">
           <v-icon name="md-send" />
         </button>
-        <button type="button">
+        <button @click="attachmentInputRef?.click()" type="button">
           <v-icon name="md-attachfile-round" />
         </button>
+        <input
+          @change="selectAttachment"
+          ref="attachmentInputRef"
+          type="file"
+        />
       </form>
     </div>
   </div>

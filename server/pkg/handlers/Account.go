@@ -8,7 +8,6 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
-	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -394,7 +393,6 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 			return
 		}
-		log.Println("LEN:", len(otherUsersMessagingData))
 		for _, umd := range otherUsersMessagingData {
 			for _, frq := range umd.FriendRequests {
 				if frq.Author == user.ID {

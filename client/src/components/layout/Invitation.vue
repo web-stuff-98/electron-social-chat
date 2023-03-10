@@ -39,7 +39,7 @@ function decline() {
 </script>
 
 <template>
-  <div class="container">
+  <div class="invitation">
     <div
       v-if="!inv.accepted && !inv.declined && inv.author !== authStore.user?.ID"
       class="message"
@@ -98,7 +98,7 @@ function decline() {
 </template>
 
 <style lang="scss" scoped>
-.container {
+.invitation {
   display: flex;
   flex-direction: column;
   align-items: center;
