@@ -108,7 +108,7 @@ const watchForAttachmentUpdates = (e: MessageEvent) => {
       attachmentStore.attachmentMetadata[i].ratio = data.ratio;
       attachmentStore.attachmentMetadata[i].failed = data.err;
     }
-    return
+    return;
   }
   if (instanceOfAttachmentMetadata(data)) {
     const i = attachmentStore.attachmentMetadata.findIndex(
@@ -246,12 +246,14 @@ watch(socketStore, (_, newVal) => {
 
 const clearUserCacheInterval = ref<NodeJS.Timer>();
 const clearRoomCacheInterval = ref<NodeJS.Timer>();
+const clearAttachmentMetadataCacheInterval = ref<NodeJS.Timer>();
 const refreshTokenInterval = ref<NodeJS.Timer>();
 
 onBeforeUnmount(() => {
   /* ------- Cleanup intervals ------- */
   clearInterval(clearUserCacheInterval.value);
   clearInterval(clearRoomCacheInterval.value);
+  clearInterval(clearAttachmentMetadataCacheInterval.value);
   clearInterval(refreshTokenInterval.value);
 
   /* ------- Cleanup socket event listeners ------- */
@@ -287,6 +289,24 @@ onMounted(() => {
           roomStore.disappearedRooms = roomStore.disappearedRooms.filter(
             (r) => r.ID !== found
           );
+        }
+      }
+    });
+  }, 5000);
+  /* ------- Clear attachment data in cache interval ------- */
+  clearAttachmentMetadataCacheInterval.value = setInterval(() => {
+    attachmentStore.disappearedAttachments.forEach((a) => {
+      if (Date.now() > a.lastSeen + 30000) {
+        const found = attachmentStore.visibleAttachments.find(
+          (id) => id === a.id
+        );
+        if (!found) {
+          attachmentStore.attachmentMetadata =
+            attachmentStore.attachmentMetadata.filter((a) => a.ID !== found);
+          attachmentStore.disappearedAttachments =
+            attachmentStore.disappearedAttachments.filter(
+              (a) => a.id !== found
+            );
         }
       }
     });

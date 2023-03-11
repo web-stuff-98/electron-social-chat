@@ -2,6 +2,12 @@ import { reactive } from "vue";
 import { IAttachmentMetadata } from "../interfaces/GeneralInterfaces";
 import { getAttachmentMetadata } from "../services/Attachment";
 
+/**
+ * Interval runs inside App.vue which uses the "disappearedAttachments" array to
+ * clear the attachment metadata cache after the attacmhent has been "disappeared"
+ * for longer than 30 seconds
+ */
+
 interface IAttachmentStore {
   attachmentMetadata: IAttachmentMetadata[];
 
