@@ -711,6 +711,11 @@ func inviteToRoom(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *so
 	if err != nil {
 		return err
 	}
+
+	if recipientId == uid {
+		return fmt.Errorf("You cannot send an invitation to yourself")
+	}
+
 	roomId, err := primitive.ObjectIDFromHex(data.RoomID)
 	if err != nil {
 		return err
@@ -1009,6 +1014,10 @@ func friendRequest(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 	recipientId, err := primitive.ObjectIDFromHex(data.Recipient)
 	if err != nil {
 		return err
+	}
+
+	if recipientId == uid {
+		return fmt.Errorf("You cannot send a friend request to yourself")
 	}
 
 	messagingData := &models.UserMessagingData{}

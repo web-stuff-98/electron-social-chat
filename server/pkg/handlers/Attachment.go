@@ -12,6 +12,7 @@ import (
 	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/helpers"
+	"github.com/web-stuff-98/electron-social-chat/pkg/socketmodels"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/validation"
 	"go.mongodb.org/mongo-driver/bson"
@@ -297,6 +298,31 @@ func (h handler) CreateAttachmentMetadata(w http.ResponseWriter, r *http.Request
 			responseMessage(w, http.StatusInternalServerError, "Internal error")
 			return
 		}
+	}
+
+	sendUpdatesTo := make(map[primitive.ObjectID]struct{})
+	if isRoomMsg {
+		recvChan := make(chan map[primitive.ObjectID]struct{})
+		h.SocketServer.GetSubscriptionUids <- socketserver.GetSubscriptionUids{
+			Name:     "channel:" + recipient.Hex(),
+			RecvChan: recvChan,
+		}
+		uids := <-recvChan
+		sendUpdatesTo = uids
+	} else {
+		sendUpdatesTo[user.ID] = struct{}{}
+		sendUpdatesTo[recipient] = struct{}{}
+	}
+
+	h.SocketServer.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: sendUpdatesTo,
+		Data: socketmodels.AttachmentMetadata{
+			MsgID: msgId.Hex(),
+			Name:  dataInput.Name,
+			Meta:  dataInput.MimeType,
+			Size:  dataInput.Size,
+		},
+		Type: "ATTACHMENT_METADATA",
 	}
 
 	responseMessage(w, http.StatusCreated, "Metadata created")

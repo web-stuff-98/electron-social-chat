@@ -1,4 +1,6 @@
 Todos in order
+ - Progress bar component for attachments
+ - Automatic failure of attachment uploads that have not received chunks in a time window
  - Fix code for friend requests & invites
  - Fix user data sometimes not being fetched when component visible
  - Client code for banning & unbanning users from rooms

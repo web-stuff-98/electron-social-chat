@@ -238,6 +238,16 @@ type AttachmentProgress struct {
 	Failed bool    `json:"err"`
 }
 
+// TYPE: ATTACHMENT_META (no "TYPE" needed in model)
+// This exists just to make sure that the metadata is stored
+// on every client when the socket event is received
+type AttachmentMetadata struct {
+	MsgID string `json:"ID"`
+	Name  string `json:"name"`
+	Meta  string `json:"meta"`
+	Size  int    `json:"size"`
+}
+
 // TYPE: ATTACHMENT_REQUEST (no "TYPE" needed in model)
 type AttachmentRequest struct {
 	MsgID  string `json:"ID"`

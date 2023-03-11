@@ -139,6 +139,16 @@ export type AttachmentProgressData = Omit<
   "TYPE"
 >;
 
+export type AttachmentMetadata = Omit<
+  {
+    ID: string;
+    meta: string;
+    name: string;
+    size: number;
+  },
+  "TYPE"
+>;
+
 export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
@@ -225,6 +235,11 @@ export function instanceOfAttachmentProgressData(
   object: any
 ): object is AttachmentProgressData {
   return object.TYPE === "ATTACHMENT_PROGRESS";
+}
+export function instanceOfAttachmentMetadata(
+  object: any
+): object is AttachmentMetadata {
+  return object.TYPE === "ATTACHMENT_METADATA";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {

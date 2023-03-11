@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"sync"
+	"time"
 
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
@@ -36,6 +37,9 @@ type Upload struct {
 	Index      uint16
 	TotalBytes uint32
 	NextId     primitive.ObjectID
+	LastChunk  time.Time
+	// if timed out, the last chunk was received too long ago. upload has failed
+	TimedOut bool
 }
 
 type InChunk struct {
@@ -66,78 +70,136 @@ func Init(ss *socketserver.SocketServer, colls *db.Collections) *AttachmentServe
 
 func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Collections) {
 	/* ------- Chunk loop ------- */
+	go chunkLoop(as, ss, colls)
+	/* ------- Delete loop ------- */
+	go deleteLoop(as, ss, colls)
+	/* ------- Watch for disconnects from the socketServer to clear uploaders & delete incomplete attachments ------- */
+	go disconnectLoop(as, ss, colls)
+
+	/* ------- Attachments fail when chunks haven't been received for a while ------- */
+	cleanUpTicker := time.NewTicker(time.Second * 15)
+	done := make(chan bool)
 	go func() {
 		for {
-			chunk := <-as.ChunkChan
-			as.Uploaders.mutex.Lock()
-			metaData := &models.AttachmentData{}
-			if err := colls.AttachmentMetadataCollection.FindOne(context.Background(), bson.M{"_id": chunk.MsgId}).Decode(&metaData); err != nil {
+			select {
+			case <-done:
+				return
+			case <-cleanUpTicker.C:
+				as.Uploaders.mutex.Lock()
+				timedOut := make(map[primitive.ObjectID][]primitive.ObjectID)
+				for uid, v := range as.Uploaders.data {
+					for uploadId, u := range v {
+						if u.LastChunk.Before(time.Now().Add(-time.Second * 10)) {
+							as.Uploaders.data[uid][uploadId] = Upload{
+								TimedOut:   true,
+								Index:      u.Index,
+								TotalBytes: u.TotalBytes,
+								NextId:     u.NextId,
+								LastChunk:  u.LastChunk,
+							}
+							timedOut[uid] = append(timedOut[uid], uploadId)
+						}
+					}
+				}
 				as.Uploaders.mutex.Unlock()
-				as.DeleteChan <- Delete{
-					MsgId: chunk.MsgId,
-					Uid:   chunk.Uid,
+				for uid, uploads := range timedOut {
+					for _, oi := range uploads {
+						as.DeleteChan <- Delete{
+							MsgId: oi,
+							Uid:   uid,
+						}
+					}
 				}
-				chunk.RecvChan <- false
-				continue
 			}
-			nextId := primitive.NewObjectID()
-			if _, ok := as.Uploaders.data[chunk.Uid]; !ok {
-				// Create uploader data
-				uploaderData := make(map[primitive.ObjectID]Upload)
-				uploaderData[chunk.MsgId] = Upload{
-					Index:      0,
-					NextId:     nextId,
-					TotalBytes: uint32(metaData.Size),
-				}
-				as.Uploaders.data[chunk.Uid] = uploaderData
+		}
+	}()
+
+}
+
+func chunkLoop(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in attachment server chunk loop:", r)
 			}
-			lastChunk := len(chunk.Data) < 4*1024*1024
-			var chunkId primitive.ObjectID
-			if lastChunk {
-				nextId = primitive.NilObjectID
+		}()
+		chunk := <-as.ChunkChan
+		as.Uploaders.mutex.Lock()
+		metaData := &models.AttachmentData{}
+		if err := colls.AttachmentMetadataCollection.FindOne(context.Background(), bson.M{"_id": chunk.MsgId}).Decode(&metaData); err != nil {
+			as.Uploaders.mutex.Unlock()
+			as.DeleteChan <- Delete{
+				MsgId: chunk.MsgId,
+				Uid:   chunk.Uid,
 			}
-			if as.Uploaders.data[chunk.Uid][chunk.MsgId].Index == 0 {
-				chunkId = chunk.MsgId
-			} else {
-				chunkId = as.Uploaders.data[chunk.Uid][chunk.MsgId].NextId
+			chunk.RecvChan <- false
+			continue
+		}
+		nextId := primitive.NewObjectID()
+		if _, ok := as.Uploaders.data[chunk.Uid]; !ok {
+			// Create uploader data
+			uploaderData := make(map[primitive.ObjectID]Upload)
+			uploaderData[chunk.MsgId] = Upload{
+				Index:      0,
+				NextId:     nextId,
+				TotalBytes: uint32(metaData.Size),
+				LastChunk:  time.Now(),
 			}
-			// Write chunk
-			if _, err := colls.AttachmentChunkCollection.InsertOne(context.Background(), models.AttachmentChunk{
-				ID:          chunkId,
-				Data:        primitive.Binary{Data: chunk.Data},
-				NextChunkID: nextId,
-			}); err != nil {
-				as.Uploaders.mutex.Unlock()
-				as.DeleteChan <- Delete{
-					MsgId: chunk.MsgId,
-					Uid:   chunk.Uid,
-				}
-				chunk.RecvChan <- false
-				continue
+			as.Uploaders.data[chunk.Uid] = uploaderData
+		}
+		lastChunk := len(chunk.Data) < 4*1024*1024
+		var chunkId primitive.ObjectID
+		if lastChunk {
+			nextId = primitive.NilObjectID
+		}
+		if as.Uploaders.data[chunk.Uid][chunk.MsgId].Index == 0 {
+			chunkId = chunk.MsgId
+		} else {
+			chunkId = as.Uploaders.data[chunk.Uid][chunk.MsgId].NextId
+		}
+		// Write chunk
+		if _, err := colls.AttachmentChunkCollection.InsertOne(context.Background(), models.AttachmentChunk{
+			ID:          chunkId,
+			Data:        primitive.Binary{Data: chunk.Data},
+			NextChunkID: nextId,
+		}); err != nil {
+			as.Uploaders.mutex.Unlock()
+			as.DeleteChan <- Delete{
+				MsgId: chunk.MsgId,
+				Uid:   chunk.Uid,
 			}
-			if lastChunk {
-				// Size less than 4mb, its the last chunk, upload is complete
-				delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
-				if len(as.Uploaders.data[chunk.Uid]) == 0 {
-					delete(as.Uploaders.data, chunk.Uid)
-				}
-				// Send progress update
-				colls.AttachmentMetadataCollection.UpdateByID(context.Background(), chunk.MsgId, bson.M{
-					"$set": bson.M{
-						"ratio": 1,
-					},
-				})
-				ss.SendDataToUsers <- socketserver.UsersDataMessage{
-					Uids: chunk.SendUpdatesTo,
-					Data: socketmodels.AttachmentProgress{
-						Ratio:  1,
-						Failed: false,
-						MsgID:  chunk.MsgId.Hex(),
-					},
-					Type: "ATTACHMENT_PROGRESS",
-				}
-			} else {
-				if upload, ok := as.Uploaders.data[chunk.Uid][chunk.MsgId]; ok {
+			chunk.RecvChan <- false
+			continue
+		}
+		if lastChunk {
+			// Size less than 4mb, its the last chunk, upload is complete
+			delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
+			if len(as.Uploaders.data[chunk.Uid]) == 0 {
+				delete(as.Uploaders.data, chunk.Uid)
+			}
+			// Send progress update
+			colls.AttachmentMetadataCollection.UpdateByID(context.Background(), chunk.MsgId, bson.M{
+				"$set": bson.M{
+					"ratio": 1,
+				},
+			})
+			ss.SendDataToUsers <- socketserver.UsersDataMessage{
+				Uids: chunk.SendUpdatesTo,
+				Data: socketmodels.AttachmentProgress{
+					Ratio:  1,
+					Failed: false,
+					MsgID:  chunk.MsgId.Hex(),
+				},
+				Type: "ATTACHMENT_PROGRESS",
+			}
+		} else {
+			if upload, ok := as.Uploaders.data[chunk.Uid][chunk.MsgId]; ok {
+				if upload.TimedOut {
+					chunk.RecvChan <- false
+					as.Uploaders.mutex.Unlock()
+					continue
+				} else {
 					// Send progress update
 					ratio := (float32(upload.Index) * (4 * 1024 * 1024)) / float32(upload.TotalBytes)
 					colls.AttachmentMetadataCollection.UpdateByID(context.Background(), chunk.MsgId, bson.M{
@@ -159,44 +221,55 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 						Index:      upload.Index + 1,
 						TotalBytes: upload.TotalBytes,
 						NextId:     nextId,
+						LastChunk:  time.Now(),
 					}
 				}
 			}
-			chunk.RecvChan <- true
-			as.Uploaders.mutex.Unlock()
 		}
-	}()
+		chunk.RecvChan <- true
+		as.Uploaders.mutex.Unlock()
+	}
+}
 
-	/* ------- Delete loop ------- */
-	go func() {
-		for {
-			deleteData := <-as.DeleteChan
-			as.Uploaders.mutex.Lock()
-			if _, err := colls.AttachmentMetadataCollection.DeleteOne(context.Background(), bson.M{"_id": deleteData.MsgId}); err != nil {
-				log.Println("Error deleting attachment metadata:", err)
-				delete(as.Uploaders.data[deleteData.Uid], deleteData.MsgId)
-				if len(as.Uploaders.data[deleteData.Uid]) == 0 {
-					delete(as.Uploaders.data, deleteData.Uid)
-				}
-				continue
+func deleteLoop(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in attachment server delete loop:", r)
 			}
-			deleteAttachmentChunks(deleteData.MsgId, deleteData.Uid, deleteData.MsgId, as, colls)
-			as.Uploaders.mutex.Unlock()
+		}()
+		deleteData := <-as.DeleteChan
+		as.Uploaders.mutex.Lock()
+		if _, err := colls.AttachmentMetadataCollection.DeleteOne(context.Background(), bson.M{"_id": deleteData.MsgId}); err != nil {
+			log.Println("Error deleting attachment metadata:", err)
+			delete(as.Uploaders.data[deleteData.Uid], deleteData.MsgId)
+			if len(as.Uploaders.data[deleteData.Uid]) == 0 {
+				delete(as.Uploaders.data, deleteData.Uid)
+			}
+			continue
 		}
-	}()
+		deleteAttachmentChunks(deleteData.MsgId, deleteData.Uid, deleteData.MsgId, as, colls)
+		as.Uploaders.mutex.Unlock()
+	}
+}
 
-	/* ------- Watch for disconnects from the socketServer to clear uploaders & delete incomplete attachments ------- */
-	go func() {
-		for {
-			uid := <-ss.AttachmentServerRemoveUploaderChan
-			as.Uploaders.mutex.Lock()
-			for msgId := range as.Uploaders.data[uid] {
-				deleteAttachmentChunks(msgId, uid, msgId, as, colls)
+func disconnectLoop(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in attachment server disconnect loop:", r)
 			}
-			delete(as.Uploaders.data, uid)
-			as.Uploaders.mutex.Unlock()
+		}()
+		uid := <-ss.AttachmentServerRemoveUploaderChan
+		as.Uploaders.mutex.Lock()
+		for msgId := range as.Uploaders.data[uid] {
+			deleteAttachmentChunks(msgId, uid, msgId, as, colls)
 		}
-	}()
+		delete(as.Uploaders.data, uid)
+		as.Uploaders.mutex.Unlock()
+	}
 }
 
 func deleteAttachmentChunks(chunkId primitive.ObjectID, uid primitive.ObjectID, msgId primitive.ObjectID, as *AttachmentServer, colls *db.Collections) {

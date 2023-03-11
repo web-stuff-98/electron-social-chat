@@ -22,6 +22,7 @@ import {
   instanceOfFriendRequestDeleteData,
   instanceOfFriendRequestResponseData,
   instanceOfAttachmentProgressData,
+  instanceOfAttachmentMetadata,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
@@ -95,8 +96,8 @@ const watchForRoomChanges = (e: MessageEvent) => {
   }
 };
 
-/* ------- Update attachment progress when socket event received ------- */
-const watchForAttachmentProgressUpdates = (e: MessageEvent) => {
+/* ------- Watch for attachment progress updates & metadata creation ------- */
+const watchForAttachmentUpdates = (e: MessageEvent) => {
   const data = parseSocketEventData(e);
   if (!data) return;
   if (instanceOfAttachmentProgressData(data)) {
@@ -106,6 +107,22 @@ const watchForAttachmentProgressUpdates = (e: MessageEvent) => {
     if (i !== -1) {
       attachmentStore.attachmentMetadata[i].ratio = data.ratio;
       attachmentStore.attachmentMetadata[i].failed = data.err;
+    }
+    return
+  }
+  if (instanceOfAttachmentMetadata(data)) {
+    const i = attachmentStore.attachmentMetadata.findIndex(
+      (a) => a.ID === data.ID
+    );
+    if (i !== -1) {
+      attachmentStore.attachmentMetadata.push({
+        ID: data.ID,
+        meta: data.meta,
+        name: data.name,
+        ratio: 0,
+        size: data.size,
+        failed: false,
+      });
     }
   }
 };
@@ -221,10 +238,7 @@ watch(socketStore, (_, newVal) => {
     socketStore.socket?.addEventListener("message", watchForRoomChanges);
     socketStore.socket?.addEventListener("message", watchForResponseMessages);
     socketStore.socket?.addEventListener("message", watchMessaging);
-    socketStore.socket?.addEventListener(
-      "message",
-      watchForAttachmentProgressUpdates
-    );
+    socketStore.socket?.addEventListener("message", watchForAttachmentUpdates);
   } else {
     socketStore.connectSocket(authStore.user?.ID!);
   }
@@ -245,10 +259,7 @@ onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchForRoomChanges);
   socketStore.socket?.removeEventListener("message", watchForResponseMessages);
   socketStore.socket?.removeEventListener("message", watchMessaging);
-  socketStore.socket?.removeEventListener(
-    "message",
-    watchForAttachmentProgressUpdates
-  );
+  socketStore.socket?.removeEventListener("message", watchForAttachmentUpdates);
 });
 
 onMounted(() => {
