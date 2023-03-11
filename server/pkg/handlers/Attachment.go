@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -248,6 +249,7 @@ func (h handler) CreateAttachmentMetadata(w http.ResponseWriter, r *http.Request
 		}
 		recipientMessagingData := &models.UserMessagingData{}
 		if err := h.Collections.UserMessagingDataCollection.FindOne(r.Context(), bson.M{"_id": recipient}).Decode(&recipientMessagingData); err != nil {
+			log.Println("A ERR:", err)
 			if err == mongo.ErrNoDocuments {
 				responseMessage(w, http.StatusNotFound, "User not found")
 			} else {
@@ -287,6 +289,7 @@ func (h handler) CreateAttachmentMetadata(w http.ResponseWriter, r *http.Request
 		responseMessage(w, http.StatusRequestEntityTooLarge, "File too large")
 		return
 	} else {
+		log.Println("B ERR:", err)
 		if _, err := h.Collections.AttachmentMetadataCollection.InsertOne(r.Context(), models.AttachmentData{
 			ID:     msgId,
 			Meta:   dataInput.MimeType,

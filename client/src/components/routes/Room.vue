@@ -96,6 +96,7 @@ onMounted(async () => {
   }
 
   socketStore.socket?.addEventListener("message", messageEventListener);
+  socketStore.socket?.addEventListener("message", watchForAttachmentRequest);
 
   return () => {
     abortController.abort();
@@ -112,6 +113,7 @@ onBeforeUnmount(async () => {
     })
   );
   socketStore.socket?.removeEventListener("message", messageEventListener);
+  socketStore.socket?.removeEventListener("message", watchForAttachmentRequest);
 });
 
 function handleMessageInput(e: Event) {
@@ -120,7 +122,7 @@ function handleMessageInput(e: Event) {
   messageInput.value = target.value;
 }
 
-function handleMessageSubmit() {
+function handleFormSubmit() {
   socketStore.send(
     JSON.stringify({
       event_type: "ROOM_MESSAGE",
@@ -219,13 +221,6 @@ function selectAttachment(e: Event) {
   }
   attachmentFile.value = target.files[0];
 }
-
-onMounted(() => {
-  socketStore.socket?.addEventListener("message", watchForAttachmentRequest);
-});
-onBeforeUnmount(() => {
-  socketStore.socket?.removeEventListener("message", watchForAttachmentRequest);
-});
 </script>
 
 <template>
@@ -311,7 +306,7 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <form
-        @submit.prevent="handleMessageSubmit"
+        @submit.prevent="handleFormSubmit"
         v-if="!resMsg.pen && !resMsg.err && !resMsg.msg"
       >
         <input

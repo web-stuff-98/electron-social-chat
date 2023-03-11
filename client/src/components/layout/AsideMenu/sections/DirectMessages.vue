@@ -22,13 +22,20 @@ import { socketStore } from "../../../../store/SocketStore";
 import { messagingStore } from "../../../../store/MessagingStore";
 import DirectMessage from "../../DirectMessage.vue";
 import {
+  instanceOfAttachmentRequestData,
   instanceOfDirectMessageData,
   parseSocketEventData,
 } from "../../../../utils/determineSocketEvent";
 import FriendRequest from "../../FriendRequest.vue";
 import Invitation from "../../Invitation.vue";
+import MessageModal from "../../../messageModal/MessageModal.vue";
+import { uploadAttachment } from "../../../../services/Attachment";
 
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+const modalConfirmation = ref(() => {});
+const modalCancellation = ref<Function | undefined>(() => {});
+const showModal = ref(false);
+const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 enum EListSection {
   "MESSAGING" = "Messaging",
@@ -67,10 +74,16 @@ onMounted(async () => {
   }
 
   socketStore.socket?.addEventListener("message", messageEventListener);
+  socketStore.socket?.addEventListener("message", watchForAttachmentRequest);
 
   return () => {
     abortController.abort();
   };
+});
+
+onBeforeUnmount(() => {
+  socketStore.socket?.removeEventListener("message", messageEventListener);
+  socketStore.socket?.removeEventListener("message", watchForAttachmentRequest);
 });
 
 watch(listBottomRef, async () => {
@@ -97,10 +110,8 @@ async function messageEventListener(e: MessageEvent) {
   }
 }
 
-onBeforeUnmount(() => {
-  socketStore.socket?.removeEventListener("message", messageEventListener);
-});
-
+const attachmentFile = ref<File | null>();
+const attachmentInputRef = ref<HTMLElement>();
 const msgInput = ref("");
 const msgInputRef = ref<HTMLCanvasElement | null>();
 function handleFormInput(e: Event) {
@@ -117,6 +128,7 @@ function handleFormSubmit() {
       event_type: "DIRECT_MESSAGE",
       content: msgInput.value,
       recipient: messagingStore.currentConversationUid,
+      has_attachment: attachmentFile.value ? true : false,
     })
   );
   // @ts-ignore
@@ -149,11 +161,77 @@ async function openConv(uid: string) {
     abortController.abort();
   };
 }
+
+async function uploadRequestedAttachment(msgId: string) {
+  const file = attachmentFile.value;
+  attachmentFile.value = undefined;
+  if (file) {
+    try {
+      await uploadAttachment(
+        file,
+        msgId,
+        messagingStore.currentConversationUid,
+        false
+      );
+    } catch (e) {
+      showModal.value = true;
+      modalMsg.value = {
+        msg: `${e}`,
+        err: true,
+        pen: false,
+      };
+      modalCancellation.value = undefined;
+      modalConfirmation.value = () => (showModal.value = false);
+    }
+  } else {
+    showModal.value = true;
+    modalMsg.value = {
+      msg: `No file selected`,
+      err: true,
+      pen: false,
+    };
+    modalCancellation.value = undefined;
+    modalConfirmation.value = () => (showModal.value = false);
+  }
+}
+
+function watchForAttachmentRequest(e: MessageEvent) {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfAttachmentRequestData(data)) {
+    if (!data.is_room) {
+      uploadRequestedAttachment(data.ID);
+    }
+  }
+}
+
+function selectAttachment(e: Event) {
+  const target = e.target as HTMLInputElement;
+  if (!target.files || !target.files[0]) return;
+  if (target.files[0].size > 20 * 1024 * 1024) {
+    modalMsg.value = {
+      msg: "File too large. Max 20mb.",
+      err: true,
+      pen: false,
+    };
+    showModal.value = true;
+    modalCancellation.value = undefined;
+    modalConfirmation.value = () => (showModal.value = false);
+    return;
+  }
+  attachmentFile.value = target.files[0];
+}
 </script>
 
 <template>
   <div class="container">
     <div class="messaging-container">
+      <MessageModal
+        :msg="modalMsg"
+        :show="showModal"
+        :confirmationCallback="modalConfirmation"
+        :cancellationCallback="modalCancellation"
+      />
       <div class="friend-requests-invitations-buttons">
         <button
           @click="listSection = EListSection.MESSAGING"
@@ -193,7 +271,13 @@ async function openConv(uid: string) {
         </button>
       </div>
       <div class="list-container">
-        <div v-if="listSection === EListSection.MESSAGING && messagingStore.currentConversationUid" class="list">
+        <div
+          v-if="
+            listSection === EListSection.MESSAGING &&
+            messagingStore.currentConversationUid
+          "
+          class="list"
+        >
           <DirectMessage
             v-for="msg in messagingStore.conversations.find(
               (c) => c.uid === messagingStore.currentConversationUid
@@ -227,11 +311,16 @@ async function openConv(uid: string) {
           maxlength="300"
           type="text"
         />
+        <input
+          @change="selectAttachment"
+          ref="attachmentInputRef"
+          type="file"
+        />
         <button type="submit">
           <v-icon name="md-send" />
         </button>
-        <button type="button">
-          <v-icon name="md-attachfile-round"/>
+        <button @click="attachmentInputRef?.click()" type="button">
+          <v-icon name="md-attachfile-round" />
         </button>
       </form>
     </div>

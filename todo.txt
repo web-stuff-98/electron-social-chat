@@ -1,7 +1,8 @@
 Todos in order
  - Fix code for friend requests & invites
+ - Attachments for direct messages
+ - Attachment download button & image rendering
  - Fix user data sometimes not being fetched when component visible
- - Client code for banning & unbanning users from rooms
  - Friends & blocked list aside section
  - Socket CHANGE events for creating/updating/deleting channels
  - Client code for attachment uploads, downloads & progress bar

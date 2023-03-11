@@ -581,6 +581,7 @@ func directMessage(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *s
 	if data.HasAttachment {
 		ss.SendDataToUser <- socketserver.UserDataMessage{
 			Type: "ATTACHMENT_REQUEST",
+			Uid:  uid,
 			Data: socketmodels.AttachmentRequest{
 				MsgID:  msgId.Hex(),
 				IsRoom: false,

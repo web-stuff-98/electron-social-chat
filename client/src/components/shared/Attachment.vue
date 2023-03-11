@@ -55,6 +55,5 @@ onBeforeUnmount(() => {
   width: 100%;
   justify-content: flex-start;
   text-align: left;
-  padding: var(--padding-medium);
 }
 </style>

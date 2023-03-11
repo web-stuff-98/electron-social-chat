@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import { ref, toRefs } from "vue";
 import { IDirectMessage } from "../../interfaces/GeneralInterfaces";
+import { attachmentStore } from "../../store/AttachmentStore";
 import { authStore } from "../../store/AuthStore";
 import { messagingStore } from "../../store/MessagingStore";
 import { socketStore } from "../../store/SocketStore";
+import Attachment from "../shared/Attachment.vue";
 import User from "../shared/User.vue";
 const props = defineProps<{ msg: IDirectMessage }>();
 
@@ -83,9 +85,15 @@ function handleSubmitUpdate() {
         </button>
       </div>
     </div>
-    <p v-show="!isEditing">
+    <div class="content" v-show="!isEditing">
       {{ msg.content }}
-    </p>
+      <Attachment
+        v-if="msg.has_attachment"
+        :reverse="msg.author !== authStore.user?.ID"
+        :msgId="msg.ID"
+        :meta="attachmentStore.getMetadata(msg.ID)"
+      />
+    </div>
     <div class="edit-textarea-and-buttons">
       <textarea
         autofocus="true"
@@ -119,7 +127,7 @@ function handleSubmitUpdate() {
   align-items: flex-start;
   box-sizing: border-box;
   text-align: left;
-  p {
+  .content {
     text-align: left;
     width: 100%;
     font-size: 0.8rem;
@@ -166,7 +174,7 @@ function handleSubmitUpdate() {
 .message-reversed {
   align-items: flex-end;
   text-align: right;
-  p {
+  .content {
     text-align: right;
   }
 }
