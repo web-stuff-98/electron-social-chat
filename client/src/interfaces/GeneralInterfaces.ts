@@ -17,6 +17,7 @@ export interface IRoomMessage {
   author: string;
   created_at: string;
   updated_at: string;
+  has_attachment: boolean;
 }
 export interface IRoomChannel {
   ID: string;
@@ -34,11 +35,12 @@ export interface IDirectMessage {
   author: string;
   created_at: string;
   updated_at: string;
+  has_attachment: boolean;
 }
 export interface IInvitation {
   ID: string;
   author: string;
-  recipient:string;
+  recipient: string;
   room_id: string;
   created_at: string;
   accepted: boolean;
@@ -47,8 +49,16 @@ export interface IInvitation {
 export interface IFriendRequest {
   ID: string;
   author: string;
-  recipient:string;
+  recipient: string;
   created_at: string;
   accepted: boolean;
   declined: boolean;
+}
+export interface IAttachmentMetadata {
+  ID: string;
+  meta: string;
+  name: string;
+  size: number;
+  ratio: number;
+  failed: boolean;
 }

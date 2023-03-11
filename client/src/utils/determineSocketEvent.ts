@@ -10,6 +10,7 @@ export type RoomMessageData = Omit<
     content: string;
     ID: string;
     author: string;
+    has_attachment: boolean;
   },
   "TYPE"
 >;
@@ -40,6 +41,7 @@ export type DirectMessageData = Omit<
     content: string;
     author: string;
     recipient: string;
+    has_attachment: boolean;
   },
   "TYPE"
 >;
@@ -128,6 +130,15 @@ export type AttachmentRequestData = Omit<
   "TYPE"
 >;
 
+export type AttachmentProgressData = Omit<
+  {
+    ID: string;
+    ratio: number;
+    err: boolean;
+  },
+  "TYPE"
+>;
+
 export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
@@ -209,6 +220,11 @@ export function instanceOfAttachmentRequestData(
   object: any
 ): object is AttachmentRequestData {
   return object.TYPE === "ATTACHMENT_REQUEST";
+}
+export function instanceOfAttachmentProgressData(
+  object: any
+): object is AttachmentProgressData {
+  return object.TYPE === "ATTACHMENT_PROGRESS";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {

@@ -233,6 +233,7 @@ type OutChangeMessage struct {
 
 // TYPE: ATTACHMENT_PROGRESS (no "TYPE" needed in model)
 type AttachmentProgress struct {
+	MsgID  string  `json:"ID"`
 	Ratio  float32 `json:"ratio"`
 	Failed bool    `json:"err"`
 }

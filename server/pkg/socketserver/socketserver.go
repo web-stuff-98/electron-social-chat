@@ -146,6 +146,7 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 }
 
 func RunServer(socketServer *SocketServer, colls *db.Collections) {
+	/* ----- Connection registration ----- */
 	go connectionRegistrationLoop(socketServer, colls)
 	/* ----- Disconnect registration ----- */
 	go disconnectRegistrationLoop(socketServer, colls)

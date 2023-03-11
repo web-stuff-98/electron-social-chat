@@ -21,15 +21,17 @@ import {
   instanceOfFriendRequestData,
   instanceOfFriendRequestDeleteData,
   instanceOfFriendRequestResponseData,
+  instanceOfAttachmentProgressData,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
 import MessageModal from "./components/messageModal/MessageModal.vue";
-import { IFriendRequest, IResMsg } from "./interfaces/GeneralInterfaces";
+import { IResMsg } from "./interfaces/GeneralInterfaces";
 import UserdropdownMenu from "./components/layout/UserdropdownMenu/UserdropdownMenu.vue";
 import { messagingStore } from "./store/MessagingStore";
 import DarkToggle from "./components/layout/DarkToggle.vue";
 import CreateEditRoomModal from "./components/layout/AsideMenu/sections/CreateEditRoomModal.vue";
+import { attachmentStore } from "./store/AttachmentStore";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -89,6 +91,21 @@ const watchForRoomChanges = (e: MessageEvent) => {
         }
         roomStore.rooms[i].img_url = imgUrl;
       }
+    }
+  }
+};
+
+/* ------- Update attachment progress when socket event received ------- */
+const watchForAttachmentProgressUpdates = (e: MessageEvent) => {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfAttachmentProgressData(data)) {
+    const i = attachmentStore.attachmentMetadata.findIndex(
+      (a) => a.ID === data.ID
+    );
+    if (i !== -1) {
+      attachmentStore.attachmentMetadata[i].ratio = data.ratio;
+      attachmentStore.attachmentMetadata[i].failed = data.err;
     }
   }
 };
@@ -204,6 +221,10 @@ watch(socketStore, (_, newVal) => {
     socketStore.socket?.addEventListener("message", watchForRoomChanges);
     socketStore.socket?.addEventListener("message", watchForResponseMessages);
     socketStore.socket?.addEventListener("message", watchMessaging);
+    socketStore.socket?.addEventListener(
+      "message",
+      watchForAttachmentProgressUpdates
+    );
   } else {
     socketStore.connectSocket(authStore.user?.ID!);
   }
@@ -224,6 +245,10 @@ onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchForRoomChanges);
   socketStore.socket?.removeEventListener("message", watchForResponseMessages);
   socketStore.socket?.removeEventListener("message", watchMessaging);
+  socketStore.socket?.removeEventListener(
+    "message",
+    watchForAttachmentProgressUpdates
+  );
 });
 
 onMounted(() => {

@@ -3,7 +3,6 @@ package attachmentserver
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"sync"
 
@@ -109,7 +108,6 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 				Data:        primitive.Binary{Data: chunk.Data},
 				NextChunkID: nextId,
 			}); err != nil {
-				log.Println("Attachment chunk error:", err)
 				as.Uploaders.mutex.Unlock()
 				as.DeleteChan <- Delete{
 					MsgId: chunk.MsgId,
@@ -128,8 +126,8 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 				if outBytes, err := json.Marshal(socketmodels.AttachmentProgress{
 					Ratio:  float32(1),
 					Failed: false,
+					MsgID:  chunk.MsgId.Hex(),
 				}); err != nil {
-					log.Println("Attachment progress update JSON marshal error:", err)
 					delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
 					if len(as.Uploaders.data[chunk.Uid]) == 0 {
 						delete(as.Uploaders.data, chunk.Uid)
@@ -152,11 +150,10 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 				if upload, ok := as.Uploaders.data[chunk.Uid][chunk.MsgId]; ok {
 					// Send progress update
 					ratio := (float32(upload.Index) * (4 * 1024 * 1024)) / float32(upload.TotalBytes)
-					log.Println("UPLOAD:", fmt.Sprint(upload))
-					log.Println("RATIO:", ratio)
 					if outBytes, err := json.Marshal(socketmodels.AttachmentProgress{
 						Ratio:  ratio,
 						Failed: false,
+						MsgID:  chunk.MsgId.Hex(),
 					}); err != nil {
 						log.Println("Attachment progress update JSON marshal error:", err)
 						delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
@@ -171,7 +168,6 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 						chunk.RecvChan <- false
 						continue
 					} else {
-						log.Println("Send updates to:", chunk.SendUpdatesTo)
 						ss.SendDataToUsers <- socketserver.UsersDataMessage{
 							Uids: chunk.SendUpdatesTo,
 							Data: outBytes,

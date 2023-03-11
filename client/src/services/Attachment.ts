@@ -47,3 +47,6 @@ export const uploadAttachment = async (
     );
   }
 };
+
+export const getAttachmentMetadata = async (msgId: string) =>
+  makeRequest(`/api/attachment/${msgId}`, { withCredentials: true });

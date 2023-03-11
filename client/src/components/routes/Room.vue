@@ -44,6 +44,7 @@ async function messageEventListener(e: MessageEvent) {
       content: data.content,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
+      has_attachment: data.has_attachment
     });
     if (messagesBottomRef) {
       await nextTick(() => {

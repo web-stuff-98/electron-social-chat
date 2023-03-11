@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -142,7 +141,6 @@ func (h handler) UploadAttachmentChunk(w http.ResponseWriter, r *http.Request) {
 		sendUpdatesTo[user.ID] = struct{}{}
 		sendUpdatesTo[recipient] = struct{}{}
 	}
-	log.Println("CHUNK BEING CREATED")
 	recvChan := make(chan bool)
 	h.AttachmentServer.ChunkChan <- attachmentserver.InChunk{
 		Uid:           user.ID,
@@ -153,10 +151,8 @@ func (h handler) UploadAttachmentChunk(w http.ResponseWriter, r *http.Request) {
 	}
 	success := <-recvChan
 	if success {
-		log.Println("CHUNK CREATED")
 		responseMessage(w, http.StatusOK, "Chunk created")
 	} else {
-		log.Println("CHUNK FAILED")
 		responseMessage(w, http.StatusInternalServerError, "Chunk failed")
 	}
 }
@@ -354,6 +350,34 @@ func (h handler) DownloadAttachment(w http.ResponseWriter, r *http.Request) {
 	if firstChunk.NextChunkID != primitive.NilObjectID {
 		recursivelyWriteAttachmentChunksToResponse(w, firstChunk.NextChunkID, h.Collections.AttachmentChunkCollection, r.Context())
 	}
+}
+
+func (h handler) GetAttachmentMetadata(w http.ResponseWriter, r *http.Request) {
+	_, err := helpers.GetUserFromRequest(r, r.Context(), *h.Collections, h.RedisClient)
+	if err != nil {
+		responseMessage(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	msgId, err := primitive.ObjectIDFromHex(mux.Vars(r)["msgId"])
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	metaData := &models.AttachmentData{}
+	if err := h.Collections.AttachmentMetadataCollection.FindOne(r.Context(), bson.M{"_id": msgId}).Decode(&metaData); err != nil {
+		if err != mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(metaData)
 }
 
 func recursivelyWriteAttachmentChunksToResponse(w http.ResponseWriter, NextChunkID primitive.ObjectID, chunkColl *mongo.Collection, ctx context.Context) error {
