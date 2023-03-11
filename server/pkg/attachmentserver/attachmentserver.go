@@ -79,12 +79,9 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 
 	/* ------- Attachments fail when chunks haven't been received for a while. Keeps memory clear of stale uploads. ------- */
 	cleanUpTicker := time.NewTicker(time.Second * 15)
-	done := make(chan bool)
 	go func() {
 		for {
 			select {
-			case <-done:
-				return
 			case <-cleanUpTicker.C:
 				as.Uploaders.mutex.Lock()
 				timedOut := make(map[primitive.ObjectID][]primitive.ObjectID)
