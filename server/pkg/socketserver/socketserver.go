@@ -34,7 +34,7 @@ type SocketServer struct {
 	GetSubscriptionUids              chan GetSubscriptionUids
 
 	// Websocket Write/Read must be done from 1 goroutine. Queue all of them to be executed in a loop.
-	// Not the best way to do it... Should be a seperate queue for each connection
+	// This is a bad way to do it... Should be a seperate queue for each connection
 	MessageSendQueue chan QueuedMessage
 
 	SendDataToUser  chan UserDataMessage
