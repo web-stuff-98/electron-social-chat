@@ -38,6 +38,7 @@ type Upload struct {
 	TotalBytes uint32
 	NextId     primitive.ObjectID
 	LastChunk  time.Time
+	MsgId      primitive.ObjectID
 	// if timed out, the last chunk was received too long ago. upload has failed
 	TimedOut bool
 }
@@ -89,7 +90,7 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 				timedOut := make(map[primitive.ObjectID][]primitive.ObjectID)
 				for uid, v := range as.Uploaders.data {
 					for uploadId, u := range v {
-						if u.LastChunk.Before(time.Now().Add(-time.Second * 10)) {
+						if u.LastChunk.Before(time.Now().Add(-time.Second * 15)) {
 							as.Uploaders.data[uid][uploadId] = Upload{
 								TimedOut:   true,
 								Index:      u.Index,
@@ -97,23 +98,26 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 								NextId:     u.NextId,
 								LastChunk:  u.LastChunk,
 							}
-							timedOut[uid] = append(timedOut[uid], uploadId)
+							timedOut[uid] = append(timedOut[uid], u.MsgId)
 						}
 					}
 				}
 				as.Uploaders.mutex.Unlock()
 				for uid, uploads := range timedOut {
 					for _, oi := range uploads {
-						as.DeleteChan <- Delete{
-							MsgId: oi,
-							Uid:   uid,
-						}
+						// don't use the delete channel because it also deletes the attachment metadata document
+						// only the chunks and Upload struct should be removed
+						deleteAttachmentChunks(oi, uid, oi, as, colls)
+						colls.AttachmentMetadataCollection.UpdateByID(context.Background(), oi, bson.M{
+							"$set": bson.M{
+								"failed": true,
+							},
+						})
 					}
 				}
 			}
 		}
 	}()
-
 }
 
 func chunkLoop(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Collections) {
@@ -135,6 +139,11 @@ func chunkLoop(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 			}
 			chunk.RecvChan <- false
 			continue
+		} else {
+			if metaData.Failed {
+				chunk.RecvChan <- false
+				continue
+			}
 		}
 		nextId := primitive.NewObjectID()
 		if _, ok := as.Uploaders.data[chunk.Uid]; !ok {
@@ -145,6 +154,7 @@ func chunkLoop(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 				NextId:     nextId,
 				TotalBytes: uint32(metaData.Size),
 				LastChunk:  time.Now(),
+				MsgId:      chunk.MsgId,
 			}
 			as.Uploaders.data[chunk.Uid] = uploaderData
 		}
@@ -222,6 +232,7 @@ func chunkLoop(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 						TotalBytes: upload.TotalBytes,
 						NextId:     nextId,
 						LastChunk:  time.Now(),
+						MsgId:      chunk.MsgId,
 					}
 				}
 			}
