@@ -50,16 +50,16 @@ type Subscriptions struct {
 	data  map[string]map[*websocket.Conn]primitive.ObjectID
 	mutex sync.Mutex
 }
+type ConnectionsSubscriptionCount struct {
+	data  map[*websocket.Conn]uint8 //Max subscriptions is 128... nice number half max uint8
+	mutex sync.Mutex
+}
 
 /* --------------- OTHER STRUCTS --------------- */
 type ConnectionInfo struct {
 	Conn   *websocket.Conn
 	Uid    primitive.ObjectID
 	Online bool
-}
-type ConnectionsSubscriptionCount struct {
-	data  map[*websocket.Conn]uint8 //Max subscriptions is 128... nice number half max uint8
-	mutex sync.Mutex
 }
 type SubscriptionConnectionInfo struct {
 	Name string
