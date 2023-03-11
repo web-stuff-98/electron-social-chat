@@ -6,6 +6,8 @@ import { roomChannelStore } from "../../store/RoomChannelStore";
 import { authStore } from "../../store/AuthStore";
 import { socketStore } from "../../store/SocketStore";
 import { roomStore } from "../../store/RoomStore";
+import Attachment from "../shared/Attachment.vue";
+import { attachmentStore } from "../../store/AttachmentStore";
 const props = defineProps<{
   msg: IRoomMessage;
   reverse?: boolean;
@@ -65,6 +67,12 @@ function handleDeleteMessage() {
     </div>
     <div v-show="!isEditing" class="content">
       {{ msg.content }}
+      <Attachment
+        v-if="msg.has_attachment"
+        :reverse="reverse"
+        :msgId="msg.ID"
+        :meta="attachmentStore.getMetadata(msg.ID)"
+      />
     </div>
     <textarea
       autofocus="true"
@@ -118,10 +126,15 @@ function handleDeleteMessage() {
   font-size: 0.8rem;
   display: flex;
   align-items: center;
+  .user-container {
+    height: 100%;
+  }
   .content {
     padding: 0;
     flex-grow: 1;
     margin: var(--padding-medium);
+    width: 100%;
+    box-sizing: border-box;
   }
   textarea {
     flex-grow: 1;

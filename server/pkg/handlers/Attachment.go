@@ -380,6 +380,46 @@ func (h handler) GetAttachmentMetadata(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(metaData)
 }
 
+// Download attachment as a file using octet stream
+func (h handler) GetAttachment(w http.ResponseWriter, r *http.Request) {
+	rawAttachmentId := mux.Vars(r)["msgId"]
+	attachmentId, err := primitive.ObjectIDFromHex(rawAttachmentId)
+	if err != nil {
+		responseMessage(w, http.StatusBadRequest, "Invalid ID")
+		return
+	}
+
+	var metaData models.AttachmentData
+	if h.Collections.AttachmentMetadataCollection.FindOne(r.Context(), bson.M{"_id": attachmentId}).Decode(&metaData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	var firstChunk models.AttachmentChunk
+	if err := h.Collections.AttachmentChunkCollection.FindOne(r.Context(), bson.M{"_id": attachmentId}).Decode(&firstChunk); err != nil {
+		if err == mongo.ErrNoDocuments {
+			responseMessage(w, http.StatusNotFound, "Not found")
+		} else {
+			responseMessage(w, http.StatusInternalServerError, "Internal error")
+		}
+		return
+	}
+
+	w.Header().Add("Content-Type", "application/octet-stream")
+	w.Header().Add("Content-Length", strconv.Itoa(metaData.Size))
+	w.Header().Add("Content-Disposition", `attachment; filename="`+metaData.Name+`"`)
+
+	w.Write(firstChunk.Data.Data)
+
+	if firstChunk.NextChunkID != primitive.NilObjectID {
+		recursivelyWriteAttachmentChunksToResponse(w, firstChunk.NextChunkID, h.Collections.AttachmentChunkCollection, r.Context())
+	}
+}
+
 func recursivelyWriteAttachmentChunksToResponse(w http.ResponseWriter, NextChunkID primitive.ObjectID, chunkColl *mongo.Collection, ctx context.Context) error {
 	var chunk models.AttachmentChunk
 	if err := chunkColl.FindOne(ctx, bson.M{"_id": NextChunkID}).Decode(&chunk); err != nil {

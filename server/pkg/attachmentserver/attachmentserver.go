@@ -2,7 +2,6 @@ package attachmentserver
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"sync"
 
@@ -123,56 +122,37 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 					delete(as.Uploaders.data, chunk.Uid)
 				}
 				// Send progress update
-				if outBytes, err := json.Marshal(socketmodels.AttachmentProgress{
-					Ratio:  float32(1),
-					Failed: false,
-					MsgID:  chunk.MsgId.Hex(),
-				}); err != nil {
-					delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
-					if len(as.Uploaders.data[chunk.Uid]) == 0 {
-						delete(as.Uploaders.data, chunk.Uid)
-					}
-					as.Uploaders.mutex.Unlock()
-					as.DeleteChan <- Delete{
-						MsgId: chunk.MsgId,
-						Uid:   chunk.Uid,
-					}
-					chunk.RecvChan <- false
-					continue
-				} else {
-					ss.SendDataToUsers <- socketserver.UsersDataMessage{
-						Uids: chunk.SendUpdatesTo,
-						Data: outBytes,
-						Type: "ATTACHMENT_PROGRESS",
-					}
+				colls.AttachmentMetadataCollection.UpdateByID(context.Background(), chunk.MsgId, bson.M{
+					"$set": bson.M{
+						"ratio": 1,
+					},
+				})
+				ss.SendDataToUsers <- socketserver.UsersDataMessage{
+					Uids: chunk.SendUpdatesTo,
+					Data: socketmodels.AttachmentProgress{
+						Ratio:  1,
+						Failed: false,
+						MsgID:  chunk.MsgId.Hex(),
+					},
+					Type: "ATTACHMENT_PROGRESS",
 				}
 			} else {
 				if upload, ok := as.Uploaders.data[chunk.Uid][chunk.MsgId]; ok {
 					// Send progress update
 					ratio := (float32(upload.Index) * (4 * 1024 * 1024)) / float32(upload.TotalBytes)
-					if outBytes, err := json.Marshal(socketmodels.AttachmentProgress{
-						Ratio:  ratio,
-						Failed: false,
-						MsgID:  chunk.MsgId.Hex(),
-					}); err != nil {
-						log.Println("Attachment progress update JSON marshal error:", err)
-						delete(as.Uploaders.data[chunk.Uid], chunk.MsgId)
-						if len(as.Uploaders.data[chunk.Uid]) == 0 {
-							delete(as.Uploaders.data, chunk.Uid)
-						}
-						as.Uploaders.mutex.Unlock()
-						as.DeleteChan <- Delete{
-							MsgId: chunk.MsgId,
-							Uid:   chunk.Uid,
-						}
-						chunk.RecvChan <- false
-						continue
-					} else {
-						ss.SendDataToUsers <- socketserver.UsersDataMessage{
-							Uids: chunk.SendUpdatesTo,
-							Data: outBytes,
-							Type: "ATTACHMENT_PROGRESS",
-						}
+					colls.AttachmentMetadataCollection.UpdateByID(context.Background(), chunk.MsgId, bson.M{
+						"$set": bson.M{
+							"ratio": ratio,
+						},
+					})
+					ss.SendDataToUsers <- socketserver.UsersDataMessage{
+						Uids: chunk.SendUpdatesTo,
+						Data: socketmodels.AttachmentProgress{
+							Ratio:  ratio,
+							Failed: false,
+							MsgID:  chunk.MsgId.Hex(),
+						},
+						Type: "ATTACHMENT_PROGRESS",
 					}
 					// Increment chunk index
 					as.Uploaders.data[chunk.Uid][chunk.MsgId] = Upload{

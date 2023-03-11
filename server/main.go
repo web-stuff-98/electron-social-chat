@@ -74,7 +74,9 @@ func main() {
 	api.HandleFunc("/rooms/own/ids", h.GetOwnRoomIDs).Methods(http.MethodGet)
 
 	api.HandleFunc("/attachment/chunk/{msgId}", h.UploadAttachmentChunk).Methods(http.MethodPost)
+	api.HandleFunc("/attachment/meta/{msgId}", h.GetAttachmentMetadata).Methods(http.MethodGet)
 	api.HandleFunc("/attachment/meta", h.CreateAttachmentMetadata).Methods(http.MethodPost)
+	api.HandleFunc("/attachment/{msgId}", h.GetAttachment).Methods(http.MethodGet)
 
 	api.HandleFunc("/ws", h.WebSocketEndpoint)
 

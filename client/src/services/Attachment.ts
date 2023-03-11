@@ -1,4 +1,5 @@
 import axios from "axios";
+import { attachmentStore } from "../store/AttachmentStore";
 import { baseURL, makeRequest } from "./makeRequest";
 
 export const uploadAttachment = async (
@@ -20,6 +21,14 @@ export const uploadAttachment = async (
     }=${recipient}`,
     data: metaData,
     withCredentials: true,
+  });
+  attachmentStore.attachmentMetadata.push({
+    ID: msgId,
+    meta: file.type,
+    name: file.name,
+    size: file.size,
+    ratio: 0,
+    failed: false,
   });
   // Split attachment into 4mb chunks
   let fileUploadChunks: Promise<ArrayBuffer>[] = [];
@@ -49,4 +58,4 @@ export const uploadAttachment = async (
 };
 
 export const getAttachmentMetadata = async (msgId: string) =>
-  makeRequest(`/api/attachment/${msgId}`, { withCredentials: true });
+  makeRequest(`/api/attachment/meta/${msgId}`, { withCredentials: true });

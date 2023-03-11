@@ -8,9 +8,9 @@ import { attachmentStore } from "../../store/AttachmentStore";
 import ResMsg from "../layout/ResMsg.vue";
 
 const props = defineProps<{
-  meta: IAttachmentMetadata;
+  meta?: IAttachmentMetadata;
   msgId: string;
-  reverse: boolean;
+  reverse?: boolean;
 }>();
 const { meta, msgId } = toRefs(props);
 
