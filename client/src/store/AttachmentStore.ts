@@ -4,7 +4,7 @@ import { getAttachmentMetadata } from "../services/Attachment";
 
 /**
  * Interval runs inside App.vue which uses the "disappearedAttachments" array to
- * clear the attachment metadata cache after the attacmhent has been "disappeared"
+ * clear the attachment metadata cache after the attachment has been "disappeared"
  * for longer than 30 seconds
  */
 
