@@ -206,21 +206,6 @@ type OutFriendRequestResponse struct {
 	Recipient string `json:"recipient"`
 }
 
-/* -------- BLOCK & UNBLOCK / BAN & UNBAN MODELS -------- */
-
-// TYPE: BLOCK_USER/UNBLOCK_USER
-type BlockUnblockUser struct {
-	Type string `json:"TYPE"`
-	UID  string `json:"uid"`
-}
-
-// TYPE: BAN_USER/UNBAN_USER
-type BanUnbanUser struct {
-	Type   string `json:"TYPE"`
-	UID    string `json:"uid"`
-	RoomID string `json:"room_id"`
-}
-
 /* -------- MISC -------- */
 
 // TYPE: CHANGE
@@ -252,4 +237,29 @@ type AttachmentMetadata struct {
 type AttachmentRequest struct {
 	MsgID  string `json:"ID"`
 	IsRoom bool   `json:"is_room"`
+}
+
+// TYPE: BLOCK/UNBLOCK
+type Block struct {
+	Type string `json:"TYPE"`
+	Uid  string `json:"uid"`
+}
+
+// TYPE: BAN/UNBAN
+type Ban struct {
+	Type   string `json:"TYPE"`
+	Uid    string `json:"uid"`
+	RoomID string `json:"room_id"`
+}
+
+// TYPE: BANNED (no "TYPE" needed in model)
+type Banned struct {
+	Banned string `json:"banned"`
+	Banner string `json:"banner"`
+	RoomID string `json:"room_id"`
+}
+
+// TYPE: BLOCKED (no "TYPE" needed in model)
+type Blocked struct {
+	Blocker string `json:"blocker"`
 }

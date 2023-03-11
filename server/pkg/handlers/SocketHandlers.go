@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketmodels"
@@ -17,7 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
 	switch eventType {
 	case "WATCH_USER":
 		err := watchUser(data, conn, uid, ss, colls)
@@ -44,7 +45,7 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		err := roomMessageUpdate(data, conn, uid, ss, colls)
 		return err
 	case "ROOM_MESSAGE_DELETE":
-		err := roomMessageDelete(data, conn, uid, ss, colls)
+		err := roomMessageDelete(data, conn, uid, ss, as, colls)
 		return err
 	case "DIRECT_MESSAGE":
 		err := directMessage(data, conn, uid, ss, colls)
@@ -64,12 +65,6 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "FRIEND_REQUEST_RESPONSE":
 		err := friendRequestResponse(data, conn, uid, ss, colls)
 		return err
-	case "BLOCK_USER":
-		err := blockUser(data, conn, uid, ss, colls)
-		return err
-	case "UNBLOCK_USER":
-		err := unblockUser(data, conn, uid, ss, colls)
-		return err
 	case "ROOM_INVITATION":
 		err := inviteToRoom(data, conn, uid, ss, colls)
 		return err
@@ -78,6 +73,18 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		return err
 	case "ROOM_INVITATION_DELETE":
 		err := deleteInvitationToRoom(data, conn, uid, ss, colls)
+		return err
+	case "BLOCK":
+		err := blockUser(data, conn, uid, ss, as, colls)
+		return err
+	case "UNBLOCK":
+		err := unblockUser(data, conn, uid, ss, as, colls)
+		return err
+	case "BAN":
+		err := banUser(data, conn, uid, ss, as, colls)
+		return err
+	case "UNBAN":
+		err := unbanUser(data, conn, uid, ss, as, colls)
 		return err
 	}
 	return fmt.Errorf("Unrecognized event type")
@@ -427,7 +434,7 @@ func roomMessageUpdate(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 	return nil
 }
 
-func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
 	var data socketmodels.RoomMessageDelete
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -492,6 +499,11 @@ func roomMessageDelete(b []byte, conn *websocket.Conn, uid primitive.ObjectID, s
 		Type: "OUT_ROOM_MESSAGE_DELETE",
 		ID:   msgId.Hex(),
 	})
+
+	as.DeleteChan <- attachmentserver.Delete{
+		MsgId: msgId,
+		Uid:   uid,
+	}
 
 	ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
 		Name: "channel:" + channelId.Hex(),
@@ -1271,29 +1283,44 @@ func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectI
 	return nil
 }
 
-func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.BlockUnblockUser
+func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
+	var data socketmodels.Block
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
 
-	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
-		"$addToSet": bson.M{
-			"blocked": data.UID,
-		},
-		"$pull": bson.M{
-			"friends": data.UID,
-			"messages": bson.M{
-				"author": data.UID,
-			},
-			"messages_sent_to":       data.UID,
-			"messages_received_from": data.UID,
-		},
-	}); err != nil {
+	blockedUid, err := primitive.ObjectIDFromHex(data.Uid)
+	if err != nil {
 		return err
 	}
 
-	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), data.UID, bson.M{
+	userMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": uid}, bson.M{
+		"$addToSet": bson.M{
+			"blocked": blockedUid,
+		},
+		"$pull": bson.M{
+			"friends": blockedUid,
+			"messages": bson.M{
+				"author": blockedUid,
+			},
+			"messages_sent_to":       blockedUid,
+			"messages_received_from": blockedUid,
+		},
+	}, options.FindOneAndUpdate().SetReturnDocument(options.Before)).Decode(&userMessagingData); err != nil {
+		return err
+	}
+	for _, dm := range userMessagingData.Messages {
+		if dm.Author == blockedUid && dm.HasAttachment {
+			as.DeleteChan <- attachmentserver.Delete{
+				MsgId: dm.ID,
+				Uid:   blockedUid,
+			}
+		}
+	}
+
+	blockedUserMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": blockedUid}, bson.M{
 		"$pull": bson.M{
 			"friends": uid,
 			"messages": bson.M{
@@ -1302,8 +1329,16 @@ func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 			"messages_sent_to":       uid,
 			"messages_received_from": uid,
 		},
-	}); err != nil {
-		return nil
+	}, options.FindOneAndUpdate().SetReturnDocument(options.Before)).Decode(&blockedUserMessagingData); err != nil {
+		return err
+	}
+	for _, dm := range blockedUserMessagingData.Messages {
+		if dm.Author == uid && dm.HasAttachment {
+			as.DeleteChan <- attachmentserver.Delete{
+				MsgId: dm.ID,
+				Uid:   uid,
+			}
+		}
 	}
 
 	rooms := []models.Room{}
@@ -1312,41 +1347,243 @@ func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 		return err
 	} else {
 		cursor.All(context.Background(), rooms)
-		cursor.Close(context.Background())
+		defer cursor.Close(context.Background())
 		roomIds := []primitive.ObjectID{}
 		for _, r := range rooms {
 			roomIds = append(roomIds, r.ID)
+			internalData := &models.RoomInternalData{}
+			if err := colls.RoomInternalDataCollection.FindOne(context.Background(), bson.M{"_id": r.ID}).Decode(&internalData); err != nil {
+				return err
+			}
+			for _, oi := range internalData.Channels {
+				recvChan := make(chan map[primitive.ObjectID]struct{})
+				ss.GetSubscriptionUids <- socketserver.GetSubscriptionUids{
+					RecvChan: recvChan,
+					Name:     "channel:" + oi.Hex(),
+				}
+				uidsInChannel := <-recvChan
+				// Blocking a user also bans them from all the blockers rooms
+				ss.SendDataToUsers <- socketserver.UsersDataMessage{
+					Uids: uidsInChannel,
+					Data: socketmodels.Banned{
+						Banner: uid.Hex(),
+						Banned: data.Uid,
+						RoomID: r.ID.Hex(),
+					},
+					Type: "BANNED",
+				}
+				channelMessages := &models.RoomChannelMessages{}
+				if err := colls.RoomChannelMessagesCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": oi}, bson.M{
+					"messages": bson.M{
+						"author": blockedUid,
+					},
+				}, options.FindOneAndUpdate().SetReturnDocument(options.Before)).Decode(&channelMessages); err != nil {
+					return err
+				}
+				for _, rcm := range channelMessages.Messages {
+					if rcm.Author == blockedUid && rcm.HasAttachment {
+						as.DeleteChan <- attachmentserver.Delete{
+							MsgId: rcm.ID,
+							Uid:   blockedUid,
+						}
+					}
+				}
+			}
 		}
 		if _, err := colls.RoomExternalDataCollection.UpdateMany(context.Background(), bson.M{"_id": bson.M{"$in": roomIds}}, bson.M{
 			"$pull": bson.M{
-				"messages": bson.M{
-					"author": uid,
-				},
-				"members": uid,
+				"members": blockedUid,
 			},
 			"$addToSet": bson.M{
-				"banned": uid,
+				"banned": blockedUid,
 			},
 		}); err != nil {
 			return err
 		}
 	}
 
+	uids := make(map[primitive.ObjectID]struct{})
+	uids[uid] = struct{}{}
+	uids[blockedUid] = struct{}{}
+
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: uids,
+		Data: socketmodels.Blocked{
+			Blocker: uid.Hex(),
+		},
+		Type: "BLOCKED",
+	}
+
 	return nil
 }
 
-func unblockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.BlockUnblockUser
+func unblockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
+	var data socketmodels.Block
 	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	blockedUid, err := primitive.ObjectIDFromHex(data.Uid)
+	if err != nil {
 		return err
 	}
 
 	if _, err := colls.UserMessagingDataCollection.UpdateByID(context.Background(), uid, bson.M{
 		"$pull": bson.M{
-			"blocked": data.UID,
+			"blocked": blockedUid,
 		},
 	}); err != nil {
 		return err
+	}
+
+	uids := make(map[primitive.ObjectID]struct{})
+	uids[uid] = struct{}{}
+	uids[blockedUid] = struct{}{}
+
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: uids,
+		Data: socketmodels.Blocked{
+			Blocker: uid.Hex(),
+		},
+		Type: "UNBLOCKED",
+	}
+
+	return nil
+}
+
+func banUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
+	var data socketmodels.Ban
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	bannedUid, err := primitive.ObjectIDFromHex(data.Uid)
+	if err != nil {
+		return err
+	}
+	roomId, err := primitive.ObjectIDFromHex(data.RoomID)
+	if err != nil {
+		return err
+	}
+
+	if _, err := colls.RoomExternalDataCollection.UpdateByID(context.Background(), roomId, bson.M{
+		"$addToSet": bson.M{
+			"banned": bannedUid,
+		},
+		"$pull": bson.M{
+			"members": bannedUid,
+		},
+	}); err != nil {
+		return err
+	}
+
+	internalData := &models.RoomInternalData{}
+	if err := colls.RoomInternalDataCollection.FindOne(context.Background(), bson.M{"_id": roomId}).Decode(&internalData); err != nil {
+		return err
+	}
+
+	uids := make(map[primitive.ObjectID]struct{})
+	uids[bannedUid] = struct{}{}
+	uids[uid] = struct{}{}
+
+	for _, oi := range internalData.Channels {
+		channelMessages := &models.RoomChannelMessages{}
+		if err := colls.RoomChannelMessagesCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": oi}, bson.M{
+			"$pull": bson.M{
+				"messages": bson.M{
+					"author": bannedUid,
+				},
+			},
+		}, options.FindOneAndUpdate().SetReturnDocument(options.Before)).Decode(&channelMessages); err != nil {
+			return err
+		}
+		for _, rcm := range channelMessages.Messages {
+			if rcm.Author == bannedUid && rcm.HasAttachment {
+				as.DeleteChan <- attachmentserver.Delete{
+					MsgId: rcm.ID,
+					Uid:   bannedUid,
+				}
+			}
+		}
+		recvChan := make(chan map[primitive.ObjectID]struct{})
+		ss.GetSubscriptionUids <- socketserver.GetSubscriptionUids{
+			RecvChan: recvChan,
+			Name:     "channel:" + oi.Hex(),
+		}
+		uidsInChannel := <-recvChan
+		for oi2 := range uidsInChannel {
+			uids[oi2] = struct{}{}
+		}
+	}
+
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: uids,
+		Data: socketmodels.Banned{
+			Banner: uid.Hex(),
+			Banned: data.Uid,
+			RoomID: data.RoomID,
+		},
+		Type: "BANNED",
+	}
+
+	return nil
+}
+
+func unbanUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
+	var data socketmodels.Ban
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	bannedUid, err := primitive.ObjectIDFromHex(data.Uid)
+	if err != nil {
+		return err
+	}
+	roomId, err := primitive.ObjectIDFromHex(data.RoomID)
+	if err != nil {
+		return err
+	}
+
+	if _, err := colls.RoomExternalDataCollection.UpdateByID(context.Background(), roomId, bson.M{
+		"$pull": bson.M{
+			"banned": bannedUid,
+		},
+	}); err != nil {
+		return err
+	}
+
+	internalData := &models.RoomInternalData{}
+	if err := colls.RoomInternalDataCollection.FindOne(context.Background(), bson.M{"_id": roomId}).Decode(&internalData); err != nil {
+		return err
+	}
+
+	uids := make(map[primitive.ObjectID]struct{})
+	uids[bannedUid] = struct{}{}
+	uids[uid] = struct{}{}
+
+	for _, oi := range internalData.Channels {
+		channelMessages := &models.RoomChannelMessages{}
+		if err := colls.RoomChannelMessagesCollection.FindOne(context.Background(), bson.M{"_id": oi}).Decode(&channelMessages); err != nil {
+			return err
+		}
+		recvChan := make(chan map[primitive.ObjectID]struct{})
+		ss.GetSubscriptionUids <- socketserver.GetSubscriptionUids{
+			RecvChan: recvChan,
+			Name:     "channel:" + oi.Hex(),
+		}
+		uidsInChannel := <-recvChan
+		for oi2 := range uidsInChannel {
+			uids[oi2] = struct{}{}
+		}
+	}
+
+	ss.SendDataToUsers <- socketserver.UsersDataMessage{
+		Uids: uids,
+		Data: socketmodels.Banned{
+			Banner: uid.Hex(),
+			Banned: data.Uid,
+		},
+		Type: "UNBANNED",
 	}
 
 	return nil

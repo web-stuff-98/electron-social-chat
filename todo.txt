@@ -1,6 +1,4 @@
 Todos in order
- - Progress bar component for attachments
- - Automatic failure of attachment uploads that have not received chunks in a time window
  - Fix code for friend requests & invites
  - Fix user data sometimes not being fetched when component visible
  - Client code for banning & unbanning users from rooms
@@ -12,8 +10,9 @@ Todos in order
  - Notifications
  - Zod & Formik
  - Go v10 validation for socket handlers
- - Autoadjust position of user dropdown to prevent overflow
  - Clicking outside the user dropdown should close it
+ - Blocking a user should kick them out of rooms
+ - Banning a user should kick them out of rooms
 
 Todos; before completion
  - Rename project to Tauri-Go-Vue-Chat, including github repo

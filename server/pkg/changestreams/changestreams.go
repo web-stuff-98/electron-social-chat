@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 
+	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketmodels"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
@@ -38,9 +39,9 @@ var insertPipeline = bson.D{
 	},
 }
 
-func WatchCollections(DB *mongo.Database, ss *socketserver.SocketServer) {
+func WatchCollections(DB *mongo.Database, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer) {
 	go watchUserPfpUpdates(DB, ss)
-	go watchRoomChannelUpdates(DB, ss)
+	go watchRoomChannelUpdates(DB, ss, as)
 	go watchRoomUpdates(DB, ss)
 
 	go watchUserDeletes(DB, ss)
@@ -240,8 +241,11 @@ func watchRoomDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 			}
 			cursor.Close(context.Background())
 		}
-		db.Collection("room_channels").DeleteMany(context.Background(), bson.M{"room_id": id})
-		db.Collection("room_channel_messages").DeleteMany(context.Background(), bson.M{"_id": bson.M{"$in": channelIds}})
+		db.Collection("room_channels").UpdateMany(context.Background(), bson.M{"room_id": id}, bson.M{
+			"$set": bson.M{
+				"to_be_deleted": true,
+			},
+		})
 
 		outBytes, err := json.Marshal(socketmodels.OutChangeMessage{
 			Type:   "CHANGE",
@@ -262,7 +266,7 @@ func watchRoomDeletes(db *mongo.Database, ss *socketserver.SocketServer) {
 	}
 }
 
-func watchRoomChannelUpdates(db *mongo.Database, ss *socketserver.SocketServer) {
+func watchRoomChannelUpdates(db *mongo.Database, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer) {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("Recovered from panic watching room channel updates :", r)
@@ -291,12 +295,23 @@ func watchRoomChannelUpdates(db *mongo.Database, ss *socketserver.SocketServer) 
 				},
 			})
 			db.Collection("room_channels").DeleteOne(context.Background(), bson.M{"_id": changeEv.FullDocument.ID})
+			channelMessages := &models.RoomChannelMessages{}
+			if err := db.Collection("room_channel_messages").FindOne(context.Background(), bson.M{"_id": changeEv.DocumentKey.ID}).Decode(&channelMessages); err == nil {
+				for _, rcm := range channelMessages.Messages {
+					if rcm.HasAttachment {
+						as.DeleteChan <- attachmentserver.Delete{
+							MsgId: rcm.ID,
+							Uid:   rcm.Author,
+						}
+					}
+				}
+			}
+			db.Collection("room_channel_messages").DeleteOne(context.Background(), bson.M{"_id": changeEv.FullDocument.ID})
 		} else {
 			outBytes, err := json.Marshal(changeEv.FullDocument)
 			if err != nil {
 				continue
 			}
-
 			ss.SendDataToSubscription <- socketserver.SubscriptionDataMessage{
 				Name: "room-channel-data=" + changeEv.DocumentKey.ID.Hex(),
 				Data: outBytes,

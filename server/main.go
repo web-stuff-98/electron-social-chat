@@ -81,7 +81,7 @@ func main() {
 	api.HandleFunc("/ws", h.WebSocketEndpoint)
 
 	log.Println("Watching collections...")
-	changestreams.WatchCollections(DB, socketServer)
+	changestreams.WatchCollections(DB, socketServer, attachmentServer)
 
 	log.Println("API open on port", os.Getenv("PORT"))
 	log.Fatal(http.ListenAndServe(fmt.Sprint(":", os.Getenv("PORT")), c.Handler(router)))

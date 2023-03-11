@@ -4,7 +4,7 @@ import { IResMsg } from "../../interfaces/GeneralInterfaces";
 import ResMsg from "../layout/ResMsg.vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
 import { roomStore } from "../../store/RoomStore";
-import { ref, onMounted, onBeforeUnmount, nextTick } from "vue";
+import { ref, onMounted, onBeforeUnmount } from "vue";
 import { socketStore } from "../../store/SocketStore";
 import RoomMessage from "../layout/RoomMessage.vue";
 import { authStore } from "../../store/AuthStore";
@@ -20,7 +20,7 @@ import { uploadAttachment } from "../../services/Attachment";
 
 const route = useRoute();
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
-const messagesBottomRef = ref<HTMLCanvasElement | null>();
+const messagesBottomRef = ref<HTMLElement>();
 
 const modalConfirmation = ref(() => {});
 const modalCancellation = ref<Function | undefined>(() => {});
@@ -28,10 +28,10 @@ const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
 const attachmentFile = ref<File | null>();
-const attachmentInputRef = ref<HTMLCanvasElement | null>();
+const attachmentInputRef = ref<HTMLElement>();
 const messageInput = ref("");
 
-async function messageEventListener(e: MessageEvent) {
+function messageEventListener(e: MessageEvent) {
   const data = parseSocketEventData(e);
   if (!data) return;
   const i = roomChannelStore.channels.findIndex(
@@ -44,12 +44,10 @@ async function messageEventListener(e: MessageEvent) {
       content: data.content,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      has_attachment: data.has_attachment
+      has_attachment: data.has_attachment,
     });
     if (messagesBottomRef) {
-      await nextTick(() => {
-        messagesBottomRef.value?.scrollIntoView({ behavior: "auto" });
-      });
+      messagesBottomRef.value?.scrollIntoView({ behavior: "auto" });
     }
     return;
   }

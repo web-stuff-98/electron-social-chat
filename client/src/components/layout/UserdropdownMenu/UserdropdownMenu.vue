@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { getOwnRoomIDs } from "../../../services/Rooms";
-import { onMounted, watch, ref, onBeforeUnmount } from "vue";
+import { onMounted, watch, ref, onBeforeUnmount, nextTick } from "vue";
 import { socketStore } from "../../../store/SocketStore";
 import { userdropdownStore } from "../../../store/UserDropdownStore";
 import { IResMsg } from "../../../interfaces/GeneralInterfaces";
@@ -15,6 +15,7 @@ enum EUserdropdownMenuSection {
 
 const mousePos = ref<{ left: number; top: number }>({ left: 0, top: 0 });
 const menuPos = ref<{ left: number; top: number }>({ left: 0, top: 0 });
+const containerRef = ref<HTMLElement>();
 const mouseInside = ref(false);
 const handleMouseMove = (e: MouseEvent) =>
   (mousePos.value = { left: e.clientX, top: e.clientY });
@@ -23,11 +24,33 @@ const handleMouseEnter = () => (mouseInside.value = true);
 const handleMouseLeave = () => (mouseInside.value = false);
 const getOwnRoomIDsResMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
-watch(userdropdownStore, () => {
+function adjust() {
+  if (
+    containerRef.value?.clientWidth! + mousePos.value.left >
+    window.innerWidth
+  ) {
+    menuPos.value.left =
+      window.innerWidth - containerRef.value?.clientWidth! * 2;
+  }
+  if (
+    containerRef.value?.clientHeight! + mousePos.value.top >
+    window.innerHeight
+  ) {
+    menuPos.value.top =
+      window.innerHeight - containerRef.value?.clientHeight! * 2;
+  }
+}
+
+watch(userdropdownStore, async () => {
   menuPos.value = mousePos.value;
   section.value = EUserdropdownMenuSection.MENU;
   getOwnRoomIDsResMsg.value = { msg: "", err: false, pen: false };
+  await nextTick(() => {
+    adjust();
+  });
 });
+
+watch(section, adjust);
 
 onMounted(() => {
   window.addEventListener("mousemove", handleMouseMove);
@@ -48,7 +71,11 @@ async function inviteToRoomClicked() {
     getOwnRoomIDsResMsg.value = { msg: "", err: false, pen: true };
     const ids: string[] = await getOwnRoomIDs();
     ownRoomIDs.value = ids;
-    getOwnRoomIDsResMsg.value = { msg: ids.length > 0 ? "" : "You have no rooms", err: false, pen: false };
+    getOwnRoomIDsResMsg.value = {
+      msg: ids.length > 0 ? "" : "You have no rooms",
+      err: false,
+      pen: false,
+    };
   } catch (e) {
     getOwnRoomIDsResMsg.value = { msg: `${e}`, err: true, pen: false };
   }
@@ -78,7 +105,7 @@ function friendRequestClicked() {
 function blockClicked() {
   socketStore.send(
     JSON.stringify({
-      event_type: "BLOCK_USER",
+      event_type: "BLOCK",
       uid: userdropdownStore.subject,
     })
   );
@@ -88,7 +115,7 @@ function blockClicked() {
 function banClicked() {
   socketStore.send(
     JSON.stringify({
-      event_type: "BAN_USER",
+      event_type: "BAN",
       uid: userdropdownStore.subject,
       room_id: userdropdownStore.roomId,
     })
@@ -123,8 +150,9 @@ function submitDirectMessage() {
   <div
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
-    v-show="userdropdownStore.open"
+    v-if="userdropdownStore.open"
     class="container"
+    ref="containerRef"
     :style="{ left: `${menuPos.left}px`, top: `${menuPos.top}px` }"
   >
     <!-- Menu section -->

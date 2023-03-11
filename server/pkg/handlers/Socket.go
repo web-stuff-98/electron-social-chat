@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/helpers"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
@@ -28,7 +29,7 @@ var upgrader = websocket.Upgrader{
 	 - sendErrorMessageThroughSocket with http status code and message
 */
 
-func reader(conn *websocket.Conn, socketServer *socketserver.SocketServer, uid *primitive.ObjectID, colls *db.Collections) {
+func reader(conn *websocket.Conn, socketServer *socketserver.SocketServer, attachmentServer *attachmentserver.AttachmentServer, uid *primitive.ObjectID, colls *db.Collections) {
 	for {
 		defer func() {
 			r := recover()
@@ -49,7 +50,7 @@ func reader(conn *websocket.Conn, socketServer *socketserver.SocketServer, uid *
 		eventType, eventTypeOk := data["event_type"]
 
 		if eventTypeOk {
-			err := HandleSocketEvent(eventType.(string), p, conn, *uid, socketServer, colls)
+			err := HandleSocketEvent(eventType.(string), p, conn, *uid, socketServer, attachmentServer, colls)
 			if err != nil {
 				sendErrorMessageThroughSocket(conn, err)
 			}
@@ -93,5 +94,5 @@ func (h handler) WebSocketEndpoint(w http.ResponseWriter, r *http.Request) {
 			Online: false,
 		}
 	}()
-	reader(ws, h.SocketServer, &uid, h.Collections)
+	reader(ws, h.SocketServer, h.AttachmentServer, &uid, h.Collections)
 }

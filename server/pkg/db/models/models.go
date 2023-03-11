@@ -118,14 +118,14 @@ type RoomImage struct {
 	Binary primitive.Binary   `bson:"binary"`
 }
 
-// Will only be accessed when a client opens the room
+// these things are seperate for a couple of reasons
+
 type RoomInternalData struct {
 	ID          primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
 	Channels    []primitive.ObjectID `bson:"channels" json:"channel"`
 	MainChannel primitive.ObjectID   `bson:"main_channel" json:"main_channel"`
 }
 
-// Data that will be accessed before the room is opened (not for display)
 type RoomExternalData struct {
 	ID      primitive.ObjectID   `bson:"_id,omitempty" json:"ID"`
 	Private bool                 `bson:"private" json:"private"`

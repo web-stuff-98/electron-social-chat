@@ -6,6 +6,7 @@ import {
 } from "../../interfaces/GeneralInterfaces";
 import { attachmentStore } from "../../store/AttachmentStore";
 import ResMsg from "../layout/ResMsg.vue";
+import ProgressBar from "../shared/Progress.vue";
 
 const props = defineProps<{
   meta?: IAttachmentMetadata;
@@ -35,13 +36,14 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    ref="containerRef"
     :style="reverse ? { justifyContent: 'flex-end', textAlign: 'right' } : {}"
+    ref="containerRef"
     class="attachment"
   >
-    <div v-if="meta">
+    <div v-if="meta && meta.ratio === 1">
       {{ meta }}
     </div>
+    <ProgressBar v-if="meta && meta.ratio < 1" :ratio="meta.ratio" />
     <ResMsg :resMsg="resMsg" />
   </div>
 </template>
