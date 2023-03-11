@@ -77,7 +77,7 @@ func runServer(as *AttachmentServer, ss *socketserver.SocketServer, colls *db.Co
 	/* ------- Watch for disconnects from the socketServer to clear uploaders & delete incomplete attachments ------- */
 	go disconnectLoop(as, ss, colls)
 
-	/* ------- Attachments fail when chunks haven't been received for a while ------- */
+	/* ------- Attachments fail when chunks haven't been received for a while. Keeps memory clear of stale uploads. ------- */
 	cleanUpTicker := time.NewTicker(time.Second * 15)
 	done := make(chan bool)
 	go func() {
