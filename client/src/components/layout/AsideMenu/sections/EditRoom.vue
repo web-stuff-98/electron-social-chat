@@ -13,6 +13,7 @@ import { roomChannelStore } from "../../../../store/RoomChannelStore";
 import { editRoomChannelsData } from "../../../../store/EditRoomChannelsData";
 import { roomStore } from "../../../../store/RoomStore";
 import { editRoomId } from "../../../../store/CreateEditRoomStore";
+import User from "../../../shared/User.vue";
 
 enum EEditRoomSection {
   "BASIC" = "Basic room settings",
@@ -29,6 +30,8 @@ const room = ref<IRoom>({
   channels: [],
   main_channel: "",
   is_private: false,
+  members: [],
+  banned: [],
 });
 const resMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
 
@@ -208,11 +211,25 @@ async function handleSubmit() {
       <span class="users" v-if="section === EEditRoomSection.USERS">
         <div class="list-container">
           <label>Banned</label>
-          <div class="users-banned"></div>
+          <div class="users-banned">
+            <User
+              :small="true"
+              :square="true"
+              :uid="uid"
+              v-for="uid in room.banned"
+            />
+          </div>
         </div>
         <div class="list-container">
           <label>Members</label>
-          <div class="users-members"></div>
+          <div class="users-members">
+            <User
+              :small="true"
+              :square="true"
+              :uid="uid"
+              v-for="uid in room.members"
+            />
+          </div>
         </div>
       </span>
       <button
@@ -300,9 +317,11 @@ async function handleSubmit() {
         }
         .users-banned,
         .users-members {
-          min-width: 5rem;
+          min-width: 6rem;
           border: 1px solid var(--base-light);
-          min-height: 5rem;
+          height: 12rem;
+          max-height: 12rem;
+          overflow-y: auto;
           border-radius: var(--border-radius-medium);
         }
       }

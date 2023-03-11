@@ -931,6 +931,10 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 	if err := colls.RoomExternalDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.Invitations[invitationIndex].RoomID}).Decode(&roomExternalData); err != nil {
 		return err
 	}
+	roomInternalData := &models.RoomInternalData{}
+	if err := colls.RoomInternalDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.Invitations[invitationIndex].RoomID}).Decode(&roomInternalData); err != nil {
+		return err
+	}
 
 	var deleteIfErr error = nil
 	for _, oi := range roomExternalData.Banned {
@@ -951,6 +955,7 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 			break
 		}
 	}
+
 	if deleteIfErr != nil {
 		if err := colls.UserMessagingDataCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": uid}, bson.M{
 			"$pull": bson.M{
@@ -987,8 +992,8 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 		return deleteIfErr
 	}
 
-	if _, err := colls.RoomExternalDataCollection.UpdateOne(context.Background(), bson.M{
-		"_id":             messagingData.Invitations[invitationIndex].RoomID,
+	if _, err := colls.UserMessagingDataCollection.UpdateOne(context.Background(), bson.M{
+		"_id":             messagingData.ID,
 		"invitations._id": invitationId,
 	}, bson.M{
 		"$set": bson.M{
@@ -999,19 +1004,46 @@ func invitationToRoomResponse(b []byte, conn *websocket.Conn, uid primitive.Obje
 		return err
 	}
 
-	inv := &socketmodels.OutRoomInvitationResponse{
-		ID:        invitationId.Hex(),
-		Author:    messagingData.Invitations[invitationIndex].Author.Hex(),
-		Recipient: uid.Hex(),
-		Accept:    data.Accept,
+	if data.Accept {
+		if _, err := colls.RoomExternalDataCollection.UpdateOne(context.Background(), bson.M{
+			"_id": messagingData.Invitations[invitationIndex].RoomID,
+		}, bson.M{
+			"$addToSet": bson.M{
+				"members": messagingData.ID,
+			},
+		}); err != nil {
+			return err
+		}
+		for _, channelId := range roomInternalData.Channels {
+			recvChan := make(chan map[primitive.ObjectID]struct{})
+			ss.GetSubscriptionUids <- socketserver.GetSubscriptionUids{
+				RecvChan: recvChan,
+				Name:     "channel:" + channelId.Hex(),
+			}
+			uidsInChannel := <-recvChan
+			ss.SendDataToUsers <- socketserver.UsersDataMessage{
+				Uids: uidsInChannel,
+				Type: "MEMBER_ADDED",
+				Data: socketmodels.MemberAdded{
+					Uid:    uid.Hex(),
+					RoomID: messagingData.Invitations[invitationIndex].RoomID.Hex(),
+				},
+			}
+		}
 	}
+
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}
 	Uids[messagingData.Invitations[invitationIndex].Author] = struct{}{}
 	ss.SendDataToUsers <- socketserver.UsersDataMessage{
 		Uids: Uids,
 		Type: "OUT_ROOM_INVITATION_RESPONSE",
-		Data: inv,
+		Data: socketmodels.OutRoomInvitationResponse{
+			ID:        invitationId.Hex(),
+			Author:    messagingData.Invitations[invitationIndex].Author.Hex(),
+			Recipient: uid.Hex(),
+			Accept:    data.Accept,
+		},
 	}
 
 	return nil
@@ -1253,8 +1285,8 @@ func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectI
 		return deleteIfErr
 	}
 
-	if _, err := colls.RoomExternalDataCollection.UpdateOne(context.Background(), bson.M{
-		"_id":                 messagingData.FriendRequests[friendRequestIndex].ID,
+	if _, err := colls.UserMessagingDataCollection.UpdateOne(context.Background(), bson.M{
+		"_id":                 messagingData.FriendRequests[friendRequestIndex].Recipient,
 		"friend_requests._id": friendRequestId,
 	}, bson.M{
 		"$set": bson.M{
@@ -1371,6 +1403,10 @@ func blockUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 						RoomID: r.ID.Hex(),
 					},
 					Type: "BANNED",
+				}
+				ss.RemoveUserFromSubscription <- socketserver.RemoveUserFromSubscription{
+					Name: "channel:" + oi.Hex(),
+					Uid:  blockedUid,
 				}
 				channelMessages := &models.RoomChannelMessages{}
 				if err := colls.RoomChannelMessagesCollection.FindOneAndUpdate(context.Background(), bson.M{"_id": oi}, bson.M{
@@ -1513,6 +1549,10 @@ func banUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *sockets
 		uidsInChannel := <-recvChan
 		for oi2 := range uidsInChannel {
 			uids[oi2] = struct{}{}
+		}
+		ss.RemoveUserFromSubscription <- socketserver.RemoveUserFromSubscription{
+			Name: "channel:" + oi.Hex(),
+			Uid:  bannedUid,
 		}
 	}
 

@@ -252,14 +252,20 @@ type Ban struct {
 	RoomID string `json:"room_id"`
 }
 
-// TYPE: BANNED (no "TYPE" needed in model)
+// TYPE: BANNED/UNBANNED (no "TYPE" needed in model)
 type Banned struct {
 	Banned string `json:"banned"`
 	Banner string `json:"banner"`
 	RoomID string `json:"room_id"`
 }
 
-// TYPE: BLOCKED (no "TYPE" needed in model)
+// TYPE: BLOCKED/UNBLOCKED (no "TYPE" needed in model)
 type Blocked struct {
 	Blocker string `json:"blocker"`
+}
+
+// TYPE: MEMBER_ADDED (no "TYPE" needed in model)
+type MemberAdded struct {
+	Uid    string `json:"uid"`
+	RoomID string `json:"room_id"`
 }

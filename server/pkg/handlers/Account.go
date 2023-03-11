@@ -8,6 +8,7 @@ import (
 	"image/jpeg"
 	"image/png"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
@@ -371,8 +372,16 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 
 	invitations := []models.Invitation{}
 	friendRequests := []models.FriendRequest{}
-	invitations = append(invitations, messagingData.Invitations...)
-	friendRequests = append(friendRequests, messagingData.FriendRequests...)
+	for _, inv := range messagingData.Invitations {
+		outInv := inv
+		outInv.Recipient = user.ID
+		invitations = append(invitations, outInv)
+	}
+	for _, frq := range messagingData.FriendRequests {
+		outFrq := frq
+		outFrq.Recipient = user.ID
+		friendRequests = append(friendRequests, outFrq)
+	}
 
 	sentAndReceived := []primitive.ObjectID{}
 	for _, oi := range messagingData.MessagesSentTo {
@@ -396,14 +405,18 @@ func (h handler) GetConversations(w http.ResponseWriter, r *http.Request) {
 		for _, umd := range otherUsersMessagingData {
 			for _, frq := range umd.FriendRequests {
 				if frq.Author == user.ID {
-					frq.Recipient = umd.ID
-					friendRequests = append(friendRequests, frq)
+					outFrq := frq
+					outFrq.Recipient = umd.ID
+					log.Println(umd.ID)
+					friendRequests = append(friendRequests, outFrq)
 				}
 			}
 			for _, inv := range umd.Invitations {
 				if inv.Author == user.ID {
-					inv.Recipient = umd.ID
-					invitations = append(invitations, inv)
+					outInv := inv
+					outInv.Recipient = umd.ID
+					log.Println(umd.ID)
+					invitations = append(invitations, outInv)
 				}
 			}
 		}

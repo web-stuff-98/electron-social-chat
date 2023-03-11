@@ -80,7 +80,15 @@ export const roomStore: IRoomStore = reactive({
         delete r.channels;
         delete r.main_channel;
       }
-      roomStore.rooms = [...roomStore.rooms.filter((r) => r.ID !== id), r];
+      const i = roomStore.rooms.findIndex((r) => r.ID === id);
+      if (i === -1)
+        roomStore.rooms = [...roomStore.rooms.filter((r) => r.ID !== id), r];
+      else {
+        roomStore.rooms[i] = {
+          ...r,
+          ...roomStore.rooms[i],
+        };
+      }
       return r;
     } catch (e) {
       console.warn(`Failed to cache room display data for ${id}: ${e}`);

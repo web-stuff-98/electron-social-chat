@@ -12,7 +12,7 @@ defineProps<{ ratio: number }>();
 
 <style lang="scss" scoped>
 .bar-container {
-  width: 4rem;
+  width: 6rem;
   height: 2rem;
   position: relative;
   .bar {

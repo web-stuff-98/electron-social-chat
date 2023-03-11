@@ -28,6 +28,8 @@ export interface IRoom extends IRoomCard {
   channels: string[];
   main_channel: string;
   is_private: boolean;
+  members: string[];
+  banned: string[];
 }
 export interface IDirectMessage {
   ID: string;

@@ -192,8 +192,8 @@ async function openConv(uid: string) {
           <User :uid="uid" />
         </button>
       </div>
-      <div v-if="messagingStore.currentConversationUid" class="list-container">
-        <div v-if="listSection === EListSection.MESSAGING" class="list">
+      <div class="list-container">
+        <div v-if="listSection === EListSection.MESSAGING && messagingStore.currentConversationUid" class="list">
           <DirectMessage
             v-for="msg in messagingStore.conversations.find(
               (c) => c.uid === messagingStore.currentConversationUid

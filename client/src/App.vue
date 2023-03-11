@@ -23,6 +23,8 @@ import {
   instanceOfFriendRequestResponseData,
   instanceOfAttachmentProgressData,
   instanceOfAttachmentMetadata,
+  instanceOfBanData,
+  instanceOfUnBanData,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
@@ -124,6 +126,49 @@ const watchForAttachmentUpdates = (e: MessageEvent) => {
         failed: false,
       });
     }
+  }
+};
+
+/* ------- Watch for bans & unbans ------- */
+const watchBansAndUnbans = (e: MessageEvent) => {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfBanData(data)) {
+    const i = roomStore.rooms.findIndex((r) => r.ID === data.room_id);
+    if (i !== -1) {
+      if (roomStore.rooms[i].banned !== undefined)
+        roomStore.rooms[i].banned?.push(data.banned);
+      else roomStore.rooms[i].banned = [data.banned];
+      if (roomStore.rooms[i].members !== undefined) {
+        const mi = roomStore.rooms[i].members?.findIndex(
+          (uid) => uid === data.banned
+        );
+        if (mi !== undefined && mi !== -1)
+          roomStore.rooms[i].members?.splice(mi, 1);
+      }
+    }
+    if (
+      data.banned === authStore.user?.ID &&
+      router.currentRoute.value.fullPath.includes(data.room_id)
+    ) {
+      router.push("/");
+      modalMsg.value = {
+        msg: "You were banned from the room",
+        err: true,
+        pen: false,
+      };
+      showModal.value = true;
+      modalConfirmation.value = () => (showModal.value = false);
+      modalCancellation.value = undefined;
+    }
+  }
+  if (instanceOfUnBanData(data)) {
+    const i = roomStore.rooms.findIndex((r) => r.ID === data.room_id);
+    if (i !== -1)
+      if (roomStore.rooms[i].banned !== undefined)
+        roomStore.rooms[i].banned = roomStore.rooms[i].banned?.filter(
+          (uid) => uid !== data.banned
+        );
   }
 };
 
@@ -239,6 +284,7 @@ watch(socketStore, (_, newVal) => {
     socketStore.socket?.addEventListener("message", watchForResponseMessages);
     socketStore.socket?.addEventListener("message", watchMessaging);
     socketStore.socket?.addEventListener("message", watchForAttachmentUpdates);
+    socketStore.socket?.addEventListener("message", watchBansAndUnbans);
   } else {
     socketStore.connectSocket(authStore.user?.ID!);
   }
@@ -262,6 +308,7 @@ onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchForResponseMessages);
   socketStore.socket?.removeEventListener("message", watchMessaging);
   socketStore.socket?.removeEventListener("message", watchForAttachmentUpdates);
+  socketStore.socket?.removeEventListener("message", watchBansAndUnbans);
 });
 
 onMounted(() => {

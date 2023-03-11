@@ -149,6 +149,26 @@ export type AttachmentMetadata = Omit<
   "TYPE"
 >;
 
+export type BannedData = Omit<
+  {
+    banned: string;
+    banner: string;
+    room_id: string;
+  },
+  "TYPE"
+>;
+
+export type UnbannedData = BannedData;
+
+export type BlockedData = Omit<
+  {
+    blocker: string;
+  },
+  "TYPE"
+>;
+
+export type UnblockedData = BlockedData;
+
 export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
@@ -240,6 +260,18 @@ export function instanceOfAttachmentMetadata(
   object: any
 ): object is AttachmentMetadata {
   return object.TYPE === "ATTACHMENT_METADATA";
+}
+export function instanceOfBanData(object: any): object is BannedData {
+  return object.TYPE === "BANNED";
+}
+export function instanceOfUnBanData(object: any): object is BannedData {
+  return object.TYPE === "UNBANNED";
+}
+export function instanceOfBlockData(object: any): object is BannedData {
+  return object.TYPE === "BLOCKED";
+}
+export function instanceOfUnblockData(object: any): object is BannedData {
+  return object.TYPE === "UNBLOCKED";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {
