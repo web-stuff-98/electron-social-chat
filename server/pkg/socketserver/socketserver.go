@@ -177,14 +177,14 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 }
 
 func connectionRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in WS registration :", r)
-		}
-		go connectionRegistrationLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in WS registration :", r)
+			}
+			go connectionRegistrationLoop(socketServer, colls)
+		}()
 		connData := <-socketServer.RegisterConn
 		if connData.Conn != nil {
 			socketServer.Connections.mutex.Lock()
@@ -207,14 +207,14 @@ func connectionRegistrationLoop(socketServer *SocketServer, colls *db.Collection
 }
 
 func disconnectRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in WS deregistration :", r)
-		}
-		go disconnectRegistrationLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in WS deregistration :", r)
+			}
+			go disconnectRegistrationLoop(socketServer, colls)
+		}()
 		connData := <-socketServer.UnregisterConn
 		socketServer.Connections.mutex.Lock()
 		socketServer.Subscriptions.mutex.Lock()
@@ -253,28 +253,28 @@ func disconnectRegistrationLoop(socketServer *SocketServer, colls *db.Collection
 }
 
 func messageQueueLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in queued socket messages :", r)
-		}
-		go messageQueueLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in queued socket messages :", r)
+			}
+			go messageQueueLoop(socketServer, colls)
+		}()
 		data := <-socketServer.MessageSendQueue
 		data.Conn.WriteMessage(websocket.TextMessage, data.Data)
 	}
 }
 
 func subscriptionConnectionRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in subscription registration :", r)
-		}
-		go subscriptionConnectionRegistrationLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in subscription registration :", r)
+			}
+			go subscriptionConnectionRegistrationLoop(socketServer, colls)
+		}()
 		connData := <-socketServer.RegisterSubscriptionConn
 		allow := true
 		// Make sure users cannot open too many subscriptions
@@ -304,14 +304,14 @@ func subscriptionConnectionRegistrationLoop(socketServer *SocketServer, colls *d
 }
 
 func subscriptionDisconnectRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in subscription disconnect registration :", r)
-		}
-		go subscriptionDisconnectRegistrationLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in subscription disconnect registration :", r)
+			}
+			go subscriptionDisconnectRegistrationLoop(socketServer, colls)
+		}()
 		connData := <-socketServer.UnregisterSubscriptionConn
 		var err error
 		if connData.Conn == nil {
@@ -333,14 +333,14 @@ func subscriptionDisconnectRegistrationLoop(socketServer *SocketServer, colls *d
 }
 
 func sendSubscriptionDataLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in subscription data channel:", r)
-		}
-		go sendSubscriptionDataLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in subscription data channel:", r)
+			}
+			go sendSubscriptionDataLoop(socketServer, colls)
+		}()
 		subsData := <-socketServer.SendDataToSubscription
 		socketServer.Subscriptions.mutex.Lock()
 		for k, s := range socketServer.Subscriptions.data {
@@ -359,14 +359,14 @@ func sendSubscriptionDataLoop(socketServer *SocketServer, colls *db.Collections)
 }
 
 func sendSubscriptionDataExclusiveLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in exclusive subscription data channel:", r)
-		}
-		go sendSubscriptionDataExclusiveLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in exclusive subscription data channel:", r)
+			}
+			go sendSubscriptionDataExclusiveLoop(socketServer, colls)
+		}()
 		subsData := <-socketServer.SendDataToSubscriptionExclusive
 		socketServer.Subscriptions.mutex.Lock()
 		for k, s := range socketServer.Subscriptions.data {
@@ -387,14 +387,14 @@ func sendSubscriptionDataExclusiveLoop(socketServer *SocketServer, colls *db.Col
 }
 
 func sendToMultipleSubscriptionsLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in subscription data channel:", r)
-		}
-		go sendToMultipleSubscriptionsLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in subscription data channel:", r)
+			}
+			go sendToMultipleSubscriptionsLoop(socketServer, colls)
+		}()
 		subsData := <-socketServer.SendDataToSubscriptions
 		socketServer.Subscriptions.mutex.Lock()
 		for _, v := range subsData.Names {
@@ -415,14 +415,14 @@ func sendToMultipleSubscriptionsLoop(socketServer *SocketServer, colls *db.Colle
 }
 
 func sendToMultipleSubscriptionsExclusiveLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in exclusive subscription data channel:", r)
-		}
-		go sendToMultipleSubscriptionsExclusiveLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in exclusive subscription data channel:", r)
+			}
+			go sendToMultipleSubscriptionsExclusiveLoop(socketServer, colls)
+		}()
 		subsData := <-socketServer.SendDataToSubscriptionsExclusive
 		socketServer.Subscriptions.mutex.Lock()
 		for _, v := range subsData.Names {
@@ -445,14 +445,14 @@ func sendToMultipleSubscriptionsExclusiveLoop(socketServer *SocketServer, colls 
 }
 
 func getSubscriptionUidsLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic getting uids from subscription channel:", r)
-		}
-		go getSubscriptionUidsLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic getting uids from subscription channel:", r)
+			}
+			go getSubscriptionUidsLoop(socketServer, colls)
+		}()
 		subsData := <-socketServer.GetSubscriptionUids
 		socketServer.Subscriptions.mutex.Lock()
 		uids := make(map[primitive.ObjectID]struct{})
@@ -465,14 +465,14 @@ func getSubscriptionUidsLoop(socketServer *SocketServer, colls *db.Collections) 
 }
 
 func sendDataToUserLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in send data to user channel:", r)
-		}
-		go sendDataToUserLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in send data to user channel:", r)
+			}
+			go sendDataToUserLoop(socketServer, colls)
+		}()
 		data := <-socketServer.SendDataToUser
 		socketServer.Connections.mutex.Lock()
 		for conn, uid := range socketServer.Connections.data {
@@ -498,14 +498,14 @@ func sendDataToUserLoop(socketServer *SocketServer, colls *db.Collections) {
 }
 
 func sendDataToUsersLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in send data to users channel:", r)
-		}
-		go sendDataToUsersLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in send data to users channel:", r)
+			}
+			go sendDataToUsersLoop(socketServer, colls)
+		}()
 		data := <-socketServer.SendDataToUsers
 		socketServer.Connections.mutex.Lock()
 		m := make(map[string]interface{})
@@ -531,14 +531,14 @@ func sendDataToUsersLoop(socketServer *SocketServer, colls *db.Collections) {
 }
 
 func removeUserFromSubscriptionLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in remove user from subscription channel:", r)
-		}
-		go removeUserFromSubscriptionLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in remove user from subscription channel:", r)
+			}
+			go removeUserFromSubscriptionLoop(socketServer, colls)
+		}()
 		data := <-socketServer.RemoveUserFromSubscription
 		socketServer.Subscriptions.mutex.Lock()
 		if subs, ok := socketServer.Subscriptions.data[data.Name]; ok {
@@ -558,14 +558,14 @@ func removeUserFromSubscriptionLoop(socketServer *SocketServer, colls *db.Collec
 }
 
 func destroySubscriptionLoop(socketServer *SocketServer, colls *db.Collections) {
-	defer func() {
-		r := recover()
-		if r != nil {
-			log.Println("Recovered from panic in destroy subscription channel:", r)
-		}
-		go destroySubscriptionLoop(socketServer, colls)
-	}()
 	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in destroy subscription channel:", r)
+			}
+			go destroySubscriptionLoop(socketServer, colls)
+		}()
 		subsName := <-socketServer.DestroySubscription
 		socketServer.Subscriptions.mutex.Lock()
 		socketServer.ConnectionSubscriptionCount.mutex.Lock()
