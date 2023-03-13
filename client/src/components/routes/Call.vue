@@ -7,6 +7,7 @@ import {
   watch,
   nextTick,
   computed,
+  reactive,
 } from "vue";
 import { authStore } from "../../store/AuthStore";
 import { useRoute, useRouter } from "vue-router";
@@ -33,9 +34,10 @@ import {
 } from "../../utils/determineSocketEvent";
 import VideoWindow from "../shared/VideoWindow.vue";
 import Peer from "simple-peer";
+import { useChatMedia } from "../../composables/useChatMedia";
 
 /*
-basically copied this
+basically copied this for the events
 https://codesandbox.io/s/vinnu1simple-videochat-webrtc-0ozmn
 */
 
@@ -47,6 +49,23 @@ const initiator = computed(() => route.query.initiator !== undefined);
 const PeerInstance = ref<Peer.Instance>();
 const peerStream = ref<MediaStream>();
 const gotAnswer = ref(false);
+
+const mediaOptions = ref({
+  userMedia: {
+    audio: true,
+    video: false,
+  },
+  displayMedia: {
+    audio: false,
+    video: false,
+  },
+});
+const { stream, trackIds } = useChatMedia(negotiateConnection, mediaOptions);
+
+function negotiateConnection() {
+
+}
+
 
 function initPeer() {
   const peer = new Peer({
@@ -128,7 +147,7 @@ onMounted(() => {
       });
     }
   });
-  userStore.cacheUserData(otherUsersId.value as string, true)
+  userStore.cacheUserData(otherUsersId.value as string, true);
 });
 onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchForCallEvents);

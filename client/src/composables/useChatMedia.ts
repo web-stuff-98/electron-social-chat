@@ -100,5 +100,6 @@ export const useChatMedia = (
 
   return {
     stream,
+    trackIds,
   };
 };

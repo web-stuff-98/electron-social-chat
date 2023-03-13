@@ -22,7 +22,7 @@ WebRTC todos (always takes a really long fucking time)
 
 ----------------------------------------------------------------
 
-
+ - Make composables. Code is too messy.
  - Attachment download button needs to actually download the attachment
  - Fix user data sometimes not being present when component visible
  - Friends & blocked list aside section
