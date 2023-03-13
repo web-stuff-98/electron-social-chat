@@ -50,6 +50,12 @@ export const useChatMedia = (
     displayMediaStream?.getAudioTracks().forEach((track) => {
       track.enabled = options.value.displayMedia.audio;
     });
+    userMediaStream?.getTracks().forEach((track) => {
+      stream.value?.addTrack(track);
+    });
+    displayMediaStream?.getTracks().forEach((track) => {
+      stream.value?.addTrack(track);
+    });
     negotiateConnection();
   });
 
@@ -81,6 +87,12 @@ export const useChatMedia = (
       });
       displayMediaStream?.getAudioTracks().forEach((track) => {
         track.enabled = options.value.displayMedia.audio;
+      });
+      userMediaStream?.getTracks().forEach((track) => {
+        stream.value?.addTrack(track);
+      });
+      displayMediaStream?.getTracks().forEach((track) => {
+        stream.value?.addTrack(track);
       });
       negotiateConnection();
     } else {

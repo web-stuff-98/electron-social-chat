@@ -66,7 +66,6 @@ function negotiateConnection() {
 
 }
 
-
 function initPeer() {
   const peer = new Peer({
     initiator: initiator.value,
