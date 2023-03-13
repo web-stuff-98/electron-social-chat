@@ -35,12 +35,17 @@ type SocketServer struct {
 
 	// Calls that have not yet been answered
 	CallsPending CallsPending
-	// Channel for creating calls
+	// Channel for creating pending calls
 	CallsPendingChan chan InCall
-	// Channel for responding to calls
+	// Channel for responding to pending calls
 	ResponseToCallChan chan InCallResponse
+
 	// Mutex protected map for active calls
 	CallsActive CallsActive
+	// Channel for closing active calls
+	LeaveCallChan chan primitive.ObjectID
+	// Channel for sending call recipient offer
+	SendCallRecipientOffer chan CallerSignal
 
 	// Websocket Write/Read must be done from 1 goroutine. Queue all messages to be sent 1 by 1.
 	// This is probably a bad way to do it... Should be a seperate goroutine for each channel,
@@ -133,6 +138,10 @@ type RemoveUserFromSubscription struct {
 	Name string
 	Uid  primitive.ObjectID
 }
+type CallerSignal struct {
+	Caller primitive.ObjectID
+	Signal string
+}
 
 /* --------------- RECV CHAN STRUCTS --------------- */
 type GetSubscriptionUids struct {
@@ -175,6 +184,8 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 		CallsActive: CallsActive{
 			data: make(map[primitive.ObjectID]primitive.ObjectID),
 		},
+		LeaveCallChan:          make(chan primitive.ObjectID),
+		SendCallRecipientOffer: make(chan CallerSignal),
 
 		MessageSendQueue: make(chan QueuedMessage),
 
@@ -218,6 +229,10 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 	go callPendingChanLoop(socketServer, colls)
 	/* ----- Call response loop ----- */
 	go callResponseChanLoop(socketServer, colls)
+	/* ----- Leave call channel loop ----- */
+	go leaveCallChanLoop(socketServer, colls)
+	/* ----- Send call recipient webRTC offer loop ----- */
+	go sendCallRecipientOfferLoop(socketServer, colls)
 }
 
 func connectionRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
@@ -821,6 +836,66 @@ func callResponseChanLoop(socketServer *SocketServer, colls *db.Collections) {
 		}
 
 		socketServer.CallsPending.mutex.Unlock()
+		socketServer.CallsActive.mutex.Unlock()
+	}
+}
+
+func leaveCallChanLoop(socketServer *SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in leave call channel:", r)
+			}
+			go leaveCallChanLoop(socketServer, colls)
+		}()
+		uid := <-socketServer.LeaveCallChan
+		socketServer.CallsActive.mutex.Lock()
+		if called, ok := socketServer.CallsActive.data[uid]; ok {
+			socketServer.SendDataToUser <- UserDataMessage{
+				Type: "CALL_LEFT",
+				Data: socketmodels.CallLeft{},
+				Uid:  called,
+			}
+			delete(socketServer.CallsActive.data, uid)
+		} else {
+			for caller, called := range socketServer.CallsActive.data {
+				if called == uid {
+					socketServer.SendDataToUser <- UserDataMessage{
+						Type: "CALL_LEFT",
+						Data: socketmodels.CallLeft{},
+						Uid:  caller,
+					}
+					delete(socketServer.CallsActive.data, caller)
+					break
+				}
+			}
+		}
+		socketServer.CallsActive.mutex.Unlock()
+	}
+}
+
+func sendCallRecipientOfferLoop(socketServer *SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in send call recipient offer loop :", r)
+			}
+			go sendCallRecipientOfferLoop(socketServer, colls)
+		}()
+		data := <-socketServer.SendCallRecipientOffer
+
+		socketServer.CallsActive.mutex.Lock()
+		if called, ok := socketServer.CallsActive.data[data.Caller]; ok {
+			socketServer.SendDataToUser <- UserDataMessage{
+				Uid:  called,
+				Type: "CALL_WEBRTC_OFFER_FROM_INITIATOR",
+				Data: socketmodels.CallWebRTCOfferFromInitiator{
+					Signal: data.Signal,
+				},
+			}
+		}
 		socketServer.CallsActive.mutex.Unlock()
 	}
 }

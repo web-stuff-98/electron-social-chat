@@ -93,6 +93,12 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "CALL_USER_RESPONSE":
 		err := callUserResponse(data, conn, uid, ss, colls)
 		return err
+	case "CALL_LEAVE":
+		err := callLeave(data, conn, uid, ss, colls)
+		return err
+	case "CALL_WEBRTC_OFFER":
+		err := callWebRTCOffer(data, conn, uid, ss, colls)
+		return err
 	}
 	return fmt.Errorf("Unrecognized event type")
 }
@@ -1719,6 +1725,31 @@ func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 		Caller: callerUid,
 		Called: calledUid,
 		Accept: data.Accept,
+	}
+
+	return nil
+}
+
+func callLeave(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.CallLeave
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	ss.LeaveCallChan <- uid
+
+	return nil
+}
+
+func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.CallWebRTCOffer
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	ss.SendCallRecipientOffer <- socketserver.CallerSignal{
+		Signal: data.Signal,
+		Caller: uid,
 	}
 
 	return nil

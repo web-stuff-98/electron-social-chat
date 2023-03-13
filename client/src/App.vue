@@ -35,7 +35,7 @@ import { IResMsg } from "./interfaces/GeneralInterfaces";
 import UserdropdownMenu from "./components/layout/UserdropdownMenu/UserdropdownMenu.vue";
 import { messagingStore } from "./store/MessagingStore";
 import { attachmentStore } from "./store/AttachmentStore";
-import { pendingCallsStore } from "./store/PendingCallsStore";
+import { pendingCallsStore } from "./store/CallsStore";
 import DarkToggle from "./components/layout/DarkToggle.vue";
 import CreateEditRoomModal from "./components/layout/AsideMenu/sections/CreateEditRoomModal.vue";
 import PendingCalls from "./components/layout/PendingCalls.vue";
@@ -270,8 +270,8 @@ const watchMessaging = (e: MessageEvent) => {
   }
 };
 
-/* ------- Watch for pending calls ------- */
-const watchForPendingCalls = (e: MessageEvent) => {
+/* ------- Watch for pending calls and call responses ------- */
+const watchForCalls = (e: MessageEvent) => {
   const data = parseSocketEventData(e);
   if (!data) return;
   if (instanceOfCallAcknowledgeData(data)) {
@@ -282,6 +282,12 @@ const watchForPendingCalls = (e: MessageEvent) => {
       (c) => c.called === data.called && c.caller === data.caller
     );
     if (i !== -1) pendingCallsStore.splice(i, 1);
+    if (data.accept)
+      router.push(
+        `/call/${
+          data.called === authStore.user?.ID ? data.caller : data.called
+        }${data.caller === authStore.user?.ID ? "?initiator" : ""}`
+      );
   }
 };
 
@@ -309,7 +315,7 @@ watch(socketStore, (_, newVal) => {
     socketStore.socket?.addEventListener("message", watchMessaging);
     socketStore.socket?.addEventListener("message", watchForAttachmentUpdates);
     socketStore.socket?.addEventListener("message", watchBansAndUnbans);
-    socketStore.socket?.addEventListener("message", watchForPendingCalls);
+    socketStore.socket?.addEventListener("message", watchForCalls);
   } else {
     socketStore.connectSocket(authStore.user?.ID!);
   }
@@ -334,7 +340,7 @@ onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchMessaging);
   socketStore.socket?.removeEventListener("message", watchForAttachmentUpdates);
   socketStore.socket?.removeEventListener("message", watchBansAndUnbans);
-  socketStore.socket?.removeEventListener("message", watchForPendingCalls);
+  socketStore.socket?.removeEventListener("message", watchForCalls);
 });
 
 onMounted(() => {

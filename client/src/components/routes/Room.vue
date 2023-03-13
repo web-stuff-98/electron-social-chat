@@ -4,7 +4,7 @@ import { IResMsg } from "../../interfaces/GeneralInterfaces";
 import ResMsg from "../layout/ResMsg.vue";
 import { roomChannelStore } from "../../store/RoomChannelStore";
 import { roomStore } from "../../store/RoomStore";
-import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ref, onMounted, onBeforeUnmount, toRef } from "vue";
 import { socketStore } from "../../store/SocketStore";
 import RoomMessage from "../layout/RoomMessage.vue";
 import { authStore } from "../../store/AuthStore";
@@ -26,6 +26,8 @@ const modalConfirmation = ref(() => {});
 const modalCancellation = ref<Function | undefined>(() => {});
 const showModal = ref(false);
 const modalMsg = ref<IResMsg>({ msg: "", err: false, pen: false });
+
+const roomId = toRef(route.params, "id");
 
 const attachmentFile = ref<File | null>();
 const attachmentInputRef = ref<HTMLElement>();
@@ -73,15 +75,12 @@ onMounted(async () => {
   const abortController = new AbortController();
   try {
     resMsg.value = { msg: "", err: false, pen: true };
-    const data = await roomStore.roomEnteredView(
-      route.params.id as string,
-      true
-    );
+    const data = await roomStore.roomEnteredView(roomId.value as string, true);
     roomChannelStore.currentChannel = data.main_channel as string;
-    await roomChannelStore.getDisplayDataForChannels(route.params.id as string);
+    await roomChannelStore.getDisplayDataForChannels(roomId.value as string);
     await roomChannelStore.getFullDataForChannel(
       data.main_channel as string,
-      route.params.id as string
+      roomId.value as string
     );
     socketStore.send(
       JSON.stringify({
@@ -89,7 +88,7 @@ onMounted(async () => {
         channel: roomChannelStore.currentChannel,
       })
     );
-    roomStore.currentRoom = route.params.id as string;
+    roomStore.currentRoom = roomId.value as string;
     resMsg.value = { msg: "", err: false, pen: false };
   } catch (e) {
     resMsg.value = { msg: `${e}`, err: true, pen: false };
@@ -105,7 +104,7 @@ onMounted(async () => {
 
 onBeforeUnmount(async () => {
   roomStore.currentRoom = "";
-  roomStore.roomLeftView(route.params.id as string);
+  roomStore.roomLeftView(roomId.value as string);
   socketStore.send(
     JSON.stringify({
       event_type: "ROOM_EXIT_CHANNEL",
@@ -178,7 +177,7 @@ async function openChannel(id: string) {
         })
       );
     }
-    await roomChannelStore.getFullDataForChannel(id, route.params.id as string);
+    await roomChannelStore.getFullDataForChannel(id, roomId.value as string);
     roomChannelStore.currentChannel = id;
     socketStore.send(
       JSON.stringify({
@@ -236,10 +235,10 @@ function selectAttachment(e: Event) {
             type="button"
             @click="
               roomChannelStore.currentChannel = roomStore.getRoom(
-                route.params.id as string
+                roomId as string
               )?.main_channel!
             "
-            :style="{ fontWeight: 600, marginBottom: 'var(--padding)', ...(roomChannelStore.currentChannel !== roomStore.getRoom(route.params.id as string)?.main_channel! ? {
+            :style="{ fontWeight: 600, marginBottom: 'var(--padding)', ...(roomChannelStore.currentChannel !== roomStore.getRoom(roomId as string)?.main_channel! ? {
               filter:'opacity(0.5)'
             } : {}) }"
             class="channel"
@@ -248,8 +247,7 @@ function selectAttachment(e: Event) {
             {{
               roomChannelStore.channels.find(
                 (c) =>
-                  c.ID ===
-                  roomStore.getRoom(route.params.id as string)?.main_channel
+                  c.ID === roomStore.getRoom(roomId as string)?.main_channel
               )?.name
             }}
           </button>
@@ -258,7 +256,7 @@ function selectAttachment(e: Event) {
         <div
           class="channel-container"
           v-for="channel in roomChannelStore.channels.filter(
-            (c) => c.ID !== roomStore.getRoom(route.params.id as string)?.main_channel
+            (c) => c.ID !== roomStore.getRoom(roomId as string)?.main_channel
           )"
         >
           <button
@@ -286,7 +284,7 @@ function selectAttachment(e: Event) {
       <ResMsg :resMsg="resMsg" />
       <div v-if="!resMsg.pen && !resMsg.err && !resMsg.msg" class="content">
         <div class="header">
-          {{ roomStore.getRoom(route.params.id as string)?.name }}
+          {{ roomStore.getRoom(roomId as string)?.name }}
         </div>
         <div class="messages-list-container">
           <div class="messages">

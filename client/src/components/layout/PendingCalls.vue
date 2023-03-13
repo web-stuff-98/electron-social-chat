@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { authStore } from "../../store/AuthStore";
-import { pendingCallsStore } from "../../store/PendingCallsStore";
+import { pendingCallsStore } from "../../store/CallsStore";
 import { socketStore } from "../../store/SocketStore";
 import { userStore } from "../../store/UserStore";
 
@@ -31,7 +31,7 @@ function acceptClicked(index: number) {
   <div class="container">
     <div
       :style="{
-        backgroundImage: `url(${!userStore.getUser(
+        backgroundImage: `url(${userStore.getUser(
           pendingCall.caller === authStore.user?.ID
             ? pendingCall.called
             : pendingCall.caller

@@ -41,7 +41,7 @@
         "fullscreen": false,
         "resizable": true,
         "title": "client",
-        "width": 500,
+        "width": 900,
         "height": 600,
         "minWidth": 500,
         "minHeight": 600

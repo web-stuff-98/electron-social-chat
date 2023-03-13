@@ -7,6 +7,9 @@ import { authStore } from "../../store/AuthStore";
     <h1>Welcome</h1>
     <span />
     <h2>To get started click on the menu icon in the bottom left</h2>
+    <p>
+      <b>Hint:</b> you can click on other users to open an action menu dropdown
+    </p>
   </div>
 </template>
 
@@ -42,7 +45,8 @@ import { authStore } from "../../store/AuthStore";
     );
   }
   h1,
-  h2 {
+  h2,
+  p {
     margin: 0;
   }
 }

@@ -288,6 +288,17 @@ type CallLeave struct {
 // TYPE: CALL_LEFT (no "TYPE" needed in model)
 type CallLeft struct{}
 
+// TYPE: CALL_WEBRTC_OFFER/CALL_WEBRTC_ANSWER
+type CallWebRTCOfferAnswer struct {
+	Type   string `json:"TYPE"`
+	Signal string `json:"signal"`
+}
+
+// TYPE: CALL_WEBRTC_OFFER_FROM_INITIATOR (no "TYPE" needed in model)
+type CallWebRTCOfferFromInitiator struct {
+	Signal string `json:"signal"`
+}
+
 /* -------- MISC -------- */
 
 // TYPE: CHANGE

@@ -5,7 +5,6 @@ import App from "./App.vue";
 import Home from "./components/routes/Home.vue";
 import Call from "./components/routes/Call.vue";
 import Room from "./components/routes/Room.vue";
-import EditRoom from "./components/layout/AsideMenu/sections/EditRoom.vue";
 
 import { OhVueIcon, addIcons } from "oh-vue-icons";
 import {
@@ -38,6 +37,7 @@ import {
   MdStopscreenshare,
   BiCameraVideoOff,
   HiPhoneIncoming,
+  GiExpand,
 } from "oh-vue-icons/icons";
 import { authStore } from "./store/AuthStore";
 
@@ -70,13 +70,14 @@ addIcons(
   MdScreenshare,
   MdStopscreenshare,
   BiCameraVideo,
-  BiCameraVideoOff
+  BiCameraVideoOff,
+  GiExpand
 );
 
 const routes = [
-  { path: "/", component: Call, name: "home" },
+  { path: "/", component: Home, name: "home" },
+  { path: "/call/:id", component: Call, name: "call" },
   { path: "/room/:id", component: Room, name: "room" },
-  { path: "/room/edit/:id", component: EditRoom, name: "edit_room" },
 ];
 
 const router = createRouter({
