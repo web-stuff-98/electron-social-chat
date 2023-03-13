@@ -33,8 +33,20 @@ type SocketServer struct {
 	DestroySubscription              chan string
 	GetSubscriptionUids              chan GetSubscriptionUids
 
-	// Websocket Write/Read must be done from 1 goroutine. Queue all of them to be executed in a loop.
-	// This is a bad way to do it... Should be a seperate queue for each connection
+	// Calls that have not yet been answered
+	CallsPending CallsPending
+	// Channel for creating calls
+	CallsPendingChan chan InCall
+	// Channel for responding to calls
+	ResponseToCallChan chan InCallResponse
+	// Mutex protected map for active calls
+	CallsActive CallsActive
+
+	// Websocket Write/Read must be done from 1 goroutine. Queue all messages to be sent 1 by 1.
+	// This is probably a bad way to do it... Should be a seperate goroutine for each channel,
+	// it would increase the speed of messaging by sending out messages to different connections
+	// seperately instead of having them all wait in one long queue... really tricky to implement
+	// though, too dumb to do it
 	MessageSendQueue chan QueuedMessage
 
 	SendDataToUser  chan UserDataMessage
@@ -52,6 +64,25 @@ type Subscriptions struct {
 }
 type ConnectionsSubscriptionCount struct {
 	data  map[*websocket.Conn]uint8 //Max subscriptions is 128... nice number half max uint8
+	mutex sync.Mutex
+}
+type CallsPending struct {
+	// outer map is caller ID, inner map is the user that was called ID
+	data  map[primitive.ObjectID]primitive.ObjectID
+	mutex sync.Mutex
+}
+type InCall struct {
+	Caller primitive.ObjectID
+	Called primitive.ObjectID
+}
+type InCallResponse struct {
+	Caller primitive.ObjectID
+	Called primitive.ObjectID
+	Accept bool
+}
+type CallsActive struct {
+	// outer map is caller ID, inner map is the user that was called ID
+	data  map[primitive.ObjectID]primitive.ObjectID
 	mutex sync.Mutex
 }
 
@@ -136,6 +167,15 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 		DestroySubscription:              make(chan string),
 		GetSubscriptionUids:              make(chan GetSubscriptionUids),
 
+		CallsPending: CallsPending{
+			data: make(map[primitive.ObjectID]primitive.ObjectID),
+		},
+		CallsPendingChan:   make(chan InCall),
+		ResponseToCallChan: make(chan InCallResponse),
+		CallsActive: CallsActive{
+			data: make(map[primitive.ObjectID]primitive.ObjectID),
+		},
+
 		MessageSendQueue: make(chan QueuedMessage),
 
 		SendDataToUser:  make(chan UserDataMessage),
@@ -174,6 +214,10 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 	go removeUserFromSubscriptionLoop(socketServer, colls)
 	/* ----- Destroy subscription ----- */
 	go destroySubscriptionLoop(socketServer, colls)
+	/* ----- Call pending loop ----- */
+	go callPendingChanLoop(socketServer, colls)
+	/* ----- Call response loop ----- */
+	go callResponseChanLoop(socketServer, colls)
 }
 
 func connectionRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
@@ -577,5 +621,153 @@ func destroySubscriptionLoop(socketServer *SocketServer, colls *db.Collections) 
 		delete(socketServer.Subscriptions.data, subsName)
 		socketServer.Subscriptions.mutex.Unlock()
 		socketServer.ConnectionSubscriptionCount.mutex.Unlock()
+	}
+}
+
+func callPendingChanLoop(socketServer *SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in pending call channel:", r)
+			}
+			go callPendingChanLoop(socketServer, colls)
+		}()
+		data := <-socketServer.CallsPendingChan
+		socketServer.CallsPending.mutex.Lock()
+		if called, ok := socketServer.CallsPending.data[data.Caller]; ok {
+			if called != data.Called {
+				// pending call switching to different user. cancel previous pending call.
+				Uids := make(map[primitive.ObjectID]struct{})
+				Uids[called] = struct{}{}
+				Uids[data.Caller] = struct{}{}
+				socketServer.SendDataToUsers <- UsersDataMessage{
+					Uids: Uids,
+					Type: "CALL_USER_RESPONSE",
+					Data: socketmodels.CallResponse{
+						Called: data.Called.Hex(),
+						Caller: data.Caller.Hex(),
+						Accept: false,
+					},
+				}
+				socketServer.CallsPending.data[data.Caller] = data.Called
+			}
+		} else {
+			socketServer.CallsPending.data[data.Caller] = data.Called
+		}
+		Uids := make(map[primitive.ObjectID]struct{})
+		Uids[data.Called] = struct{}{}
+		Uids[data.Caller] = struct{}{}
+		socketServer.SendDataToUsers <- UsersDataMessage{
+			Uids: Uids,
+			Type: "CALL_USER_ACKNOWLEDGE",
+			Data: socketmodels.CallAcknowledge{
+				Caller: data.Caller.Hex(),
+				Called: data.Called.Hex(),
+			},
+		}
+		socketServer.CallsPending.mutex.Unlock()
+	}
+}
+
+func callResponseChanLoop(socketServer *SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in call response channel:", r)
+			}
+			go callResponseChanLoop(socketServer, colls)
+		}()
+		data := <-socketServer.ResponseToCallChan
+		socketServer.CallsPending.mutex.Lock()
+		socketServer.CallsActive.mutex.Lock()
+		delete(socketServer.CallsPending.data, data.Caller)
+
+		if data.Accept {
+			// Close any call that either user is currently in.
+			// Clients can only be in a single call.
+			// Confusing variable names here.
+			closedCallerCall := false
+			closedCalledCall := false
+			if callerCalled, ok := socketServer.CallsActive.data[data.Caller]; ok {
+				closedCallerCall = true
+				Uids := make(map[primitive.ObjectID]struct{})
+				Uids[data.Caller] = struct{}{}
+				Uids[callerCalled] = struct{}{}
+				socketServer.SendDataToUsers <- UsersDataMessage{
+					Type: "CALL_LEFT",
+					Data: socketmodels.CallLeft{},
+					Uids: Uids,
+				}
+				delete(socketServer.CallsActive.data, data.Caller)
+			}
+			if calledCalled, ok := socketServer.CallsActive.data[data.Called]; ok {
+				closedCalledCall = true
+				Uids := make(map[primitive.ObjectID]struct{})
+				Uids[data.Called] = struct{}{}
+				Uids[calledCalled] = struct{}{}
+				socketServer.SendDataToUsers <- UsersDataMessage{
+					Type: "CALL_LEFT",
+					Data: socketmodels.CallLeft{},
+					Uids: Uids,
+				}
+				delete(socketServer.CallsActive.data, data.Called)
+			}
+			// make sure that the caller is not in a call. If they are exit the call they are already in
+			if !closedCallerCall {
+				for caller, called := range socketServer.CallsActive.data {
+					if data.Caller == called {
+						Uids := make(map[primitive.ObjectID]struct{})
+						Uids[caller] = struct{}{}
+						Uids[called] = struct{}{}
+						socketServer.SendDataToUsers <- UsersDataMessage{
+							Type: "CALL_LEFT",
+							Data: socketmodels.CallLeft{},
+							Uids: Uids,
+						}
+						delete(socketServer.CallsActive.data, caller)
+						break
+					}
+				}
+			}
+			// make sure that the called user is not in a call. If they are exit the call they are already in
+			if !closedCalledCall {
+				for caller, called := range socketServer.CallsActive.data {
+					if data.Called == called {
+						Uids := make(map[primitive.ObjectID]struct{})
+						Uids[caller] = struct{}{}
+						Uids[called] = struct{}{}
+						socketServer.SendDataToUsers <- UsersDataMessage{
+							Type: "CALL_LEFT",
+							Data: socketmodels.CallLeft{},
+							Uids: Uids,
+						}
+						delete(socketServer.CallsActive.data, caller)
+						break
+					}
+				}
+			}
+
+			// Any active calls that either user in have now been closed. Proceed.
+			socketServer.CallsActive.data[data.Caller] = data.Called
+		}
+
+		// Send the response to both clients
+		Uids := make(map[primitive.ObjectID]struct{})
+		Uids[data.Called] = struct{}{}
+		Uids[data.Caller] = struct{}{}
+		socketServer.SendDataToUsers <- UsersDataMessage{
+			Uids: Uids,
+			Type: "CALL_USER_RESPONSE",
+			Data: socketmodels.CallResponse{
+				Caller: data.Caller.Hex(),
+				Called: data.Called.Hex(),
+				Accept: data.Accept,
+			},
+		}
+
+		socketServer.CallsPending.mutex.Unlock()
+		socketServer.CallsActive.mutex.Unlock()
 	}
 }

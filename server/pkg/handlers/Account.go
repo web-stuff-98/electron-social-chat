@@ -260,9 +260,9 @@ func (h handler) UploadPfp(w http.ResponseWriter, r *http.Request) {
 	}
 	buf := &bytes.Buffer{}
 	if img.Bounds().Dx() > img.Bounds().Dy() {
-		img = resize.Resize(64, 0, img, resize.Lanczos3)
+		img = resize.Resize(128, 0, img, resize.Lanczos3)
 	} else {
-		img = resize.Resize(0, 64, img, resize.Lanczos3)
+		img = resize.Resize(0, 128, img, resize.Lanczos3)
 	}
 	if err := jpeg.Encode(buf, img, nil); err != nil {
 		responseMessage(w, http.StatusInternalServerError, "Internal error")

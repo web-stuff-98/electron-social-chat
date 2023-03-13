@@ -43,7 +43,7 @@ svg {
   --shadow: 0px 3px 2px rgba(0, 0, 0, 0.1), 0px 2px 1px rgba(0, 0, 0, 0.05);
   --shadow-medium: 0px 1px 1px rgba(0, 0, 0, 0.1);
 
-  --border-radius-medium: 0.25rem;
+  --border-radius-medium: 0.333rem;
 
   --base: rgba(0, 0, 0, 0.366);
   --base-light: rgba(0, 0, 0, 0.175);

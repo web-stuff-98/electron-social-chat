@@ -25,6 +25,7 @@ import {
   instanceOfAttachmentMetadata,
   instanceOfBanData,
   instanceOfUnBanData,
+  instanceOfCallAcknowledgeData,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
@@ -32,9 +33,11 @@ import MessageModal from "./components/messageModal/MessageModal.vue";
 import { IResMsg } from "./interfaces/GeneralInterfaces";
 import UserdropdownMenu from "./components/layout/UserdropdownMenu/UserdropdownMenu.vue";
 import { messagingStore } from "./store/MessagingStore";
+import { attachmentStore } from "./store/AttachmentStore";
+import { pendingCallsStore } from "./store/PendingCallsStore";
 import DarkToggle from "./components/layout/DarkToggle.vue";
 import CreateEditRoomModal from "./components/layout/AsideMenu/sections/CreateEditRoomModal.vue";
-import { attachmentStore } from "./store/AttachmentStore";
+import PendingCalls from "./components/layout/PendingCalls.vue";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -261,6 +264,15 @@ const watchMessaging = (e: MessageEvent) => {
   }
 };
 
+/* ------- Watch for pending calls ------- */
+const watchForPendingCalls = (e: MessageEvent) => {
+  const data = parseSocketEventData(e);
+  if (!data) return;
+  if (instanceOfCallAcknowledgeData(data)) {
+    pendingCallsStore.push(data);
+  }
+};
+
 /* ------- Watch for response messages on the socket connection ------- */
 const watchForResponseMessages = (e: MessageEvent) => {
   const data = parseSocketEventData(e);
@@ -285,6 +297,7 @@ watch(socketStore, (_, newVal) => {
     socketStore.socket?.addEventListener("message", watchMessaging);
     socketStore.socket?.addEventListener("message", watchForAttachmentUpdates);
     socketStore.socket?.addEventListener("message", watchBansAndUnbans);
+    socketStore.socket?.addEventListener("message", watchForPendingCalls);
   } else {
     socketStore.connectSocket(authStore.user?.ID!);
   }
@@ -309,6 +322,7 @@ onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchMessaging);
   socketStore.socket?.removeEventListener("message", watchForAttachmentUpdates);
   socketStore.socket?.removeEventListener("message", watchBansAndUnbans);
+  socketStore.socket?.removeEventListener("message", watchForPendingCalls);
 });
 
 onMounted(() => {
@@ -390,6 +404,7 @@ onMounted(() => {
     <WelcomeModal v-else />
     <CreateEditRoomModal />
     <DarkToggle />
+    <PendingCalls />
   </div>
 </template>
 

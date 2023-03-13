@@ -123,6 +123,15 @@ function banClicked() {
   userdropdownStore.open = false;
 }
 
+function callClicked() {
+  socketStore.send(
+    JSON.stringify({
+      event_type: "CALL_USER",
+      uid: userdropdownStore.subject,
+    })
+  );
+}
+
 const msgInputRef = ref<HTMLCanvasElement | null>();
 const msgInput = ref("");
 function handleMsgInput(e: Event) {
@@ -161,6 +170,7 @@ function submitDirectMessage() {
       <button @click="directMessageClicked">Direct message</button>
       <button @click="friendRequestClicked">Friend request</button>
       <button @click="blockClicked">Block</button>
+      <button @click="callClicked">Call user</button>
       <button v-if="userdropdownStore.roomId" @click="banClicked">Ban</button>
     </div>
     <!-- Direct message section -->

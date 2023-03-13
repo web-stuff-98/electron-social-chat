@@ -15,6 +15,7 @@ import (
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -85,6 +86,9 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		return err
 	case "UNBAN":
 		err := unbanUser(data, conn, uid, ss, as, colls)
+		return err
+	case "CALL_USER":
+		err := callUser(data, conn, uid, ss, colls)
 		return err
 	}
 	return fmt.Errorf("Unrecognized event type")
@@ -1238,6 +1242,8 @@ func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectI
 		return fmt.Errorf("Friend request not found")
 	}
 
+	frq := messagingData.FriendRequests[friendRequestIndex]
+
 	authorMessagingData := &models.UserMessagingData{}
 	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": messagingData.FriendRequests[friendRequestIndex].Author}).Decode(&authorMessagingData); err != nil {
 		return err
@@ -1286,27 +1292,42 @@ func friendRequestResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectI
 		return deleteIfErr
 	}
 
-	if _, err := colls.UserMessagingDataCollection.UpdateOne(context.Background(), bson.M{
-		"_id":                 messagingData.FriendRequests[friendRequestIndex].Recipient,
-		"friend_requests._id": friendRequestId,
-	}, bson.M{
-		"$set": bson.M{
-			"friend_requests.$.accepted": data.Accept,
-			"friend_requests.$.declined": !data.Accept,
-		},
-	}); err != nil {
-		return err
+	if data.Accept {
+		if _, err := colls.UserMessagingDataCollection.UpdateOne(context.Background(), bson.M{
+			"_id":                 uid,
+			"friend_requests._id": friendRequestId,
+		}, bson.M{
+			"$set": bson.M{
+				"friend_requests.$.accepted": data.Accept,
+				"friend_requests.$.declined": !data.Accept,
+			},
+			"$addToSet": bson.M{
+				"friends": frq.Author,
+			},
+		}); err != nil {
+			return err
+		}
+
+		if _, err := colls.UserMessagingDataCollection.UpdateOne(context.Background(), bson.M{
+			"_id": frq.Author,
+		}, bson.M{
+			"$addToSet": bson.M{
+				"friends": uid,
+			},
+		}); err != nil {
+			return err
+		}
 	}
 
 	inv := &socketmodels.OutFriendRequestResponse{
 		ID:        friendRequestId.Hex(),
 		Author:    uid.Hex(),
-		Recipient: messagingData.FriendRequests[friendRequestIndex].Author.Hex(),
+		Recipient: frq.Author.Hex(),
 		Accept:    data.Accept,
 	}
 	Uids := make(map[primitive.ObjectID]struct{})
 	Uids[uid] = struct{}{}
-	Uids[messagingData.FriendRequests[friendRequestIndex].Author] = struct{}{}
+	Uids[frq.Author] = struct{}{}
 	ss.SendDataToUsers <- socketserver.UsersDataMessage{
 		Uids: Uids,
 		Type: "OUT_FRIEND_REQUEST_RESPONSE",
@@ -1625,6 +1646,49 @@ func unbanUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 			Banned: data.Uid,
 		},
 		Type: "UNBANNED",
+	}
+
+	return nil
+}
+
+func callUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.CallUser
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	callUid, err := primitive.ObjectIDFromHex(data.Uid)
+	if err != nil {
+		return err
+	}
+
+	calledMessagingData := &models.UserMessagingData{}
+	if err := colls.UserMessagingDataCollection.FindOne(context.Background(), bson.M{"_id": callUid}).Decode(&calledMessagingData); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return fmt.Errorf("User not found")
+		}
+		return fmt.Errorf("Internal server error")
+	}
+
+	for _, oi := range calledMessagingData.Blocked {
+		if oi == uid {
+			return fmt.Errorf("This user blocked your account")
+		}
+	}
+	foundFriend := false
+	for _, oi := range calledMessagingData.Friends {
+		if oi == uid {
+			foundFriend = true
+			break
+		}
+	}
+	if !foundFriend {
+		return fmt.Errorf("You can only call users you are friends with")
+	}
+
+	ss.CallsPendingChan <- socketserver.InCall{
+		Caller: uid,
+		Called: callUid,
 	}
 
 	return nil

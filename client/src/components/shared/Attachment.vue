@@ -4,6 +4,7 @@ import {
   IResMsg,
   IAttachmentMetadata,
 } from "../../interfaces/GeneralInterfaces";
+import { baseURL } from "../../services/makeRequest";
 import { attachmentStore } from "../../store/AttachmentStore";
 import ResMsg from "../layout/ResMsg.vue";
 import ProgressBar from "../shared/Progress.vue";
@@ -41,7 +42,20 @@ onBeforeUnmount(() => {
     class="attachment"
   >
     <div v-if="meta && meta.ratio === 1">
-      {{ meta }}
+      <img
+        :src="`${baseURL}/api/attachment/${msgId}`"
+        v-if="
+          meta.meta === 'image/jpeg' ||
+          meta.meta === 'image/png' ||
+          meta.meta === 'image/avif'
+        "
+      />
+      <button :style="{ flexDirection: 'row-reverse' }" type="button" v-else>
+        <v-icon name="fa-download" />
+        {{
+          meta.name.length > 24 ? meta.name.slice(0, 24 - 1) + "..." : meta.name
+        }}
+      </button>
     </div>
     <ProgressBar v-if="meta && meta.ratio < 1" :ratio="meta.ratio" />
     <ResMsg :resMsg="resMsg" />
@@ -55,5 +69,25 @@ onBeforeUnmount(() => {
   width: 100%;
   justify-content: flex-start;
   text-align: left;
+  img {
+    border-radius: var(--border-radius-medium);
+    filter: drop-shadow(var(--shadow-medium));
+    max-width: 80%;
+    border: 2px solid var(--base-light);
+  }
+  button {
+    padding: 3px;
+    display: flex;
+    gap: var(--padding-medium);
+    font-size: 0.666rem;
+    line-height: 1;
+    align-items: center;
+    padding: var(--padding-medium);
+    box-shadow: none;
+    border: none;
+  }
+  button:hover {
+    outline: 1px solid var(--base-light);
+  }
 }
 </style>

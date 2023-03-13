@@ -206,15 +206,7 @@ type OutFriendRequestResponse struct {
 	Recipient string `json:"recipient"`
 }
 
-/* -------- MISC -------- */
-
-// TYPE: CHANGE
-type OutChangeMessage struct {
-	Type   string `json:"TYPE"`
-	Method string `json:"METHOD"`
-	Data   string `json:"DATA"`
-	Entity string `json:"ENTITY"`
-}
+/* -------- ATTACHMENT EVENTS -------- */
 
 // TYPE: ATTACHMENT_PROGRESS (no "TYPE" needed in model)
 type AttachmentProgress struct {
@@ -239,6 +231,8 @@ type AttachmentRequest struct {
 	IsRoom bool   `json:"is_room"`
 }
 
+/* -------- BLOCK/BAN -------- */
+
 // TYPE: BLOCK/UNBLOCK
 type Block struct {
 	Type string `json:"TYPE"`
@@ -262,6 +256,46 @@ type Banned struct {
 // TYPE: BLOCKED/UNBLOCKED (no "TYPE" needed in model)
 type Blocked struct {
 	Blocker string `json:"blocker"`
+}
+
+/* -------- CALL EVENTS -------- */
+
+// TYPE: CALL_USER
+type CallUser struct {
+	Type string `json:"TYPE"`
+	Uid  string `json:"uid"`
+}
+
+// TYPE: CALL_USER_ACKNOWLEDGE (no "TYPE" needed in model)
+// This event is also sent back to the caller
+type CallAcknowledge struct {
+	Caller string `json:"caller"`
+	Called string `json:"called"`
+}
+
+// TYPE: CALL_USER_RESPONSE (no "TYPE" needed in model)
+type CallResponse struct {
+	Caller string `json:"caller"`
+	Called string `json:"called"`
+	Accept bool   `json:"accept"`
+}
+
+// TYPE: CALL_LEAVE
+type CallLeave struct {
+	Type string `json:"TYPE"`
+}
+
+// TYPE: CALL_LEFT (no "TYPE" needed in model)
+type CallLeft struct{}
+
+/* -------- MISC -------- */
+
+// TYPE: CHANGE
+type OutChangeMessage struct {
+	Type   string `json:"TYPE"`
+	Method string `json:"METHOD"`
+	Data   string `json:"DATA"`
+	Entity string `json:"ENTITY"`
 }
 
 // TYPE: MEMBER_ADDED (no "TYPE" needed in model)

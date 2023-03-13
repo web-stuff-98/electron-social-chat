@@ -3,6 +3,7 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import "./style.css";
 import App from "./App.vue";
 import Home from "./components/routes/Home.vue";
+import Call from "./components/routes/Call.vue";
 import Room from "./components/routes/Room.vue";
 import EditRoom from "./components/layout/AsideMenu/sections/EditRoom.vue";
 
@@ -28,6 +29,14 @@ import {
   BiCaretRight,
   MdDarkmode,
   MdAttachfileRound,
+  FaDownload,
+  HiPhoneMissedCall,
+  BiMicFill,
+  BiMicMuteFill,
+  MdScreenshare,
+  BiCameraVideo,
+  MdStopscreenshare,
+  BiCameraVideoOff,
 } from "oh-vue-icons/icons";
 import { authStore } from "./store/AuthStore";
 
@@ -51,11 +60,19 @@ addIcons(
   BiCaretLeft,
   BiCaretRight,
   MdDarkmode,
-  MdAttachfileRound
+  MdAttachfileRound,
+  FaDownload,
+  HiPhoneMissedCall,
+  BiMicFill,
+  BiMicMuteFill,
+  MdScreenshare,
+  MdStopscreenshare,
+  BiCameraVideo,
+  BiCameraVideoOff
 );
 
 const routes = [
-  { path: "/", component: Home, name: "home" },
+  { path: "/", component: Call, name: "home" },
   { path: "/room/:id", component: Room, name: "room" },
   { path: "/room/edit/:id", component: EditRoom, name: "edit_room" },
 ];

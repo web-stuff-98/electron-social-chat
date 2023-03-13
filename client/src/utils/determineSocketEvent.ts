@@ -169,6 +169,14 @@ export type BlockedData = Omit<
 
 export type UnblockedData = BlockedData;
 
+export type CallAcknowledgeData = Omit<
+  {
+    called: string;
+    caller: string;
+  },
+  "TYPE"
+>;
+
 export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
@@ -272,6 +280,11 @@ export function instanceOfBlockData(object: any): object is BannedData {
 }
 export function instanceOfUnblockData(object: any): object is BannedData {
   return object.TYPE === "UNBLOCKED";
+}
+export function instanceOfCallAcknowledgeData(
+  object: any
+): object is CallAcknowledgeData {
+  return object.TYPE === "CALL_USER_ACKNOWLEDGE";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {
