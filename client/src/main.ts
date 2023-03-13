@@ -37,6 +37,7 @@ import {
   BiCameraVideo,
   MdStopscreenshare,
   BiCameraVideoOff,
+  HiPhoneIncoming,
 } from "oh-vue-icons/icons";
 import { authStore } from "./store/AuthStore";
 
@@ -63,6 +64,7 @@ addIcons(
   MdAttachfileRound,
   FaDownload,
   HiPhoneMissedCall,
+  HiPhoneIncoming,
   BiMicFill,
   BiMicMuteFill,
   MdScreenshare,

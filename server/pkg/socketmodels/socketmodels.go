@@ -267,7 +267,7 @@ type CallUser struct {
 }
 
 // TYPE: CALL_USER_ACKNOWLEDGE (no "TYPE" needed in model)
-// This event is also sent back to the caller
+// This event is also sent to the caller
 type CallAcknowledge struct {
 	Caller string `json:"caller"`
 	Called string `json:"called"`

@@ -177,6 +177,15 @@ export type CallAcknowledgeData = Omit<
   "TYPE"
 >;
 
+export type CallResponseData = Omit<
+  {
+    called: string;
+    caller: string;
+    accept: boolean;
+  },
+  "TYPE"
+>;
+
 export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
@@ -285,6 +294,11 @@ export function instanceOfCallAcknowledgeData(
   object: any
 ): object is CallAcknowledgeData {
   return object.TYPE === "CALL_USER_ACKNOWLEDGE";
+}
+export function instanceOfCallResponseData(
+  object: any
+): object is CallAcknowledgeData {
+  return object.TYPE === "CALL_USER_RESPONSE";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {

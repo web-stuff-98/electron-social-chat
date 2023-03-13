@@ -90,6 +90,9 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "CALL_USER":
 		err := callUser(data, conn, uid, ss, colls)
 		return err
+	case "CALL_USER_RESPONSE":
+		err := callUserResponse(data, conn, uid, ss, colls)
+		return err
 	}
 	return fmt.Errorf("Unrecognized event type")
 }
@@ -1689,6 +1692,33 @@ func callUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socket
 	ss.CallsPendingChan <- socketserver.InCall{
 		Caller: uid,
 		Called: callUid,
+	}
+
+	return nil
+}
+
+func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.CallResponse
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	callerUid, err := primitive.ObjectIDFromHex(data.Caller)
+	if err != nil {
+		return err
+	}
+	calledUid, err := primitive.ObjectIDFromHex(data.Called)
+	if err != nil {
+		return err
+	}
+	if callerUid == uid && data.Accept {
+		return fmt.Errorf("You cannot accept a call to a another user on your own behalf")
+	}
+
+	ss.ResponseToCallChan <- socketserver.InCallResponse{
+		Caller: callerUid,
+		Called: calledUid,
+		Accept: data.Accept,
 	}
 
 	return nil

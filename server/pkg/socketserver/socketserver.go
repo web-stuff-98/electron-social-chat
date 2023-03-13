@@ -291,6 +291,59 @@ func disconnectRegistrationLoop(socketServer *SocketServer, colls *db.Collection
 				}
 			}
 		}
+
+		socketServer.CallsPending.mutex.Lock()
+		if callPending, ok := socketServer.CallsPending.data[connData.Uid]; ok {
+			socketServer.SendDataToUser <- UserDataMessage{
+				Uid:  callPending,
+				Type: "CALL_USER_RESPONSE",
+				Data: socketmodels.CallResponse{
+					Caller: connData.Uid.Hex(),
+					Called: callPending.Hex(),
+					Accept: false,
+				},
+			}
+			delete(socketServer.CallsActive.data, connData.Uid)
+		}
+		for caller, called := range socketServer.CallsPending.data {
+			if called == connData.Uid {
+				socketServer.SendDataToUser <- UserDataMessage{
+					Uid:  caller,
+					Type: "CALL_USER_RESPONSE",
+					Data: socketmodels.CallResponse{
+						Caller: caller.Hex(),
+						Called: connData.Uid.Hex(),
+						Accept: false,
+					},
+				}
+				delete(socketServer.CallsPending.data, caller)
+			}
+		}
+		socketServer.CallsPending.mutex.Unlock()
+
+		socketServer.CallsActive.mutex.Lock()
+		if called, ok := socketServer.CallsActive.data[connData.Uid]; ok {
+			socketServer.SendDataToUser <- UserDataMessage{
+				Uid:  called,
+				Type: "CALL_LEFT",
+				Data: socketmodels.CallLeft{},
+			}
+			delete(socketServer.CallsActive.data, connData.Uid)
+		} else {
+			for caller, called := range socketServer.CallsActive.data {
+				if called == connData.Uid {
+					socketServer.SendDataToUser <- UserDataMessage{
+						Type: "CALL_LEFT",
+						Uid:  caller,
+						Data: socketmodels.CallLeft{},
+					}
+					delete(socketServer.CallsActive.data, caller)
+					break
+				}
+			}
+		}
+		socketServer.CallsActive.mutex.Unlock()
+
 		socketServer.Connections.mutex.Unlock()
 		socketServer.Subscriptions.mutex.Unlock()
 	}

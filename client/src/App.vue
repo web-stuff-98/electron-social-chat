@@ -26,6 +26,7 @@ import {
   instanceOfBanData,
   instanceOfUnBanData,
   instanceOfCallAcknowledgeData,
+  instanceOfCallResponseData,
 } from "./utils/determineSocketEvent";
 import { roomStore } from "./store/RoomStore";
 import { baseURL } from "./services/makeRequest";
@@ -38,6 +39,7 @@ import { pendingCallsStore } from "./store/PendingCallsStore";
 import DarkToggle from "./components/layout/DarkToggle.vue";
 import CreateEditRoomModal from "./components/layout/AsideMenu/sections/CreateEditRoomModal.vue";
 import PendingCalls from "./components/layout/PendingCalls.vue";
+import { roomChannelStore } from "./store/RoomChannelStore";
 
 const router = useRouter();
 const showAside = ref(false);
@@ -150,19 +152,23 @@ const watchBansAndUnbans = (e: MessageEvent) => {
           roomStore.rooms[i].members?.splice(mi, 1);
       }
     }
-    if (
-      data.banned === authStore.user?.ID &&
-      router.currentRoute.value.fullPath.includes(data.room_id)
-    ) {
-      router.push("/");
-      modalMsg.value = {
-        msg: "You were banned from the room",
-        err: true,
-        pen: false,
-      };
-      showModal.value = true;
-      modalConfirmation.value = () => (showModal.value = false);
-      modalCancellation.value = undefined;
+    if (data.banned === authStore.user?.ID) {
+      if (router.currentRoute.value.fullPath.includes(data.room_id)) {
+        router.push("/");
+        modalMsg.value = {
+          msg: "You were banned from the room",
+          err: true,
+          pen: false,
+        };
+        showModal.value = true;
+        modalConfirmation.value = () => (showModal.value = false);
+        modalCancellation.value = undefined;
+      }
+    } else {
+      roomChannelStore.channels.map((c) => ({
+        ...c,
+        messages: c.messages?.filter((m) => m.author !== data.banned),
+      }));
     }
   }
   if (instanceOfUnBanData(data)) {
@@ -270,6 +276,12 @@ const watchForPendingCalls = (e: MessageEvent) => {
   if (!data) return;
   if (instanceOfCallAcknowledgeData(data)) {
     pendingCallsStore.push(data);
+  }
+  if (instanceOfCallResponseData(data)) {
+    const i = pendingCallsStore.findIndex(
+      (c) => c.called === data.called && c.caller === data.caller
+    );
+    if (i !== -1) pendingCallsStore.splice(i, 1);
   }
 };
 
