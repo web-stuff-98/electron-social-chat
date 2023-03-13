@@ -46,9 +46,15 @@ const router = useRouter();
 const otherUsersId = toRef(route.params, "id");
 const initiator = computed(() => route.query.initiator !== undefined);
 
-const PeerInstance = ref<Peer.Instance>();
+const peerInstance = ref<Peer.Instance>();
 const peerStream = ref<MediaStream>();
 const gotAnswer = ref(false);
+
+/*
+Got to rewrite this file to use this stuff...
+
+Then use the trackIds returned by useChatMedia in the socket events
+to handle screen sharing
 
 const mediaOptions = ref({
   userMedia: {
@@ -63,13 +69,25 @@ const mediaOptions = ref({
 const { stream, trackIds } = useChatMedia(negotiateConnection, mediaOptions);
 
 function negotiateConnection() {
-
+  if (peerInstance.value) {
+    peerInstance.value.destroy();
+    peerInstance.value = undefined;
+  }
+  peerStream.value?.getTracks().forEach((track) => {
+    peerStream.value?.removeTrack(track);
+  });
+  peerStream.value = undefined;
+  if (initiator) {
+    makePeer();
+  }
 }
-
+*/
 function initPeer() {
   const peer = new Peer({
     initiator: initiator.value,
     trickle: false,
+    // this needs to be using the stream object returned by useChatMedia instead
+    // remove the old stupid MediaStore.ts file
     stream: userMedia.value,
     iceCompleteTimeout: 2000, // 5 seconds is too long
   });
@@ -91,7 +109,7 @@ function makePeer() {
       );
     }
   });
-  PeerInstance.value = peer;
+  peerInstance.value = peer;
 }
 // for recipient peer
 async function makeAnswerPeer(signal: Peer.SignalData) {
@@ -107,13 +125,13 @@ async function makeAnswerPeer(signal: Peer.SignalData) {
   await nextTick(() => {
     peer.signal(signal);
   });
-  PeerInstance.value = peer;
+  peerInstance.value = peer;
 }
 
 async function signalAnswer(signal: Peer.SignalData) {
   gotAnswer.value = true;
   await nextTick(() => {
-    PeerInstance.value?.signal(signal);
+    peerInstance.value?.signal(signal);
   });
 }
 
@@ -121,7 +139,7 @@ function watchForCallEvents(e: MessageEvent) {
   const data = parseSocketEventData(e);
   if (!data) return;
   if (instanceOfCallLeftData(data)) {
-    PeerInstance.value?.destroy();
+    peerInstance.value?.destroy();
     router.push("/");
   }
   if (instanceOfCallWebRTCOfferFromInitiator(data)) {
@@ -163,22 +181,22 @@ watch(userMediaProperties, async (oldVal, newVal) => {
     if (newVal.video && !oldVal.video)
       userMedia.value?.getVideoTracks().forEach((track) => {
         //@ts-ignore
-        PeerInstance.value?.addTrack(track, userMedia.value);
+        peerInstance.value?.addTrack(track, userMedia.value);
       });
     else if (!oldVal.video)
       userMedia.value?.getVideoTracks().forEach((track) => {
         //@ts-ignore
-        PeerInstance.value?.removeTrack(track, userMedia.value);
+        peerInstance.value?.removeTrack(track, userMedia.value);
       });
     if (newVal.audio && !oldVal.audio)
       userMedia.value?.getAudioTracks().forEach((track) => {
         //@ts-ignore
-        PeerInstance.value?.addTrack(track, userMedia.value);
+        peerInstance.value?.addTrack(track, userMedia.value);
       });
     else if (!oldVal.audio)
       userMedia.value?.getAudioTracks().forEach((track) => {
         //@ts-ignore
-        PeerInstance.value?.removeTrack(track, userMedia.value);
+        peerInstance.value?.removeTrack(track, userMedia.value);
       });
   });
 });
