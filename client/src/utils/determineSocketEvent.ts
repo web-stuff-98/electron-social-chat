@@ -190,6 +190,8 @@ export type CallLeftData = Omit<{}, "TYPE">;
 
 export type CallWebRTCOfferFromInitiator = Omit<{ signal: string }, "TYPE">;
 
+export type CallWebRTCAnswerFromRecipient = Omit<{ signal: string }, "TYPE">;
+
 export type SocketEventChangeMethodData =
   | "UPDATE"
   | "INSERT"
@@ -311,6 +313,11 @@ export function instanceOfCallWebRTCOfferFromInitiator(
   object: any
 ): object is CallWebRTCOfferFromInitiator {
   return object.TYPE === "CALL_WEBRTC_OFFER_FROM_INITIATOR";
+}
+export function instanceOfCallWebRTCAnswerFromRecipient(
+  object: any
+): object is CallWebRTCAnswerFromRecipient {
+  return object.TYPE === "CALL_WEBRTC_ANSWER_FROM_RECIPIENT";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {

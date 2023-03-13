@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref } from "vue";
 import { userMediaProperties } from "../../store/MediaStore";
+import { userStore } from "../../store/UserStore";
 defineProps<{
   userMedia?: MediaStream;
   displayMedia?: MediaStream;
@@ -14,7 +15,7 @@ const muteDisplayMedia = ref(false);
 
 <template>
   <div class="video-window">
-    <div class="name">{{ uid }}</div>
+    <div class="name">{{ userStore.getUser(uid as string)?.username }}</div>
     <video
       :srcObject="displayMedia || userMedia"
       :muted="
@@ -25,7 +26,16 @@ const muteDisplayMedia = ref(false);
       class="main-video"
       autoplay
     />
-    <div v-if="!isOwner" :style="{ width: 'fit-content' }" class="buttons">
+    <div
+      v-if="!isOwner"
+      :style="{
+        width: 'fit-content',
+        position: 'absolute',
+        bottom: '1rem',
+        left: '1rem',
+      }"
+      class="buttons"
+    >
       <!-- Mute/unmute button -->
       <button
         class="mute-button"
@@ -39,7 +49,14 @@ const muteDisplayMedia = ref(false);
           }
         "
       >
-        <v-icon :name="muteDisplayMedia ? 'bi-mic-mute-fill' : 'bi-mic-fill'" />
+        <v-icon
+          :style="{ fill: 'white', filter:'drop-shadow(0px, 2px, 2px black)' }"
+          :name="
+            (displayMedia && userMedia ? muteDisplayMedia : muteUserMedia)
+              ? 'bi-mic-mute-fill'
+              : 'bi-mic-fill'
+          "
+        />
       </button>
     </div>
     <div
@@ -112,6 +129,13 @@ const muteDisplayMedia = ref(false);
   }
   .name {
     padding: var(--padding-medium);
+    position: absolute;
+    top: var(--padding);
+    left: var(--padding);
+    padding: var(--padding-medium);
+    font-weight: 600;
+    text-shadow: 0px 2px 2px black;
+    color: white;
   }
   .main-video,
   .small-video-container {
@@ -122,7 +146,7 @@ const muteDisplayMedia = ref(false);
   }
   .main-video {
     width: 45vw;
-    max-width: 30rem;
+    max-width: min(30rem, 40vh);
   }
   .small-video-container {
     position: absolute;

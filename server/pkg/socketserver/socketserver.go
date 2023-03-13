@@ -46,6 +46,8 @@ type SocketServer struct {
 	LeaveCallChan chan primitive.ObjectID
 	// Channel for sending call recipient offer
 	SendCallRecipientOffer chan CallerSignal
+	// Channel for sending answer from called back to caller
+	SendCalledAnswer chan CalledSignal
 
 	// Websocket Write/Read must be done from 1 goroutine. Queue all messages to be sent 1 by 1.
 	// This is probably a bad way to do it... Should be a seperate goroutine for each channel,
@@ -142,6 +144,10 @@ type CallerSignal struct {
 	Caller primitive.ObjectID
 	Signal string
 }
+type CalledSignal struct {
+	Called primitive.ObjectID
+	Signal string
+}
 
 /* --------------- RECV CHAN STRUCTS --------------- */
 type GetSubscriptionUids struct {
@@ -186,6 +192,7 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 		},
 		LeaveCallChan:          make(chan primitive.ObjectID),
 		SendCallRecipientOffer: make(chan CallerSignal),
+		SendCalledAnswer:       make(chan CalledSignal),
 
 		MessageSendQueue: make(chan QueuedMessage),
 
@@ -233,6 +240,8 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 	go leaveCallChanLoop(socketServer, colls)
 	/* ----- Send call recipient webRTC offer loop ----- */
 	go sendCallRecipientOfferLoop(socketServer, colls)
+	/* ----- Send call recipient webRTC offer loop ----- */
+	go sendCallerAnswerLoop(socketServer, colls)
 }
 
 func connectionRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
@@ -885,7 +894,6 @@ func sendCallRecipientOfferLoop(socketServer *SocketServer, colls *db.Collection
 			go sendCallRecipientOfferLoop(socketServer, colls)
 		}()
 		data := <-socketServer.SendCallRecipientOffer
-
 		socketServer.CallsActive.mutex.Lock()
 		if called, ok := socketServer.CallsActive.data[data.Caller]; ok {
 			socketServer.SendDataToUser <- UserDataMessage{
@@ -894,6 +902,33 @@ func sendCallRecipientOfferLoop(socketServer *SocketServer, colls *db.Collection
 				Data: socketmodels.CallWebRTCOfferFromInitiator{
 					Signal: data.Signal,
 				},
+			}
+		}
+		socketServer.CallsActive.mutex.Unlock()
+	}
+}
+
+func sendCallerAnswerLoop(socketServer *SocketServer, colls *db.Collections) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in sending offer answer loop :", r)
+			}
+			go sendCallerAnswerLoop(socketServer, colls)
+		}()
+		data := <-socketServer.SendCalledAnswer
+		socketServer.CallsActive.mutex.Lock()
+		for caller, oi2 := range socketServer.CallsActive.data {
+			if oi2 == data.Called {
+				socketServer.SendDataToUser <- UserDataMessage{
+					Uid:  caller,
+					Type: "CALL_WEBRTC_ANSWER_FROM_RECIPIENT",
+					Data: socketmodels.CallWebRTCOfferAnswer{
+						Signal: data.Signal,
+					},
+				}
+				break
 			}
 		}
 		socketServer.CallsActive.mutex.Unlock()

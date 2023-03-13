@@ -40,6 +40,10 @@ import DarkToggle from "./components/layout/DarkToggle.vue";
 import CreateEditRoomModal from "./components/layout/AsideMenu/sections/CreateEditRoomModal.vue";
 import PendingCalls from "./components/layout/PendingCalls.vue";
 import { roomChannelStore } from "./store/RoomChannelStore";
+// @ts-ignore
+import global from 'global'
+import * as process from "process";
+global.process = process;
 
 const router = useRouter();
 const showAside = ref(false);
@@ -191,7 +195,6 @@ const watchMessaging = (e: MessageEvent) => {
         c.uid ===
         (data.author === authStore.user?.ID ? data.recipient : data.author)
     );
-    console.log(convI);
     if (convI !== -1)
       messagingStore.conversations[convI].messages.push({
         ...data,

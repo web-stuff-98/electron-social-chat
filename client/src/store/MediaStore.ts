@@ -23,10 +23,10 @@ function addUserMediaEventListeners() {
 export async function openMic() {
   if (!userMedia.value) {
     userMedia.value = await navigator.mediaDevices.getUserMedia({
-      video: false,
+      video: true,
       audio: true,
     });
-    userMediaProperties.video = false;
+    userMediaProperties.video = true;
     userMediaProperties.audio = true;
     addUserMediaEventListeners();
   } else {

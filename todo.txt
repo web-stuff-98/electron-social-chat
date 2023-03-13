@@ -1,11 +1,33 @@
 Todos in order
- - Fix code for friend requests & invites
+
+WebRTC todos (always takes a really long fucking time)
+
+ - Create a hook (composable) called useMedia for video chat.
+   It should return userMedia & displayMedia, and take in and
+   invoke a function that should renegotioate WebRTC with the
+   updated stream after adding/removing tracks. It's the only
+   way to do it. It's the way WebRTC works. But you can use
+   .enabled on audio tracks instead of adding/removing them
+
+ - Video window component expand to fullscreen button 
+
+ - Screen sharing... is it possible to send 2 streams at the same
+   time? Screen sharing is an important feature. The other client
+   needs some way to determine which video/audio track is for the
+   screen. There is the id property attached to MediaStream. The
+   client could send a message indicating that the stream with
+   the matching id is the display stream
+
+ - Add simple-peer video chat to rooms aswell
+
+----------------------------------------------------------------
+
+
  - Attachment download button needs to actually download the attachment
- - Fix user data sometimes not being fetched when component visible
+ - Fix user data sometimes not being present when component visible
  - Friends & blocked list aside section
- - Socket CHANGE events for creating/updating/deleting channels
+ - Socket events for creating/updating/deleting channels
  - User online indicator
- - WebRTC network for video sharing
  - Notifications
  - Zod & Formik
  - Go v10 validation for socket handlers
@@ -20,11 +42,12 @@ Todos; before completion
  - Clean up imports, add comments to templates, re-order functions
  - Clean up SCSS classes
  - Rate limiters for API routes & socket handler
- - Alert sounds
+ - Sound for incoming calls & messages
  - Audio/Video input device selection
  - Screen sharing toggle
  - UI/UX improvements
  - Styling improvements
+ - Timeouts for calls that go unanswered
 
 And lots more, probably
 

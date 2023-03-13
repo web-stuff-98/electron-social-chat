@@ -99,8 +99,11 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "CALL_WEBRTC_OFFER":
 		err := callWebRTCOffer(data, conn, uid, ss, colls)
 		return err
+	case "CALL_WEBRTC_ANSWER":
+		err := callWebRTCAnswer(data, conn, uid, ss, colls)
+		return err
 	}
-	return fmt.Errorf("Unrecognized event type")
+	return fmt.Errorf("Unrecognized event type:", eventType)
 }
 
 func watchUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
@@ -1750,6 +1753,20 @@ func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss 
 	ss.SendCallRecipientOffer <- socketserver.CallerSignal{
 		Signal: data.Signal,
 		Caller: uid,
+	}
+
+	return nil
+}
+
+func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+	var data socketmodels.CallWebRTCOfferAnswer
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	ss.SendCalledAnswer <- socketserver.CalledSignal{
+		Signal: data.Signal,
+		Called: uid,
 	}
 
 	return nil

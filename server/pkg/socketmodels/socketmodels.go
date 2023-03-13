@@ -299,6 +299,11 @@ type CallWebRTCOfferFromInitiator struct {
 	Signal string `json:"signal"`
 }
 
+// TYPE: CALL_WEBRTC_ANSWER_FROM_RECIPIENT (no "TYPE" needed in model)
+type CallWebRTCAnswerFromInitiator struct {
+	Signal string `json:"signal"`
+}
+
 /* -------- MISC -------- */
 
 // TYPE: CHANGE

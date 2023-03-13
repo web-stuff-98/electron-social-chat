@@ -28,12 +28,14 @@ import {
 import {
   instanceOfCallLeftData,
   instanceOfCallWebRTCOfferFromInitiator,
+  instanceOfCallWebRTCAnswerFromRecipient,
   parseSocketEventData,
 } from "../../utils/determineSocketEvent";
 import VideoWindow from "../shared/VideoWindow.vue";
 import Peer from "simple-peer";
 
 /*
+basically copied this
 https://codesandbox.io/s/vinnu1simple-videochat-webrtc-0ozmn
 */
 
@@ -44,6 +46,58 @@ const initiator = computed(() => route.query.initiator !== undefined);
 
 const PeerInstance = ref<Peer.Instance>();
 const peerStream = ref<MediaStream>();
+const gotAnswer = ref(false);
+
+function initPeer() {
+  const peer = new Peer({
+    initiator: initiator.value,
+    trickle: false,
+    stream: userMedia.value,
+    iceCompleteTimeout: 2000, // 5 seconds is too long
+  });
+  peer.on("stream", handleStream);
+  return peer;
+}
+
+// for initializer peer
+function makePeer() {
+  gotAnswer.value = false;
+  const peer = initPeer();
+  peer.on("signal", (signal) => {
+    if (!gotAnswer.value) {
+      socketStore.send(
+        JSON.stringify({
+          event_type: "CALL_WEBRTC_OFFER",
+          signal: JSON.stringify(signal),
+        })
+      );
+    }
+  });
+  PeerInstance.value = peer;
+}
+// for recipient peer
+async function makeAnswerPeer(signal: Peer.SignalData) {
+  const peer = initPeer();
+  peer.on("signal", (signal) => {
+    socketStore.send(
+      JSON.stringify({
+        event_type: "CALL_WEBRTC_ANSWER",
+        signal: JSON.stringify(signal),
+      })
+    );
+  });
+  await nextTick(() => {
+    peer.signal(signal);
+  });
+  PeerInstance.value = peer;
+}
+
+async function signalAnswer(signal: Peer.SignalData) {
+  gotAnswer.value = true;
+  await nextTick(() => {
+    PeerInstance.value?.signal(signal);
+  });
+}
 
 function watchForCallEvents(e: MessageEvent) {
   const data = parseSocketEventData(e);
@@ -53,17 +107,10 @@ function watchForCallEvents(e: MessageEvent) {
     router.push("/");
   }
   if (instanceOfCallWebRTCOfferFromInitiator(data)) {
-    PeerInstance.value = new Peer({ initiator: false });
-    PeerInstance.value.on("stream", handleStream);
-    PeerInstance.value.on("signal", (signal) =>
-      socketStore.send(
-        JSON.stringify({
-          event_type: "CALL_WEBRTC_ANSWER",
-          signal,
-        })
-      )
-    );
-    PeerInstance.value.signal(JSON.parse(data.signal) as Peer.SignalData);
+    makeAnswerPeer(JSON.parse(data.signal) as Peer.SignalData);
+  }
+  if (instanceOfCallWebRTCAnswerFromRecipient(data)) {
+    signalAnswer(JSON.parse(data.signal) as Peer.SignalData);
   }
 }
 
@@ -71,29 +118,17 @@ function handleStream(stream: MediaStream) {
   peerStream.value = stream;
 }
 
-function handleSignal(signal: Peer.SignalData) {
-  if (initiator) {
-    socketStore.send(
-      JSON.stringify({
-        event_type: "CALL_WEBRTC_OFFER",
-        signal: JSON.stringify(signal),
-      })
-    );
-  }
-}
-
 onMounted(() => {
   socketStore.socket?.addEventListener("message", watchForCallEvents);
   openMic().then(async () => {
     if (initiator) {
+      // Initialize the peer
       await nextTick(() => {
-        // Initialize the peer
-        PeerInstance.value = new Peer({ initiator: true });
-        PeerInstance.value.on("stream", handleStream);
-        PeerInstance.value.on("signal", handleSignal);
+        makePeer();
       });
     }
   });
+  userStore.cacheUserData(otherUsersId.value as string, true)
 });
 onBeforeUnmount(() => {
   socketStore.socket?.removeEventListener("message", watchForCallEvents);
@@ -103,6 +138,31 @@ onBeforeUnmount(() => {
     })
   );
   closeAllMedia();
+});
+
+watch(userMediaProperties, async (oldVal, newVal) => {
+  await nextTick(() => {
+    if (newVal.video && !oldVal.video)
+      userMedia.value?.getVideoTracks().forEach((track) => {
+        //@ts-ignore
+        PeerInstance.value?.addTrack(track, userMedia.value);
+      });
+    else if (!oldVal.video)
+      userMedia.value?.getVideoTracks().forEach((track) => {
+        //@ts-ignore
+        PeerInstance.value?.removeTrack(track, userMedia.value);
+      });
+    if (newVal.audio && !oldVal.audio)
+      userMedia.value?.getAudioTracks().forEach((track) => {
+        //@ts-ignore
+        PeerInstance.value?.addTrack(track, userMedia.value);
+      });
+    else if (!oldVal.audio)
+      userMedia.value?.getAudioTracks().forEach((track) => {
+        //@ts-ignore
+        PeerInstance.value?.removeTrack(track, userMedia.value);
+      });
+  });
 });
 </script>
 
@@ -145,7 +205,7 @@ onBeforeUnmount(() => {
       </div>
       <VideoWindow
         v-else
-        :uid="authStore.user?.ID"
+        :uid="otherUsersId as string"
         :userMedia="peerStream"
         :isOwner="false"
       />
