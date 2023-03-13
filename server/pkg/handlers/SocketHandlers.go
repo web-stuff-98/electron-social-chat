@@ -1742,7 +1742,7 @@ func callLeave(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 }
 
 func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
-	var data socketmodels.CallWebRTCOffer
+	var data socketmodels.CallWebRTCOfferAnswer
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
