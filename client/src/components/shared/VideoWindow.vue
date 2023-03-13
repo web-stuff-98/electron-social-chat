@@ -1,28 +1,72 @@
 <script lang="ts" setup>
-import { ref } from "vue";
-import { userMediaProperties } from "../../store/MediaStore";
+import { ref, computed, toRefs } from "vue";
 import { userStore } from "../../store/UserStore";
-defineProps<{
-  userMedia?: MediaStream;
-  displayMedia?: MediaStream;
+const props = defineProps<{
+  media?: MediaStream;
   isOwner: boolean;
   uid?: string;
+  trackIds: {
+    userMediaVideo: string;
+    userMediaAudio: string;
+    displayMediaVideo: string;
+    displayMediaAudio: string;
+  };
+  // This should only be used for the current users window, not other peers.
+  // Used to enable/disable microphone and camera access
+  mediaOptions?: {
+    userMedia: {
+      audio: boolean;
+      video: boolean;
+    };
+    displayMedia: {
+      audio: boolean;
+      video: boolean;
+    };
+  };
 }>();
-const hideUserMedia = ref(false);
-const muteUserMedia = ref(false);
-const muteDisplayMedia = ref(false);
+const { media, trackIds } = toRefs(props);
+
+const userMedia = computed(() => {
+  const videoTrack = media?.value?.getTrackById(trackIds.value.userMediaVideo);
+  const audioTrack = media?.value?.getTrackById(trackIds.value.userMediaAudio);
+  const stream = new MediaStream();
+  if (videoTrack) stream.addTrack(videoTrack);
+  if (audioTrack) stream.addTrack(audioTrack);
+  return videoTrack || audioTrack ? stream : undefined;
+});
+
+const displayMedia = computed(() => {
+  const videoTrack = media?.value?.getTrackById(
+    trackIds.value.displayMediaVideo
+  );
+  const audioTrack = media?.value?.getTrackById(
+    trackIds.value.displayMediaAudio
+  );
+  const stream = new MediaStream();
+  if (videoTrack) stream.addTrack(videoTrack);
+  if (audioTrack) stream.addTrack(audioTrack);
+  return videoTrack || audioTrack ? stream : undefined;
+});
+
+const showUserMediaVideo = computed(() => {
+  const vidTracks = userMedia.value?.getVideoTracks();
+  return vidTracks ? vidTracks[0].enabled : false;
+});
+
+const showDisplayMediaVideo = computed(() => {
+  const vidTracks = displayMedia.value?.getVideoTracks();
+  return vidTracks ? vidTracks[0].enabled : false;
+});
 </script>
 
 <template>
   <div class="video-window">
+    {{ trackIds }}
     <div class="name">{{ userStore.getUser(uid as string)?.username }}</div>
     <video
-      :srcObject="displayMedia || userMedia"
-      :muted="
-        isOwner ||
-        (!displayMedia && muteUserMedia) ||
-        Boolean(muteDisplayMedia && displayMedia && userMedia)
-      "
+      v-show="showUserMediaVideo"
+      :srcObject="userMedia"
+      :muted="false"
       class="main-video"
       autoplay
     />
@@ -37,55 +81,12 @@ const muteDisplayMedia = ref(false);
       class="buttons"
     >
       <!-- Mute/unmute button -->
-      <button
-        class="mute-button"
-        @click="
-          {
-            if (displayMedia && userMedia) {
-              muteDisplayMedia = !muteDisplayMedia;
-            } else {
-              muteUserMedia = !muteUserMedia;
-            }
-          }
-        "
-      >
+      <button class="mute-button">
         <v-icon
-          :style="{ fill: 'white', filter:'drop-shadow(0px, 2px, 2px black)' }"
-          :name="
-            (displayMedia && userMedia ? muteDisplayMedia : muteUserMedia)
-              ? 'bi-mic-mute-fill'
-              : 'bi-mic-fill'
-          "
+          :style="{ fill: 'white', filter: 'drop-shadow(0px, 2px, 2px black)' }"
+          name="bi-mic-fill"
         />
       </button>
-    </div>
-    <div
-      :style="hideUserMedia ? { filter: 'opacity(0.5)' } : {}"
-      v-if="displayMedia && userMedia"
-      v-show="userMediaProperties.video"
-      class="small-video-container"
-    >
-      <video
-        v-if="!hideUserMedia"
-        :srcObject="userMedia || displayMedia"
-        :muted="isOwner || muteUserMedia"
-        class="small-video"
-        autoplay
-      />
-      <div class="buttons">
-        <!-- Mute/unmute userMedia video button -->
-        <button
-          v-if="!isOwner"
-          class="mute-button"
-          @click="muteUserMedia = !muteUserMedia"
-        >
-          <v-icon :name="muteUserMedia ? 'bi-mic-mute-fill' : 'bi-mic-fill'" />
-        </button>
-        <!-- Hide/unhide userMedia video button -->
-        <button @click="hideUserMedia = !hideUserMedia">
-          <v-icon :name="hideUserMedia ? 'gi-expand' : 'io-close'" />
-        </button>
-      </div>
     </div>
   </div>
 </template>

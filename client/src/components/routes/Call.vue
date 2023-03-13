@@ -7,25 +7,11 @@ import {
   watch,
   nextTick,
   computed,
-  reactive,
 } from "vue";
 import { authStore } from "../../store/AuthStore";
 import { useRoute, useRouter } from "vue-router";
 import { userStore } from "../../store/UserStore";
 import { socketStore } from "../../store/SocketStore";
-import {
-  closeAllMedia,
-  muteMic,
-  openMic,
-  openCamera,
-  closeCamera,
-  openScreen,
-  closeScreen,
-  userMediaProperties,
-  displayMediaActive,
-  userMedia,
-  displayMedia,
-} from "../../store/MediaStore";
 import {
   instanceOfCallLeftData,
   instanceOfCallWebRTCOfferFromInitiator,
@@ -50,12 +36,6 @@ const peerInstance = ref<Peer.Instance>();
 const peerStream = ref<MediaStream>();
 const gotAnswer = ref(false);
 
-/*
-Got to rewrite this file to use this stuff...
-
-Then use the trackIds returned by useChatMedia in the socket events
-to handle screen sharing
-
 const mediaOptions = ref({
   userMedia: {
     audio: true,
@@ -69,26 +49,22 @@ const mediaOptions = ref({
 const { stream, trackIds } = useChatMedia(negotiateConnection, mediaOptions);
 
 function negotiateConnection() {
+  gotAnswer.value = false;
   if (peerInstance.value) {
     peerInstance.value.destroy();
     peerInstance.value = undefined;
   }
-  peerStream.value?.getTracks().forEach((track) => {
-    peerStream.value?.removeTrack(track);
-  });
   peerStream.value = undefined;
   if (initiator) {
     makePeer();
   }
 }
-*/
+
 function initPeer() {
   const peer = new Peer({
     initiator: initiator.value,
     trickle: false,
-    // this needs to be using the stream object returned by useChatMedia instead
-    // remove the old stupid MediaStore.ts file
-    stream: userMedia.value,
+    stream: stream.value,
     iceCompleteTimeout: 2000, // 5 seconds is too long
   });
   peer.on("stream", handleStream);
@@ -156,14 +132,6 @@ function handleStream(stream: MediaStream) {
 
 onMounted(() => {
   socketStore.socket?.addEventListener("message", watchForCallEvents);
-  openMic().then(async () => {
-    if (initiator) {
-      // Initialize the peer
-      await nextTick(() => {
-        makePeer();
-      });
-    }
-  });
   userStore.cacheUserData(otherUsersId.value as string, true);
 });
 onBeforeUnmount(() => {
@@ -173,33 +141,17 @@ onBeforeUnmount(() => {
       event_type: "CALL_LEAVE",
     })
   );
-  closeAllMedia();
 });
 
-watch(userMediaProperties, async (oldVal, newVal) => {
-  await nextTick(() => {
-    if (newVal.video && !oldVal.video)
-      userMedia.value?.getVideoTracks().forEach((track) => {
-        //@ts-ignore
-        peerInstance.value?.addTrack(track, userMedia.value);
-      });
-    else if (!oldVal.video)
-      userMedia.value?.getVideoTracks().forEach((track) => {
-        //@ts-ignore
-        peerInstance.value?.removeTrack(track, userMedia.value);
-      });
-    if (newVal.audio && !oldVal.audio)
-      userMedia.value?.getAudioTracks().forEach((track) => {
-        //@ts-ignore
-        peerInstance.value?.addTrack(track, userMedia.value);
-      });
-    else if (!oldVal.audio)
-      userMedia.value?.getAudioTracks().forEach((track) => {
-        //@ts-ignore
-        peerInstance.value?.removeTrack(track, userMedia.value);
-      });
-  });
-});
+/*
+      <VideoWindow
+        v-else
+        :trackIds="trackIds"
+        :uid="otherUsersId as string"
+        :userMedia="peerStream"
+        :isOwner="false"
+      />
+*/
 </script>
 
 <template>
@@ -213,16 +165,16 @@ watch(userMediaProperties, async (oldVal, newVal) => {
             : {}),
         }"
         class="pfp"
-        v-if="!userMediaProperties.video && !displayMediaActive"
+        v-if="!trackIds.displayMediaVideo"
       >
         <v-icon v-if="!authStore.user?.base64pfp" name="fa-user" />
       </div>
       <VideoWindow
-        v-else
+        :trackIds="trackIds"
         :uid="authStore.user?.ID"
-        :userMedia="userMedia"
-        :displayMedia="displayMedia"
+        :media="stream"
         :isOwner="true"
+        :mediaOptions="mediaOptions"
       />
       <!-- Other users pfp / streams -->
       <div
@@ -239,32 +191,16 @@ watch(userMediaProperties, async (oldVal, newVal) => {
           name="fa-user"
         />
       </div>
-      <VideoWindow
-        v-else
-        :uid="otherUsersId as string"
-        :userMedia="peerStream"
-        :isOwner="false"
-      />
     </div>
     <div class="control-buttons">
       <!-- Camera button -->
       <button
-        @click="
-          {
-            if (!userMediaProperties.video) {
-              openCamera();
-            } else {
-              closeCamera();
-            }
-          }
-        "
+        @click="mediaOptions.userMedia.video = !mediaOptions.userMedia.video"
         type="button"
       >
         <v-icon
           :name="
-            userMediaProperties.video
-              ? 'bi-camera-video-off'
-              : 'bi-camera-video'
+            trackIds.userMediaAudio ? 'bi-camera-video-off' : 'bi-camera-video'
           "
         />
       </button>
@@ -272,27 +208,10 @@ watch(userMediaProperties, async (oldVal, newVal) => {
       <button
         @click="
           {
-            if (!displayMediaActive) {
-              openScreen();
+            if (!trackIds.displayMediaVideo) {
+              mediaOptions.displayMedia.video = true;
             } else {
-              closeScreen();
-            }
-          }
-        "
-        type="button"
-      >
-        <v-icon
-          :name="displayMediaActive ? 'md-stopscreenshare' : 'md-screenshare'"
-        />
-      </button>
-      <!-- Mute/unmute button -->
-      <button
-        @click="
-          {
-            if (userMediaProperties.audio) {
-              muteMic();
-            } else {
-              openMic();
+              mediaOptions.displayMedia.video = false;
             }
           }
         "
@@ -300,8 +219,21 @@ watch(userMediaProperties, async (oldVal, newVal) => {
       >
         <v-icon
           :name="
-            !userMediaProperties.audio ? 'bi-mic-mute-fill' : 'bi-mic-fill'
+            trackIds.displayMediaVideo ? 'md-stopscreenshare' : 'md-screenshare'
           "
+        />
+      </button>
+      <!-- Mute/unmute button -->
+      <button
+        @click="
+          {
+              mediaOptions.userMedia.audio = !mediaOptions.userMedia.audio;
+          }
+        "
+        type="button"
+      >
+        <v-icon
+          :name="mediaOptions.userMedia.audio ? 'bi-mic-mute-fill' : 'bi-mic-fill'"
         />
       </button>
       <!-- Hangup button -->
