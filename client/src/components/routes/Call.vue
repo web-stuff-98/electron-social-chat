@@ -198,36 +198,17 @@ onBeforeUnmount(() => {
     })
   );
 });
-
-const showVideoWindow = computed(() => {
-  return streamIds.displayMedia || streamIds.userMedia;
-});
-
-const showPeerVideoWindow = computed(() => {
-  return peerStreamIds.value.displayMedia || peerStreamIds.value.userMedia;
-});
 </script>
 
 <template>
   <div class="container">
-    <div :style="{ fontSize: '0.7rem' }">
+    <div :style="{ fontSize: '0.666rem', letterSpacing: '-1px' }">
       {{ streamIds }}
       <br />
       {{ peerStreamIds }}
     </div>
-    <div class="pfps">
-      <!-- Current users pfp / streams -->
-      <div
-        :style="{
-          ...(authStore.user?.base64pfp
-            ? { backgroundImage: `url(${authStore.user?.base64pfp})` }
-            : {}),
-        }"
-        class="pfp"
-        v-if="!showVideoWindow"
-      >
-        <v-icon v-if="!authStore.user?.base64pfp" name="fa-user" />
-      </div>
+    <div class="vid-chat-users">
+      <!-- Current user -->
       <VidChatUser
         :streamIds="streamIds"
         :uid="authStore.user?.ID"
@@ -236,21 +217,7 @@ const showPeerVideoWindow = computed(() => {
         :isOwner="true"
         :mediaOptions="mediaOptions"
       />
-      <!-- Other users pfp / streams -->
-      <div
-        :style="{
-          ...(userStore.getUser(otherUsersId as string)?.base64pfp
-            ? { backgroundImage: `url(${userStore.getUser(otherUsersId as string)?.base64pfp})` }
-            : {}),
-        }"
-        class="pfp"
-        v-if="!showPeerVideoWindow"
-      >
-        <v-icon
-          v-if="!userStore.getUser(otherUsersId as string)?.base64pfp"
-          name="fa-user"
-        />
-      </div>
+      <!-- Other user -->
       <VidChatUser
         :userMedia="peerUserStream"
         :displayMedia="peerDisplayStream"
@@ -258,7 +225,6 @@ const showPeerVideoWindow = computed(() => {
         :isOwner="false"
         :uid="String(otherUsersId)"
       />
-      <!-- <video :style="{ maxWidth: '4rem' }" :srcObject="peerStream" autoplay /> -->
     </div>
     <div class="control-buttons">
       <!-- Camera button -->
@@ -322,31 +288,14 @@ const showPeerVideoWindow = computed(() => {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  .pfps {
+  .vid-chat-users {
     display: flex;
-    gap: 1vw;
+    gap: 0.5rem;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     padding: 0.6rem;
     flex-shrink: 1;
-    .pfp {
-      width: 6rem;
-      height: 6rem;
-      border: 2px solid var(--base);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: var(--shadow);
-      gap: var(--padding);
-      background-size: cover;
-      background-position: center;
-      svg {
-        width: 2rem;
-        height: 2rem;
-      }
-    }
   }
   .control-buttons {
     display: flex;

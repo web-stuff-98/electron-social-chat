@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref, toRefs, watch } from "vue";
+import useUser from "../../composables/useUser";
 import { userStore } from "../../store/UserStore";
 const props = defineProps<{
   userMedia: MediaStream | undefined;
@@ -10,7 +11,7 @@ const props = defineProps<{
     userMedia: string;
     displayMedia: string;
   };
-  // This should only be used for the current users window, not other peers.
+  // This should only be used for the current users container, not other peers.
   // Used to enable/disable microphone and camera access
   mediaOptions?: {
     userMedia: {
@@ -23,121 +24,175 @@ const props = defineProps<{
     };
   };
 }>();
-const { userMedia, displayMedia, streamIds } = toRefs(props);
+const { userMedia, displayMedia, streamIds, uid, isOwner } = toRefs(props);
+
+const user = useUser(uid?.value as string);
 
 const hasUserMediaVideo = computed(() => {
   let enabled = false;
   userMedia.value?.getVideoTracks().forEach((track) => {
-    if (track.enabled) enabled = true;
+    if (isOwner.value) {
+      if (track.enabled) enabled = true;
+    } else {
+      if (!track.muted) enabled = true;
+    }
+  });
+  return enabled;
+});
+
+const hasDisplayMediaVideo = computed(() => {
+  let enabled = false;
+  displayMedia.value?.getVideoTracks().forEach((track) => {
+    if (isOwner.value) {
+      if (track.enabled) enabled = true;
+    } else {
+      if (!track.muted) enabled = true;
+    }
   });
   return enabled;
 });
 </script>
 
 <template>
-  <div
-    v-show="streamIds.userMedia || streamIds.displayMedia"
-    class="video-window"
-  >
-    <div class="name">
-      {{ userStore.getUser(uid as string)?.username }}
-    </div>
-    <video
-      v-show="hasUserMediaVideo"
-      :srcObject="userMedia"
-      :muted="isOwner"
-      class="main-video"
-      autoplay
-    />
+  <div v-show="streamIds.userMedia || streamIds.displayMedia" class="container">
+    <!-- Pfp container - For when there are no video streams present -->
     <div
-      v-if="(!isOwner && streamIds.userMedia) || streamIds.displayMedia"
       :style="{
-        width: 'fit-content',
-        position: 'absolute',
-        bottom: '1rem',
-        left: '1rem',
+        ...(user?.base64pfp
+          ? { backgroundImage: `url(${user?.base64pfp})` }
+          : {}),
       }"
-      class="buttons"
+      class="pfp"
+      v-if="!hasDisplayMediaVideo && !hasUserMediaVideo"
     >
-      <!-- Mute/unmute button -->
-      <button class="mute-button">
-        <v-icon
-          :style="{ fill: 'white', filter: 'drop-shadow(0px, 2px, 2px black)' }"
-          name="bi-mic-fill"
-        />
-      </button>
+      <v-icon v-if="!user?.base64pfp" name="fa-user" />
+    </div>
+    <!-- Video container - For when there is either video stream present -->
+    <div
+      v-show="hasDisplayMediaVideo || hasUserMediaVideo"
+      class="vid-container"
+    >
+      <div class="name">
+        {{ userStore.getUser(uid as string)?.username }}
+      </div>
+      <video
+        v-show="hasDisplayMediaVideo || hasUserMediaVideo"
+        :srcObject="displayMedia || userMedia"
+        :muted="isOwner"
+        class="main-video"
+        autoplay
+      />
+      <div
+        v-if="!isOwner"
+        :style="{
+          width: 'fit-content',
+          position: 'absolute',
+          bottom: '1rem',
+          left: '1rem',
+        }"
+        class="buttons"
+      >
+        <!-- Mute/unmute button -->
+        <button class="mute-button">
+          <v-icon
+            :style="{
+              fill: 'white',
+              filter: 'drop-shadow(0px, 2px, 2px black)',
+            }"
+            name="bi-mic-fill"
+          />
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <style lang="scss" scoped>
-.video-window {
+.container {
   position: relative;
-  padding: var(--padding);
   display: flex;
   flex-direction: column;
   text-align: left;
-  .buttons {
+  .pfp {
+    width: 6rem;
+    height: 6rem;
+    border: 2px solid var(--base);
+    border-radius: 50%;
     display: flex;
-    justify-content: flex-end;
-    height: 1.5rem;
-    button svg {
-      width: 100%;
-      height: 100%;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow);
+    gap: var(--padding);
+    background-size: cover;
+    background-position: center;
+    svg {
+      width: 2rem;
+      height: 2rem;
     }
-    .mute-button {
-      svg {
-        width: 70%;
-        height: 70%;
+  }
+  .vid-container {
+    .buttons {
+      display: flex;
+      justify-content: flex-end;
+      height: 1.5rem;
+      button svg {
+        width: 100%;
+        height: 100%;
+      }
+      .mute-button {
+        svg {
+          width: 70%;
+          height: 70%;
+        }
+      }
+      button {
+        height: 1.5rem;
+        width: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        margin: 0;
+        border: none;
+        box-shadow: none;
+        background: none;
+      }
+      video {
+        width: 100%;
       }
     }
-    button {
-      height: 1.5rem;
-      width: 1.5rem;
+    .name {
+      padding: var(--padding-medium);
+      position: absolute;
+      top: var(--padding);
+      left: var(--padding);
+      padding: var(--padding-medium);
+      font-weight: 600;
+      text-shadow: 0px 2px 2px black;
+      color: white;
+    }
+    .main-video,
+    .small-video-container {
+      border: 1px solid var(--base-light);
+      height: auto;
+      box-shadow: var(--shadow);
+      border-radius: var(--border-radius-medium);
+    }
+    .main-video {
+      width: 45vw;
+      max-width: min(30rem, 40vh);
+    }
+    .small-video-container {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 30%;
+      height: auto;
+      background: var(--foreground);
       display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-      margin: 0;
-      border: none;
-      box-shadow: none;
-      background: none;
+      flex-direction: column;
+      overflow: hidden;
     }
-    video {
-      width: 100%;
-    }
-  }
-  .name {
-    padding: var(--padding-medium);
-    position: absolute;
-    top: var(--padding);
-    left: var(--padding);
-    padding: var(--padding-medium);
-    font-weight: 600;
-    text-shadow: 0px 2px 2px black;
-    color: white;
-  }
-  .main-video,
-  .small-video-container {
-    border: 1px solid var(--base-light);
-    height: auto;
-    box-shadow: var(--shadow);
-    border-radius: var(--border-radius-medium);
-  }
-  .main-video {
-    width: 45vw;
-    max-width: min(30rem, 40vh);
-  }
-  .small-video-container {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 30%;
-    height: auto;
-    background: var(--foreground);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
   }
 }
 </style>
