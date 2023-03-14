@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, toRefs } from "vue";
+import { computed, toRefs } from "vue";
 import { userStore } from "../../store/UserStore";
 const props = defineProps<{
   media?: MediaStream;
@@ -61,12 +61,11 @@ const showDisplayMediaVideo = computed(() => {
 
 <template>
   <div class="video-window">
-    {{ trackIds }}
     <div class="name">{{ userStore.getUser(uid as string)?.username }}</div>
     <video
       v-show="showUserMediaVideo"
       :srcObject="userMedia"
-      :muted="false"
+      :muted="isOwner"
       class="main-video"
       autoplay
     />

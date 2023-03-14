@@ -4,7 +4,6 @@ import {
   onMounted,
   onBeforeUnmount,
   ref,
-  watch,
   nextTick,
   computed,
 } from "vue";
@@ -16,6 +15,7 @@ import {
   instanceOfCallLeftData,
   instanceOfCallWebRTCOfferFromInitiator,
   instanceOfCallWebRTCAnswerFromRecipient,
+  instanceOfCallWebRTCRecipientRequestedReInitialization,
   parseSocketEventData,
 } from "../../utils/determineSocketEvent";
 import VideoWindow from "../shared/VideoWindow.vue";
@@ -48,16 +48,41 @@ const mediaOptions = ref({
 });
 const { stream, trackIds } = useChatMedia(negotiateConnection, mediaOptions);
 
+type TrackIDs = {
+  um_snd_track_id: string;
+  um_vid_track_id: string;
+  dm_snd_track_id: string;
+  dm_vid_track_id: string;
+};
+
+const peerTrackIds = ref({
+  userMediaAudio: "",
+  userMediaVideo: "",
+  displayMediaAudio: "",
+  displayMediaVideo: "",
+});
+
 function negotiateConnection() {
   gotAnswer.value = false;
-  if (peerInstance.value) {
-    peerInstance.value.destroy();
-    peerInstance.value = undefined;
-  }
-  peerStream.value = undefined;
-  if (initiator) {
+  if (initiator.value) {
+    console.log("Is negotiating as initiator");
+    if (peerInstance.value) {
+      peerInstance.value.destroy();
+    }
+    peerStream.value = undefined;
     makePeer();
+  } else {
+    console.log("Is requesting reinitialization");
+    requestReInitialization();
   }
+}
+
+function requestReInitialization() {
+  socketStore.send(
+    JSON.stringify({
+      event_type: "CALL_WEBRTC_RECIPIENT_REQUEST_REINITIALIZATION",
+    })
+  );
 }
 
 function initPeer() {
@@ -81,6 +106,11 @@ function makePeer() {
         JSON.stringify({
           event_type: "CALL_WEBRTC_OFFER",
           signal: JSON.stringify(signal),
+
+          um_snd_track_id: trackIds.userMediaAudio,
+          um_vid_track_id: trackIds.userMediaVideo,
+          dm_snd_track_id: trackIds.displayMediaAudio,
+          dm_vid_track_id: trackIds.displayMediaVideo,
         })
       );
     }
@@ -88,24 +118,41 @@ function makePeer() {
   peerInstance.value = peer;
 }
 // for recipient peer
-async function makeAnswerPeer(signal: Peer.SignalData) {
+async function makeAnswerPeer(signal: Peer.SignalData, pTrackIds: TrackIDs) {
   const peer = initPeer();
   peer.on("signal", (signal) => {
     socketStore.send(
       JSON.stringify({
         event_type: "CALL_WEBRTC_ANSWER",
         signal: JSON.stringify(signal),
+
+        um_snd_track_id: trackIds.userMediaAudio,
+        um_vid_track_id: trackIds.userMediaVideo,
+        dm_snd_track_id: trackIds.displayMediaAudio,
+        dm_vid_track_id: trackIds.displayMediaVideo,
       })
     );
   });
+  peerTrackIds.value = {
+    userMediaAudio: pTrackIds.um_snd_track_id,
+    userMediaVideo: pTrackIds.um_vid_track_id,
+    displayMediaAudio: pTrackIds.dm_snd_track_id,
+    displayMediaVideo: pTrackIds.dm_vid_track_id,
+  };
   await nextTick(() => {
     peer.signal(signal);
   });
   peerInstance.value = peer;
 }
 
-async function signalAnswer(signal: Peer.SignalData) {
+async function signalAnswer(signal: Peer.SignalData, pTrackIds: TrackIDs) {
   gotAnswer.value = true;
+  peerTrackIds.value = {
+    userMediaAudio: pTrackIds.um_snd_track_id,
+    userMediaVideo: pTrackIds.um_vid_track_id,
+    displayMediaAudio: pTrackIds.dm_snd_track_id,
+    displayMediaVideo: pTrackIds.dm_vid_track_id,
+  };
   await nextTick(() => {
     peerInstance.value?.signal(signal);
   });
@@ -119,10 +166,24 @@ function watchForCallEvents(e: MessageEvent) {
     router.push("/");
   }
   if (instanceOfCallWebRTCOfferFromInitiator(data)) {
-    makeAnswerPeer(JSON.parse(data.signal) as Peer.SignalData);
+    makeAnswerPeer(JSON.parse(data.signal) as Peer.SignalData, {
+      um_snd_track_id: data.um_snd_track_id,
+      um_vid_track_id: data.um_vid_track_id,
+      dm_snd_track_id: data.dm_snd_track_id,
+      dm_vid_track_id: data.dm_vid_track_id,
+    });
   }
   if (instanceOfCallWebRTCAnswerFromRecipient(data)) {
-    signalAnswer(JSON.parse(data.signal) as Peer.SignalData);
+    signalAnswer(JSON.parse(data.signal) as Peer.SignalData, {
+      um_snd_track_id: data.um_snd_track_id,
+      um_vid_track_id: data.um_vid_track_id,
+      dm_snd_track_id: data.dm_snd_track_id,
+      dm_vid_track_id: data.dm_vid_track_id,
+    });
+  }
+  if (instanceOfCallWebRTCRecipientRequestedReInitialization(data)) {
+    console.log("Renegotiation requested");
+    negotiateConnection();
   }
 }
 
@@ -143,19 +204,30 @@ onBeforeUnmount(() => {
   );
 });
 
-/*
-      <VideoWindow
-        v-else
-        :trackIds="trackIds"
-        :uid="otherUsersId as string"
-        :userMedia="peerStream"
-        :isOwner="false"
-      />
-*/
+const showVideoWindow = computed(() => {
+  const tracks = stream.value?.getVideoTracks();
+  tracks?.forEach((track) => {
+    if (track.enabled) return true;
+  });
+  return false;
+});
+
+const showPeerVideoWindow = computed(() => {
+  const tracks = peerStream.value?.getVideoTracks();
+  tracks?.forEach((track) => {
+    if (!track.muted) return true;
+  });
+  return false;
+});
 </script>
 
 <template>
   <div class="container">
+    <div :style="{ fontSize: '0.7rem' }">
+      {{ trackIds }}
+      <br />
+      {{ peerTrackIds }}
+    </div>
     <div class="pfps">
       <!-- Current users pfp / streams -->
       <div
@@ -165,7 +237,7 @@ onBeforeUnmount(() => {
             : {}),
         }"
         class="pfp"
-        v-if="!trackIds.displayMediaVideo"
+        v-if="!showVideoWindow"
       >
         <v-icon v-if="!authStore.user?.base64pfp" name="fa-user" />
       </div>
@@ -184,13 +256,21 @@ onBeforeUnmount(() => {
             : {}),
         }"
         class="pfp"
-        v-if="!peerStream"
+        v-if="!showPeerVideoWindow"
       >
         <v-icon
           v-if="!userStore.getUser(otherUsersId as string)?.base64pfp"
           name="fa-user"
         />
       </div>
+      <VideoWindow
+        v-else
+        :trackIds="peerTrackIds"
+        :uid="otherUsersId as string"
+        :media="peerStream"
+        :isOwner="false"
+      />
+      <video :style="{ maxWidth: '4rem' }" :srcObject="peerStream" autoplay />
     </div>
     <div class="control-buttons">
       <!-- Camera button -->
@@ -200,7 +280,9 @@ onBeforeUnmount(() => {
       >
         <v-icon
           :name="
-            trackIds.userMediaAudio ? 'bi-camera-video-off' : 'bi-camera-video'
+            mediaOptions.userMedia.video
+              ? 'bi-camera-video-off'
+              : 'bi-camera-video'
           "
         />
       </button>
@@ -208,18 +290,16 @@ onBeforeUnmount(() => {
       <button
         @click="
           {
-            if (!trackIds.displayMediaVideo) {
-              mediaOptions.displayMedia.video = true;
-            } else {
-              mediaOptions.displayMedia.video = false;
-            }
+            mediaOptions.displayMedia.video = !mediaOptions.displayMedia.video;
           }
         "
         type="button"
       >
         <v-icon
           :name="
-            trackIds.displayMediaVideo ? 'md-stopscreenshare' : 'md-screenshare'
+            mediaOptions.displayMedia.video
+              ? 'md-stopscreenshare'
+              : 'md-screenshare'
           "
         />
       </button>
@@ -227,13 +307,15 @@ onBeforeUnmount(() => {
       <button
         @click="
           {
-              mediaOptions.userMedia.audio = !mediaOptions.userMedia.audio;
+            mediaOptions.userMedia.audio = !mediaOptions.userMedia.audio;
           }
         "
         type="button"
       >
         <v-icon
-          :name="mediaOptions.userMedia.audio ? 'bi-mic-mute-fill' : 'bi-mic-fill'"
+          :name="
+            mediaOptions.userMedia.audio ? 'bi-mic-mute-fill' : 'bi-mic-fill'
+          "
         />
       </button>
       <!-- Hangup button -->

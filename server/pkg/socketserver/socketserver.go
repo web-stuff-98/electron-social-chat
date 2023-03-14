@@ -48,6 +48,8 @@ type SocketServer struct {
 	SendCallRecipientOffer chan CallerSignal
 	// Channel for sending answer from called back to caller
 	SendCalledAnswer chan CalledSignal
+	// Channel for recipient requesting re-initialization (necessary for changing media devices)
+	CallRecipientRequestedReInitialization chan primitive.ObjectID
 
 	// Websocket Write/Read must be done from 1 goroutine. Queue all messages to be sent 1 by 1.
 	// This is probably a bad way to do it... Should be a seperate goroutine for each channel,
@@ -143,10 +145,20 @@ type RemoveUserFromSubscription struct {
 type CallerSignal struct {
 	Caller primitive.ObjectID
 	Signal string
+
+	UserMediaAudioTrackID    string
+	UserMediaVideoTrackID    string
+	DisplayMediaAudioTrackID string
+	DisplayMediaVideoTrackID string
 }
 type CalledSignal struct {
 	Called primitive.ObjectID
 	Signal string
+
+	UserMediaAudioTrackID    string
+	UserMediaVideoTrackID    string
+	DisplayMediaAudioTrackID string
+	DisplayMediaVideoTrackID string
 }
 
 /* --------------- RECV CHAN STRUCTS --------------- */
@@ -190,9 +202,10 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 		CallsActive: CallsActive{
 			data: make(map[primitive.ObjectID]primitive.ObjectID),
 		},
-		LeaveCallChan:          make(chan primitive.ObjectID),
-		SendCallRecipientOffer: make(chan CallerSignal),
-		SendCalledAnswer:       make(chan CalledSignal),
+		LeaveCallChan:                          make(chan primitive.ObjectID),
+		SendCallRecipientOffer:                 make(chan CallerSignal),
+		SendCalledAnswer:                       make(chan CalledSignal),
+		CallRecipientRequestedReInitialization: make(chan primitive.ObjectID),
 
 		MessageSendQueue: make(chan QueuedMessage),
 
@@ -242,6 +255,8 @@ func RunServer(socketServer *SocketServer, colls *db.Collections) {
 	go sendCallRecipientOfferLoop(socketServer, colls)
 	/* ----- Send call recipient webRTC offer loop ----- */
 	go sendCallerAnswerLoop(socketServer, colls)
+	/* ----- Call recipient request webRTC reinitialization loop ----- */
+	go callRecipientRequestReInitializationLoop(socketServer)
 }
 
 func connectionRegistrationLoop(socketServer *SocketServer, colls *db.Collections) {
@@ -901,6 +916,11 @@ func sendCallRecipientOfferLoop(socketServer *SocketServer, colls *db.Collection
 				Type: "CALL_WEBRTC_OFFER_FROM_INITIATOR",
 				Data: socketmodels.CallWebRTCOfferFromInitiator{
 					Signal: data.Signal,
+
+					UserMediaAudioTrackID:    data.UserMediaAudioTrackID,
+					UserMediaVideoTrackID:    data.UserMediaVideoTrackID,
+					DisplayMediaAudioTrackID: data.DisplayMediaAudioTrackID,
+					DisplayMediaVideoTrackID: data.DisplayMediaVideoTrackID,
 				},
 			}
 		}
@@ -926,7 +946,37 @@ func sendCallerAnswerLoop(socketServer *SocketServer, colls *db.Collections) {
 					Type: "CALL_WEBRTC_ANSWER_FROM_RECIPIENT",
 					Data: socketmodels.CallWebRTCOfferAnswer{
 						Signal: data.Signal,
+
+						UserMediaAudioTrackID:    data.UserMediaAudioTrackID,
+						UserMediaVideoTrackID:    data.UserMediaVideoTrackID,
+						DisplayMediaAudioTrackID: data.DisplayMediaAudioTrackID,
+						DisplayMediaVideoTrackID: data.DisplayMediaVideoTrackID,
 					},
+				}
+				break
+			}
+		}
+		socketServer.CallsActive.mutex.Unlock()
+	}
+}
+
+func callRecipientRequestReInitializationLoop(socketServer *SocketServer) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in caller recipient request re-initialization loop :", r)
+			}
+			go callRecipientRequestReInitializationLoop(socketServer)
+		}()
+		callerUid := <-socketServer.CallRecipientRequestedReInitialization
+		socketServer.CallsActive.mutex.Lock()
+		for caller, oi2 := range socketServer.CallsActive.data {
+			if oi2 == callerUid {
+				socketServer.SendDataToUser <- UserDataMessage{
+					Uid:  caller,
+					Type: "CALL_WEBRTC_REQUESTED_REINITIALIZATION",
+					Data: socketmodels.CallWebRTCRequestedReInitialization{},
 				}
 				break
 			}

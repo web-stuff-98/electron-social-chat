@@ -188,9 +188,29 @@ export type CallResponseData = Omit<
 
 export type CallLeftData = Omit<{}, "TYPE">;
 
-export type CallWebRTCOfferFromInitiator = Omit<{ signal: string }, "TYPE">;
+export type CallWebRTCOfferFromInitiator = Omit<
+  {
+    signal: string;
+    um_snd_track_id: string;
+    um_vid_track_id: string;
+    dm_snd_track_id: string;
+    dm_vid_track_id: string;
+  },
+  "TYPE"
+>;
 
-export type CallWebRTCAnswerFromRecipient = Omit<{ signal: string }, "TYPE">;
+export type CallWebRTCAnswerFromRecipient = Omit<
+  {
+    signal: string;
+    um_snd_track_id: string;
+    um_vid_track_id: string;
+    dm_snd_track_id: string;
+    dm_vid_track_id: string;
+  },
+  "TYPE"
+>;
+
+export type CallWebRTCRecipientRequestedReInitialization = Omit<{}, "TYPE">;
 
 export type SocketEventChangeMethodData =
   | "UPDATE"
@@ -318,6 +338,11 @@ export function instanceOfCallWebRTCAnswerFromRecipient(
   object: any
 ): object is CallWebRTCAnswerFromRecipient {
   return object.TYPE === "CALL_WEBRTC_ANSWER_FROM_RECIPIENT";
+}
+export function instanceOfCallWebRTCRecipientRequestedReInitialization(
+  object: any
+): object is CallWebRTCRecipientRequestedReInitialization {
+  return object.TYPE === "CALL_WEBRTC_REQUESTED_REINITIALIZATION";
 }
 
 export function parseSocketEventData(e: MessageEvent): object | undefined {

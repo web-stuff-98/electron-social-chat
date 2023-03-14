@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -101,6 +102,9 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		return err
 	case "CALL_WEBRTC_ANSWER":
 		err := callWebRTCAnswer(data, conn, uid, ss, colls)
+		return err
+	case "CALL_WEBRTC_RECIPIENT_REQUEST_REINITIALIZATION":
+		err := callRecipientRequestReInitialization(data, conn, uid, ss)
 		return err
 	}
 	return fmt.Errorf("Unrecognized event type:", eventType)
@@ -1753,6 +1757,11 @@ func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss 
 	ss.SendCallRecipientOffer <- socketserver.CallerSignal{
 		Signal: data.Signal,
 		Caller: uid,
+
+		UserMediaAudioTrackID:    data.UserMediaAudioTrackID,
+		UserMediaVideoTrackID:    data.UserMediaVideoTrackID,
+		DisplayMediaAudioTrackID: data.DisplayMediaAudioTrackID,
+		DisplayMediaVideoTrackID: data.DisplayMediaVideoTrackID,
 	}
 
 	return nil
@@ -1767,7 +1776,25 @@ func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 	ss.SendCalledAnswer <- socketserver.CalledSignal{
 		Signal: data.Signal,
 		Called: uid,
+
+		UserMediaAudioTrackID:    data.UserMediaAudioTrackID,
+		UserMediaVideoTrackID:    data.UserMediaVideoTrackID,
+		DisplayMediaAudioTrackID: data.DisplayMediaAudioTrackID,
+		DisplayMediaVideoTrackID: data.DisplayMediaVideoTrackID,
 	}
+
+	return nil
+}
+
+func callRecipientRequestReInitialization(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
+	var data socketmodels.CallWebRTCRequestReInitialization
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	log.Println(uid, "requested reinitialization")
+
+	ss.CallRecipientRequestedReInitialization <- uid
 
 	return nil
 }

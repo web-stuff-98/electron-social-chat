@@ -33,8 +33,8 @@ export const useChatMedia = (
       });
       const vidTrack = userMediaStream.getVideoTracks()[0];
       const sndTrack = userMediaStream.getAudioTracks()[0];
-      trackIds.userMediaVideo = vidTrack !== undefined ? vidTrack.id : "";
-      trackIds.userMediaAudio = sndTrack !== undefined ? sndTrack.id : "";
+      trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
+      trackIds.userMediaAudio = sndTrack ? sndTrack.id : "";
     } catch (e) {
       console.warn(e);
     }
@@ -96,8 +96,8 @@ export const useChatMedia = (
       });
       const vidTrack = userMediaStream.getVideoTracks()[0];
       const sndTrack = userMediaStream.getAudioTracks()[0];
-      trackIds.userMediaVideo = vidTrack !== undefined ? vidTrack.id : "";
-      trackIds.userMediaAudio = sndTrack !== undefined ? sndTrack.id : "";
+      trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
+      trackIds.userMediaAudio = sndTrack ? sndTrack.id : "";
     } catch (e) {
       console.warn(e);
     }
