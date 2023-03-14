@@ -5,11 +5,14 @@ the application)
 
  - Add display media back to VideoWindow component
 
+ - Create CallVidServer file and move Call events into there
+
+ - Create RoomVidServer file and start working on adding room
+   video chat into there
+
  - Video window component expand to fullscreen button 
  - Add simple-peer video chat to rooms aswell
  - Settings page for media device selection
-
- - Create CallServer file and move Call events into there
 
 ----------------------------------------------------------------
 
