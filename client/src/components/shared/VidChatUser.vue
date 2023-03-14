@@ -27,8 +27,8 @@ const { userMedia, displayMedia, userMediaStreamID, uid, isOwner } =
   toRefs(props);
 
 const user = useUser(uid?.value as string);
-
 const forceMute = ref(false);
+
 </script>
 
 <template>
@@ -102,14 +102,16 @@ const forceMute = ref(false);
       </div>
     </div>
   </div>
+  <!-- Loading spinner -->
+  <v-icon
+    v-show="!userMediaStreamID"
+    class="anim-spin spinner"
+    name="pr-spinner"
+  />
 </template>
 
 <style lang="scss" scoped>
 .container {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  text-align: left;
   .pfp {
     width: 6rem;
     height: 6rem;
@@ -191,5 +193,9 @@ const forceMute = ref(false);
       overflow: hidden;
     }
   }
+}
+.spinner {
+  width: 4rem;
+  height: 4rem;
 }
 </style>

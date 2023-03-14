@@ -20,6 +20,7 @@ import { authStore } from "../../store/AuthStore";
   padding: calc(2 * var(--padding));
   gap: var(--padding-medium);
   width: 100%;
+  max-width: 50rem;
   height: 100%;
   align-items: center;
   justify-content: center;

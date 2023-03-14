@@ -3,15 +3,17 @@ Todos in order
 WebRTC todos (always takes a really long fucking time. its 99% of 
 the application)
 
- - Add display media back to VideoWindow component
+ - Finish VideoWindow component. Use teleport for fullscreen.
 
  - Create CallVidServer file and move Call events into there
 
  - Create RoomVidServer file and start working on adding room
    video chat into there
 
- - Video window component expand to fullscreen button 
  - Settings page for media device selection
+
+ - Instead of restarting the connection when the user mutes their
+   mic, just .enable = !track.enabled
 
 ----------------------------------------------------------------
 

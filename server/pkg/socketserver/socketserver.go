@@ -90,15 +90,6 @@ type CallsPending struct {
 	data  map[primitive.ObjectID]primitive.ObjectID
 	mutex sync.Mutex
 }
-type InCall struct {
-	Caller primitive.ObjectID
-	Called primitive.ObjectID
-}
-type InCallResponse struct {
-	Caller primitive.ObjectID
-	Called primitive.ObjectID
-	Accept bool
-}
 type CallsActive struct {
 	// outer map is caller ID, inner map is the user that was called ID
 	data  map[primitive.ObjectID]primitive.ObjectID
@@ -168,6 +159,15 @@ type CalledSignal struct {
 	UserMediaVid      bool
 	DisplayMediaVid   bool
 }
+type InCall struct {
+	Caller primitive.ObjectID
+	Called primitive.ObjectID
+}
+type InCallResponse struct {
+	Caller primitive.ObjectID
+	Called primitive.ObjectID
+	Accept bool
+}
 
 /* --------------- RECV CHAN STRUCTS --------------- */
 type GetSubscriptionUids struct {
@@ -220,11 +220,11 @@ func Init(colls *db.Collections) (*SocketServer, error) {
 		SendDataToUser:  make(chan UserDataMessage),
 		SendDataToUsers: make(chan UsersDataMessage),
 	}
-	RunServer(socketServer, colls)
+	runServer(socketServer, colls)
 	return socketServer, nil
 }
 
-func RunServer(socketServer *SocketServer, colls *db.Collections) {
+func runServer(socketServer *SocketServer, colls *db.Collections) {
 	/* ----- Connection registration ----- */
 	go connectionRegistrationLoop(socketServer, colls)
 	/* ----- Disconnect registration ----- */

@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/cors"
 	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
+	"github.com/web-stuff-98/electron-social-chat/pkg/callserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/changestreams"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/handlers"
@@ -22,16 +23,20 @@ func main() {
 		log.Fatal("Error loading .env file:", err)
 	}
 
-	DB, colls := db.Init()
 	router := mux.NewRouter()
+
+	DB, colls := db.Init()
 	redis := rdb.Init()
+
 	socketServer, err := socketserver.Init(colls)
-	attachmentServer := attachmentserver.Init(socketServer, colls)
 	if err != nil {
 		log.Fatal("Error setting up socket server: ", err)
 	}
 
-	h := handlers.New(DB, colls, redis, socketServer, attachmentServer)
+	callServer := callserver.Init(socketServer)
+	attachmentServer := attachmentserver.Init(socketServer, colls)
+
+	h := handlers.New(DB, colls, redis, socketServer, attachmentServer, callServer)
 
 	var origins []string
 	if os.Getenv("PRODUCTION") == "true" {

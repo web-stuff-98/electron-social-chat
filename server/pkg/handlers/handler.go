@@ -8,6 +8,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
+	"github.com/web-stuff-98/electron-social-chat/pkg/callserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
 
@@ -27,8 +28,9 @@ type handler struct {
 	RedisClient      *redis.Client
 	SocketServer     *socketserver.SocketServer
 	AttachmentServer *attachmentserver.AttachmentServer
+	CallServer       *callserver.CallServer
 }
 
-func New(db *mongo.Database, collections *db.Collections, redisClient *redis.Client, socketServer *socketserver.SocketServer, attachmentServer *attachmentserver.AttachmentServer) handler {
-	return handler{db, collections, redisClient, socketServer, attachmentServer}
+func New(db *mongo.Database, collections *db.Collections, redisClient *redis.Client, socketServer *socketserver.SocketServer, attachmentServer *attachmentserver.AttachmentServer, callServer *callserver.CallServer) handler {
+	return handler{db, collections, redisClient, socketServer, attachmentServer, callServer}
 }

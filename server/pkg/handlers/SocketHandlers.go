@@ -22,6 +22,7 @@ import (
 
 func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
 	switch eventType {
+	/* --------------- GENERAL EVENTS --------------- */
 	case "WATCH_USER":
 		err := watchUser(data, conn, uid, ss, colls)
 		return err
@@ -88,26 +89,29 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 	case "UNBAN":
 		err := unbanUser(data, conn, uid, ss, as, colls)
 		return err
+
+	/* --------------- CALL SERVER EVENTS --------------- */
 	case "CALL_USER":
 		err := callUser(data, conn, uid, ss, colls)
 		return err
 	case "CALL_USER_RESPONSE":
-		err := callUserResponse(data, conn, uid, ss, colls)
+		err := callUserResponse(data, conn, uid, ss)
 		return err
 	case "CALL_LEAVE":
-		err := callLeave(data, conn, uid, ss, colls)
+		err := callLeave(data, conn, uid, ss)
 		return err
 	case "CALL_WEBRTC_OFFER":
-		err := callWebRTCOffer(data, conn, uid, ss, colls)
+		err := callWebRTCOffer(data, conn, uid, ss)
 		return err
 	case "CALL_WEBRTC_ANSWER":
-		err := callWebRTCAnswer(data, conn, uid, ss, colls)
+		err := callWebRTCAnswer(data, conn, uid, ss)
 		return err
 	case "CALL_WEBRTC_RECIPIENT_REQUEST_REINITIALIZATION":
 		err := callRecipientRequestReInitialization(data, conn, uid, ss)
 		return err
 	}
-	return fmt.Errorf("Unrecognized event type:", eventType)
+
+	return fmt.Errorf("Unrecognized event type :", eventType)
 }
 
 func watchUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
@@ -1710,7 +1714,7 @@ func callUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socket
 	return nil
 }
 
-func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
 	var data socketmodels.CallResponse
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -1737,7 +1741,7 @@ func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 	return nil
 }
 
-func callLeave(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func callLeave(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
 	var data socketmodels.CallLeave
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -1748,7 +1752,7 @@ func callLeave(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 	return nil
 }
 
-func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
 	var data socketmodels.CallWebRTCOfferAnswer
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -1766,7 +1770,7 @@ func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss 
 	return nil
 }
 
-func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
 	var data socketmodels.CallWebRTCOfferAnswer
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
