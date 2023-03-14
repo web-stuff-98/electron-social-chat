@@ -70,7 +70,7 @@ export const useChatMedia = (
       }
       stream.value?.addTrack(track);
     });
-    negotiateConnection();
+    negotiateConnection(true);
   });
 
   onBeforeUnmount(() => {

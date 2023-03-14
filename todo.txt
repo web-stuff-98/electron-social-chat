@@ -1,24 +1,13 @@
 Todos in order
 
-WebRTC todos (always takes a really long fucking time)
+WebRTC todos (always takes a really long fucking time. its 99% of 
+the application)
 
- - Create a hook (composable) called useMedia for video chat.
-   It should return userMedia & displayMedia, and take in and
-   invoke a function that should renegotioate WebRTC with the
-   updated stream after adding/removing tracks. It's the only
-   way to do it. It's the way WebRTC works. But you can use
-   .enabled on audio tracks instead of adding/removing them
+ - Add display media back to VideoWindow component
 
  - Video window component expand to fullscreen button 
-
- - Screen sharing... is it possible to send 2 streams at the same
-   time? Screen sharing is an important feature. The other client
-   needs some way to determine which video/audio track is for the
-   screen. There is the id property attached to MediaStream. The
-   client could send a message indicating that the stream with
-   the matching id is the display stream
-
  - Add simple-peer video chat to rooms aswell
+ - Settings page for media device selection
 
 ----------------------------------------------------------------
 

@@ -62,7 +62,7 @@ const peerTrackIds = ref({
   displayMediaVideo: "",
 });
 
-function negotiateConnection() {
+function negotiateConnection(isOnMounted?: boolean) {
   gotAnswer.value = false;
   if (initiator.value) {
     console.log("Is negotiating as initiator");
@@ -71,7 +71,7 @@ function negotiateConnection() {
     }
     peerStream.value = undefined;
     makePeer();
-  } else {
+  } else if (!isOnMounted) {
     console.log("Is requesting reinitialization");
     requestReInitialization();
   }

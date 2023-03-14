@@ -12,6 +12,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+/*
+
+	Stuff for calls should be moved into seperate CallServer file,
+	there is too much stuff going on in here. It's meant for just
+	generic socket messaging for subscriptions and sending messages
+
+	Breaking design principles here (as if I was using any to begin with)
+
+*/
+
 /* --------------- SOCKET SERVER STRUCT --------------- */
 type SocketServer struct {
 	Connections                 Connections
@@ -48,7 +58,7 @@ type SocketServer struct {
 	SendCallRecipientOffer chan CallerSignal
 	// Channel for sending answer from called back to caller
 	SendCalledAnswer chan CalledSignal
-	// Channel for recipient requesting re-initialization (necessary for changing media devices)
+	// Channel for recipient requesting WebRTC re-initialization (necessary for changing media devices)
 	CallRecipientRequestedReInitialization chan primitive.ObjectID
 
 	// Websocket Write/Read must be done from 1 goroutine. Queue all messages to be sent 1 by 1.
