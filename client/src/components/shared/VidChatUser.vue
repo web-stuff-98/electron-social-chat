@@ -45,7 +45,7 @@ const user = useUser(uid?.value as string);
     >
       <v-icon v-if="!user?.base64pfp" name="fa-user" />
     </div>
-    <!-- Video container - For when there is either video stream present -->
+    <!-- Video container - For when there is either or both video streams present -->
     <div
       v-show="hasDisplayMediaVideo || hasUserMediaVideo"
       class="vid-container"
@@ -80,6 +80,27 @@ const user = useUser(uid?.value as string);
             name="bi-mic-fill"
           />
         </button>
+      </div>
+      <!-- Smaller video, for when display media is present -->
+      <div class="small-video-container">
+        <video
+          v-show="hasDisplayMediaVideo && hasUserMediaVideo"
+          :srcObject="userMedia"
+          :muted="isOwner"
+          autoplay
+        />
+        <div class="buttons">
+          <!-- Mute/unmute button -->
+          <button class="mute-button">
+            <v-icon
+              :style="{
+                fill: 'white',
+                filter: 'drop-shadow(0px, 2px, 2px black)',
+              }"
+              name="bi-mic-fill"
+            />
+          </button>
+        </div>
       </div>
     </div>
   </div>

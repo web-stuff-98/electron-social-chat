@@ -27,7 +27,12 @@ export const useChatMedia = (
     displayStream.value = new MediaStream();
     try {
       userMediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: options.value.userMedia.audio,
+        audio: options.value.userMedia.audio
+          ? {
+              noiseSuppression: true,
+              echoCancellation: true,
+            }
+          : false,
         // has to be true or it throws an error.
         video: true,
       });
@@ -104,7 +109,12 @@ export const useChatMedia = (
     displayStream.value = new MediaStream();
     try {
       userMediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: options.value.userMedia.audio,
+        audio: options.value.userMedia.audio
+          ? {
+              noiseSuppression: true,
+              echoCancellation: true,
+            }
+          : false,
         // has to be true or it throws an error.
         video: true,
       });

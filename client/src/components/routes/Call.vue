@@ -213,10 +213,15 @@ function watchForCallEvents(e: MessageEvent) {
 }
 
 function handleStream(stream: MediaStream) {
-  if (stream.id === peerStreamIds.value.userMedia)
+  console.log("Received stream with ID: ", stream.id);
+  if (stream.id === peerStreamIds.value.userMedia) {
+    console.log("added user media");
     peerUserStream.value = stream;
-  if (stream.id === peerStreamIds.value.displayMedia)
+  }
+  if (stream.id === peerStreamIds.value.displayMedia) {
+    console.log("added display media");
     peerDisplayStream.value = stream;
+  }
 }
 
 onMounted(() => {
