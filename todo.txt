@@ -26,6 +26,7 @@ the application)
  - Go v10 validation for socket handlers
  - Clicking outside the user dropdown should close it
  - Blocking a user should kick them out of rooms
+ - Blocking a user should cancel the call
  - Banning a user should kick them out of rooms
 
 Todos; before completion
