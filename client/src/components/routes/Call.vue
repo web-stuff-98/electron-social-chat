@@ -205,19 +205,13 @@ onBeforeUnmount(() => {
 });
 
 const showVideoWindow = computed(() => {
-  const tracks = stream.value?.getVideoTracks();
-  tracks?.forEach((track) => {
-    if (track.enabled) return true;
-  });
-  return false;
+  return trackIds.displayMediaVideo || trackIds.userMediaVideo;
 });
 
 const showPeerVideoWindow = computed(() => {
-  const tracks = peerStream.value?.getVideoTracks();
-  tracks?.forEach((track) => {
-    if (!track.muted) return true;
-  });
-  return false;
+  return (
+    peerTrackIds.value.displayMediaVideo || peerTrackIds.value.userMediaVideo
+  );
 });
 </script>
 
@@ -264,13 +258,12 @@ const showPeerVideoWindow = computed(() => {
         />
       </div>
       <VideoWindow
-        v-else
-        :trackIds="peerTrackIds"
-        :uid="otherUsersId as string"
         :media="peerStream"
+        :trackIds="peerTrackIds"
         :isOwner="false"
+        :uid="String(otherUsersId)"
       />
-      <video :style="{ maxWidth: '4rem' }" :srcObject="peerStream" autoplay />
+      <!-- <video :style="{ maxWidth: '4rem' }" :srcObject="peerStream" autoplay /> -->
     </div>
     <div class="control-buttons">
       <!-- Camera button -->
@@ -343,8 +336,8 @@ const showPeerVideoWindow = computed(() => {
     padding: 0.6rem;
     flex-shrink: 1;
     .pfp {
-      width: 4rem;
-      height: 4rem;
+      width: 6rem;
+      height: 6rem;
       border: 2px solid var(--base);
       border-radius: 50%;
       display: flex;

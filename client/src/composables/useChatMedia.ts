@@ -33,7 +33,14 @@ export const useChatMedia = (
       });
       const vidTrack = userMediaStream.getVideoTracks()[0];
       const sndTrack = userMediaStream.getAudioTracks()[0];
-      trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
+      if (!options.value.userMedia.video) {
+        trackIds.userMediaVideo = "";
+        if (vidTrack !== undefined) {
+          vidTrack.enabled = false;
+        }
+      } else {
+        trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
+      }
       trackIds.userMediaAudio = sndTrack ? sndTrack.id : "";
     } catch (e) {
       console.warn(e);
@@ -96,7 +103,14 @@ export const useChatMedia = (
       });
       const vidTrack = userMediaStream.getVideoTracks()[0];
       const sndTrack = userMediaStream.getAudioTracks()[0];
-      trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
+      if (!options.value.userMedia.video) {
+        trackIds.userMediaVideo = "";
+        if (vidTrack !== undefined) {
+          vidTrack.enabled = false;
+        }
+      } else {
+        trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
+      }
       trackIds.userMediaAudio = sndTrack ? sndTrack.id : "";
     } catch (e) {
       console.warn(e);

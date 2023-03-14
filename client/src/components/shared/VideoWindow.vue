@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import { computed, toRefs } from "vue";
+import { ref, toRefs, watch } from "vue";
 import { userStore } from "../../store/UserStore";
 const props = defineProps<{
-  media?: MediaStream;
+  media: MediaStream | undefined;
   isOwner: boolean;
   uid?: string;
   trackIds: {
@@ -25,52 +25,25 @@ const props = defineProps<{
   };
 }>();
 const { media, trackIds } = toRefs(props);
-
-const userMedia = computed(() => {
-  const videoTrack = media?.value?.getTrackById(trackIds.value.userMediaVideo);
-  const audioTrack = media?.value?.getTrackById(trackIds.value.userMediaAudio);
-  const stream = new MediaStream();
-  if (videoTrack) stream.addTrack(videoTrack);
-  if (audioTrack) stream.addTrack(audioTrack);
-  return videoTrack || audioTrack ? stream : undefined;
-});
-
-const displayMedia = computed(() => {
-  const videoTrack = media?.value?.getTrackById(
-    trackIds.value.displayMediaVideo
-  );
-  const audioTrack = media?.value?.getTrackById(
-    trackIds.value.displayMediaAudio
-  );
-  const stream = new MediaStream();
-  if (videoTrack) stream.addTrack(videoTrack);
-  if (audioTrack) stream.addTrack(audioTrack);
-  return videoTrack || audioTrack ? stream : undefined;
-});
-
-const showUserMediaVideo = computed(() => {
-  const vidTracks = userMedia.value?.getVideoTracks();
-  return vidTracks ? vidTracks[0].enabled : false;
-});
-
-const showDisplayMediaVideo = computed(() => {
-  const vidTracks = displayMedia.value?.getVideoTracks();
-  return vidTracks ? vidTracks[0].enabled : false;
-});
 </script>
 
 <template>
-  <div class="video-window">
-    <div class="name">{{ userStore.getUser(uid as string)?.username }}</div>
+  <div
+    v-show="trackIds.userMediaVideo || trackIds.displayMediaVideo"
+    class="video-window"
+  >
+    <div class="name">
+      {{ userStore.getUser(uid as string)?.username }}
+    </div>
     <video
-      v-show="showUserMediaVideo"
-      :srcObject="userMedia"
+      v-show="trackIds.userMediaVideo"
+      :srcObject="media"
       :muted="isOwner"
       class="main-video"
       autoplay
     />
     <div
-      v-if="!isOwner"
+      v-if="(!isOwner && trackIds.userMediaVideo) || trackIds.displayMediaVideo"
       :style="{
         width: 'fit-content',
         position: 'absolute',
