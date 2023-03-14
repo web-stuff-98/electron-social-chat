@@ -158,6 +158,8 @@ type CallerSignal struct {
 
 	UserMediaStreamID    string
 	DisplayMediaStreamID string
+	UserMediaVid         bool
+	DisplayMediaVid      bool
 }
 type CalledSignal struct {
 	Called primitive.ObjectID
@@ -165,6 +167,8 @@ type CalledSignal struct {
 
 	UserMediaStreamID    string
 	DisplayMediaStreamID string
+	UserMediaVid         bool
+	DisplayMediaVid      bool
 }
 
 /* --------------- RECV CHAN STRUCTS --------------- */
@@ -925,6 +929,8 @@ func sendCallRecipientOfferLoop(socketServer *SocketServer, colls *db.Collection
 
 					UserMediaStreamID:    data.UserMediaStreamID,
 					DisplayMediaStreamID: data.DisplayMediaStreamID,
+					UserMediaVid:         data.UserMediaVid,
+					DisplayMediaVid:      data.DisplayMediaVid,
 				},
 			}
 		}
@@ -953,6 +959,8 @@ func sendCallerAnswerLoop(socketServer *SocketServer, colls *db.Collections) {
 
 						UserMediaStreamID:    data.UserMediaStreamID,
 						DisplayMediaStreamID: data.DisplayMediaStreamID,
+						UserMediaVid:         data.UserMediaVid,
+						DisplayMediaVid:      data.DisplayMediaVid,
 					},
 				}
 				break

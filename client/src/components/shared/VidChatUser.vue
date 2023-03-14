@@ -23,34 +23,12 @@ const props = defineProps<{
       video: boolean;
     };
   };
+  hasDisplayMediaVideo: boolean;
+  hasUserMediaVideo: boolean;
 }>();
 const { userMedia, displayMedia, streamIds, uid, isOwner } = toRefs(props);
 
 const user = useUser(uid?.value as string);
-
-const hasUserMediaVideo = computed(() => {
-  let enabled = false;
-  userMedia.value?.getVideoTracks().forEach((track) => {
-    if (isOwner.value) {
-      if (track.enabled) enabled = true;
-    } else {
-      if (!track.muted) enabled = true;
-    }
-  });
-  return enabled;
-});
-
-const hasDisplayMediaVideo = computed(() => {
-  let enabled = false;
-  displayMedia.value?.getVideoTracks().forEach((track) => {
-    if (isOwner.value) {
-      if (track.enabled) enabled = true;
-    } else {
-      if (!track.muted) enabled = true;
-    }
-  });
-  return enabled;
-});
 </script>
 
 <template>

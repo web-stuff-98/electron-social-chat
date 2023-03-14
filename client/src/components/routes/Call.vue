@@ -33,8 +33,12 @@ const otherUsersId = toRef(route.params, "id");
 const initiator = computed(() => route.query.initiator !== undefined);
 
 const peerInstance = ref<Peer.Instance>();
+
 const peerUserStream = ref<MediaStream>();
+const peerUserStreamHasVideo = ref(false);
 const peerDisplayStream = ref<MediaStream>();
+const peerDisplayStreamHasVideo = ref(false);
+
 const gotAnswer = ref(false);
 
 const mediaOptions = ref({
@@ -56,7 +60,6 @@ type StreamIDs = {
   um_stream_id: string;
   dm_stream_id: string;
 };
-
 const peerStreamIds = ref({
   userMedia: "",
   displayMedia: "",
@@ -64,6 +67,8 @@ const peerStreamIds = ref({
 
 function negotiateConnection(isOnMounted?: boolean) {
   gotAnswer.value = false;
+  peerUserStreamHasVideo.value = false;
+  peerDisplayStreamHasVideo.value = false;
   if (initiator.value) {
     console.log("Is negotiating as initiator");
     if (peerInstance.value) {
@@ -113,6 +118,8 @@ function makePeer() {
 
           um_stream_id: streamIds.userMedia,
           dm_stream_id: streamIds.displayMedia,
+          um_vid: mediaOptions.value.userMedia.video,
+          dm_vid: mediaOptions.value.displayMedia.video,
         })
       );
     }
@@ -120,7 +127,12 @@ function makePeer() {
   peerInstance.value = peer;
 }
 // for recipient peer
-async function makeAnswerPeer(signal: Peer.SignalData, pStreamIds: StreamIDs) {
+async function makeAnswerPeer(
+  signal: Peer.SignalData,
+  pStreamIds: StreamIDs,
+  showUserVid: boolean,
+  showDisplayVid: boolean
+) {
   const peer = initPeer();
   peer.on("signal", (signal) => {
     socketStore.send(
@@ -130,6 +142,8 @@ async function makeAnswerPeer(signal: Peer.SignalData, pStreamIds: StreamIDs) {
 
         um_stream_id: streamIds.userMedia,
         dm_stream_id: streamIds.displayMedia,
+        um_vid: mediaOptions.value.userMedia.video,
+        dm_vid: mediaOptions.value.displayMedia.video,
       })
     );
   });
@@ -137,18 +151,27 @@ async function makeAnswerPeer(signal: Peer.SignalData, pStreamIds: StreamIDs) {
     userMedia: pStreamIds.um_stream_id,
     displayMedia: pStreamIds.dm_stream_id,
   };
+  peerUserStreamHasVideo.value = showUserVid;
+  peerDisplayStreamHasVideo.value = showDisplayVid;
   await nextTick(() => {
     peer.signal(signal);
   });
   peerInstance.value = peer;
 }
 
-async function signalAnswer(signal: Peer.SignalData, pStreamIds: StreamIDs) {
+async function signalAnswer(
+  signal: Peer.SignalData,
+  pStreamIds: StreamIDs,
+  showUserVid: boolean,
+  showDisplayVid: boolean
+) {
   gotAnswer.value = true;
   peerStreamIds.value = {
     userMedia: pStreamIds.um_stream_id,
     displayMedia: pStreamIds.dm_stream_id,
   };
+  peerUserStreamHasVideo.value = showUserVid;
+  peerDisplayStreamHasVideo.value = showDisplayVid;
   await nextTick(() => {
     peerInstance.value?.signal(signal);
   });
@@ -162,16 +185,26 @@ function watchForCallEvents(e: MessageEvent) {
     router.push("/");
   }
   if (instanceOfCallWebRTCOfferFromInitiator(data)) {
-    makeAnswerPeer(JSON.parse(data.signal) as Peer.SignalData, {
-      um_stream_id: data.um_stream_id,
-      dm_stream_id: data.dm_stream_id,
-    });
+    makeAnswerPeer(
+      JSON.parse(data.signal) as Peer.SignalData,
+      {
+        um_stream_id: data.um_stream_id,
+        dm_stream_id: data.dm_stream_id,
+      },
+      data.um_vid,
+      data.dm_vid
+    );
   }
   if (instanceOfCallWebRTCAnswerFromRecipient(data)) {
-    signalAnswer(JSON.parse(data.signal) as Peer.SignalData, {
-      um_stream_id: data.um_stream_id,
-      dm_stream_id: data.dm_stream_id,
-    });
+    signalAnswer(
+      JSON.parse(data.signal) as Peer.SignalData,
+      {
+        um_stream_id: data.um_stream_id,
+        dm_stream_id: data.dm_stream_id,
+      },
+      data.um_vid,
+      data.dm_vid
+    );
   }
   if (instanceOfCallWebRTCRecipientRequestedReInitialization(data)) {
     console.log("Renegotiation requested");
@@ -216,6 +249,8 @@ onBeforeUnmount(() => {
         :displayMedia="displayStream"
         :isOwner="true"
         :mediaOptions="mediaOptions"
+        :hasDisplayMediaVideo="mediaOptions.displayMedia.video"
+        :hasUserMediaVideo="mediaOptions.userMedia.video"
       />
       <!-- Other user -->
       <VidChatUser
@@ -224,6 +259,8 @@ onBeforeUnmount(() => {
         :streamIds="peerStreamIds"
         :isOwner="false"
         :uid="String(otherUsersId)"
+        :hasDisplayMediaVideo="peerDisplayStreamHasVideo"
+        :hasUserMediaVideo="peerUserStreamHasVideo"
       />
     </div>
     <div class="control-buttons">

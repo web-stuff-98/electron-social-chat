@@ -295,6 +295,8 @@ type CallWebRTCOfferAnswer struct {
 
 	UserMediaStreamID    string `json:"um_stream_id"`
 	DisplayMediaStreamID string `json:"dm_stream_id"`
+	UserMediaVid         bool   `json:"um_vid"`
+	DisplayMediaVid      bool   `json:"dm_vid"`
 }
 
 // TYPE: CALL_WEBRTC_OFFER_FROM_INITIATOR (no "TYPE" needed in model)
@@ -303,6 +305,8 @@ type CallWebRTCOfferFromInitiator struct {
 
 	UserMediaStreamID    string `json:"um_stream_id"`
 	DisplayMediaStreamID string `json:"dm_stream_id"`
+	UserMediaVid         bool   `json:"um_vid"`
+	DisplayMediaVid      bool   `json:"dm_vid"`
 }
 
 // TYPE: CALL_WEBRTC_ANSWER_FROM_RECIPIENT (no "TYPE" needed in model)
@@ -311,6 +315,8 @@ type CallWebRTCAnswerFromInitiator struct {
 
 	UserMediaStreamID    string `json:"um_stream_id"`
 	DisplayMediaStreamID string `json:"dm_stream_id"`
+	UserMediaVid         bool   `json:"um_vid"`
+	DisplayMediaVid      bool   `json:"dm_vid"`
 }
 
 // TYPE: CALL_WEBRTC_RECIPIENT_REQUEST_REINITIALIZATION
