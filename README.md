@@ -5,3 +5,5 @@
 ## Needs to be renamed to Tauri-Go-Vue-Chat
 
 ## Vue code is very messy
+
+### started around 21/03/2023, nearly finished
