@@ -217,8 +217,7 @@ function handleStream(stream: MediaStream) {
   if (stream.id === peerStreamIds.value.userMedia) {
     console.log("added user media");
     peerUserStream.value = stream;
-  }
-  if (stream.id === peerStreamIds.value.displayMedia) {
+  } else {
     console.log("added display media");
     peerDisplayStream.value = stream;
   }

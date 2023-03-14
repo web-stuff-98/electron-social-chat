@@ -1,4 +1,12 @@
-import { onBeforeUnmount, onMounted, reactive, ref, Ref, watch } from "vue";
+import {
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  Ref,
+  watch,
+} from "vue";
 
 export const useChatMedia = (
   negotiateConnection: Function,
@@ -59,6 +67,7 @@ export const useChatMedia = (
           // has to be true or it throws an error.
           video: true,
         });
+        console.log("Display media retrieved in onMounted");
         const vidTrack = displayMediaStream.getVideoTracks()[0];
         if (vidTrack) {
           streamIds.displayMedia = vidTrack.id;
@@ -76,7 +85,9 @@ export const useChatMedia = (
     }
     userStream.value = userMediaStream;
     displayStream.value = displayMediaStream;
-    negotiateConnection(true);
+    await nextTick(() => {
+      negotiateConnection(true);
+    });
   });
 
   onBeforeUnmount(() => {
@@ -95,18 +106,6 @@ export const useChatMedia = (
   watch(options.value, async () => {
     let userMediaStream: MediaStream | undefined;
     let displayMediaStream: MediaStream | undefined;
-    if (userStream.value) {
-      userStream.value?.getTracks().forEach((track) => {
-        userStream.value?.removeTrack(track);
-      });
-    }
-    if (displayStream.value) {
-      displayStream.value?.getTracks().forEach((track) => {
-        displayStream.value?.removeTrack(track);
-      });
-    }
-    userStream.value = new MediaStream();
-    displayStream.value = new MediaStream();
     try {
       userMediaStream = await navigator.mediaDevices.getUserMedia({
         audio: options.value.userMedia.audio
@@ -141,6 +140,7 @@ export const useChatMedia = (
           // has to be true or it throws an error.
           video: true,
         });
+        console.log("Display media retrieved in watch");
         const vidTrack = displayMediaStream.getVideoTracks()[0];
         if (vidTrack) {
           streamIds.displayMedia = vidTrack.id;
@@ -158,7 +158,9 @@ export const useChatMedia = (
     }
     userStream.value = userMediaStream;
     displayStream.value = displayMediaStream;
-    negotiateConnection();
+    await nextTick(() => {
+      negotiateConnection();
+    });
   });
 
   return {
