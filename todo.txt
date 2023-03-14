@@ -17,19 +17,6 @@ the application)
 
 ----------------------------------------------------------------
 
-  Performance stuff
-
- - Replace regular mutexes with RWMutexes in SocketServer
-
- - There shouldn't be one queue for all outbound socket messages.
-   There should be a mutex protecting each connection so that
-   messages can be sent to different users simultaneously... or
-   something similar... cannot have all messages queued in one
-   loop. Its slow and beats the point of even using go in the
-   first place.
-
-----------------------------------------------------------------
-
  - Make composables for stuff. Vue code is too messy.
  - Attachment download button needs to actually download the attachment
  - Fix user data sometimes not being present when component visible

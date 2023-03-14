@@ -7,7 +7,6 @@ import ResMsg from "../../ResMsg.vue";
 import { socketStore } from "../../../../store/SocketStore";
 import {
   instanceOfChangeData,
-  instanceOfRoomMessageDeleteData,
   parseSocketEventData,
 } from "../../../../utils/determineSocketEvent";
 

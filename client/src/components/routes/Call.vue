@@ -4,7 +4,6 @@ import {
   onMounted,
   onBeforeUnmount,
   ref,
-  nextTick,
   computed,
 } from "vue";
 import { authStore } from "../../store/AuthStore";

@@ -38,11 +38,6 @@ type SocketServer struct {
 	DestroySubscription              chan string
 	GetSubscriptionUids              chan GetSubscriptionUids
 
-	// Websocket Write/Read must be done from 1 goroutine. Queue all messages to be sent 1 by 1.
-	// This is probably a bad way to do it... Should be a seperate goroutine for each channel,
-	// it would increase the speed of messaging by sending out messages to different connections
-	// seperately instead of having them all wait in one long queue... really tricky to implement
-	// though, too dumb to do it at the moment
 	MessageSendQueue chan QueuedMessage
 
 	SendDataToUser  chan UserDataMessage
