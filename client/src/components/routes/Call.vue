@@ -62,11 +62,11 @@ function negotiateConnection(isOnMounted?: boolean) {
   gotAnswer.value = false;
   peerUserStreamHasVideo.value = false;
   peerDisplayStreamHasVideo.value = false;
+  if (peerInstance.value) {
+    peerInstance.value.destroy();
+  }
   if (initiator.value) {
     console.log("Is negotiating as initiator");
-    if (peerInstance.value) {
-      peerInstance.value.destroy();
-    }
     peerUserStream.value = undefined;
     peerDisplayStream.value = undefined;
     makePeer();
@@ -141,9 +141,7 @@ async function makeAnswerPeer(
   peerUserMediaStreamID.value = userMediaID;
   peerUserStreamHasVideo.value = showUserVid;
   peerDisplayStreamHasVideo.value = showDisplayVid;
-  await nextTick(() => {
-    peer.signal(signal);
-  });
+  peer.signal(signal);
   peerInstance.value = peer;
 }
 
@@ -157,9 +155,7 @@ async function signalAnswer(
   peerUserMediaStreamID.value = userMediaID;
   peerUserStreamHasVideo.value = showUserVid;
   peerDisplayStreamHasVideo.value = showDisplayVid;
-  await nextTick(() => {
-    peerInstance.value?.signal(signal);
-  });
+  peerInstance.value?.signal(signal);
 }
 
 function watchForCallEvents(e: MessageEvent) {

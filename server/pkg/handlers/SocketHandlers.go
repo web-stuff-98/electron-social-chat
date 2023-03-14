@@ -118,7 +118,7 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 		return err
 	}
 
-	return fmt.Errorf("Unrecognized event type :", eventType)
+	return fmt.Errorf("Unrecognized event type :" + eventType)
 }
 
 func watchUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {

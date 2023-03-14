@@ -54,6 +54,9 @@ onMounted(() => {
 });
 onBeforeUnmount(() => {
   observer.disconnect();
+  if (imgObjectURL.value) {
+    URL.revokeObjectURL(imgObjectURL.value);
+  }
 });
 </script>
 
@@ -85,7 +88,7 @@ onBeforeUnmount(() => {
   text-align: left;
   text-shadow: 0px 2px 3px black, 0px 1px 7px black;
   font-weight: 600;
-  color:white;
+  color: white;
   border-radius: var(--border-radius-medium);
   border: 1px solid var(--base-light);
   cursor: pointer;
