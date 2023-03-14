@@ -42,7 +42,7 @@ type SocketServer struct {
 	// This is probably a bad way to do it... Should be a seperate goroutine for each channel,
 	// it would increase the speed of messaging by sending out messages to different connections
 	// seperately instead of having them all wait in one long queue... really tricky to implement
-	// though, too dumb to do it
+	// though, too dumb to do it at the moment
 	MessageSendQueue chan QueuedMessage
 
 	SendDataToUser  chan UserDataMessage
@@ -52,15 +52,15 @@ type SocketServer struct {
 /* --------------- MUTEX PROTECTED MAPS --------------- */
 type Connections struct {
 	data  map[*websocket.Conn]primitive.ObjectID
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 type Subscriptions struct {
 	data  map[string]map[*websocket.Conn]primitive.ObjectID
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 type ConnectionsSubscriptionCount struct {
 	data  map[*websocket.Conn]uint8 //Max subscriptions is 128... nice number half max uint8
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 /* --------------- OTHER STRUCTS --------------- */
@@ -195,9 +195,9 @@ func connectionRegistrationLoop(socketServer *SocketServer, colls *db.Collection
 		}()
 		connData := <-socketServer.RegisterConn
 		if connData.Conn != nil {
-			socketServer.Connections.mutex.Lock()
+			socketServer.Connections.mutex.RLock()
 			socketServer.Connections.data[connData.Conn] = connData.Uid
-			socketServer.Connections.mutex.Unlock()
+			socketServer.Connections.mutex.RUnlock()
 			outBytes, err := json.Marshal(socketmodels.OutChangeMessage{
 				Type:   "CHANGE",
 				Method: "UPDATE",
@@ -287,26 +287,25 @@ func subscriptionConnectionRegistrationLoop(socketServer *SocketServer, colls *d
 			go subscriptionConnectionRegistrationLoop(socketServer, colls)
 		}()
 		connData := <-socketServer.RegisterSubscriptionConn
-		allow := true
 		// Make sure users cannot open too many subscriptions
-		socketServer.ConnectionSubscriptionCount.mutex.Lock()
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.ConnectionSubscriptionCount.mutex.RLock()
 		count, countOk := socketServer.ConnectionSubscriptionCount.data[connData.Conn]
 		if count >= 128 {
-			allow = false
+			socketServer.ConnectionSubscriptionCount.mutex.RUnlock()
+			continue
 		}
 		if connData.Conn != nil {
+			socketServer.Subscriptions.mutex.Lock()
+			socketServer.ConnectionSubscriptionCount.mutex.Lock()
 			// Passed all checks, add the connection to the subscription
-			if allow {
-				if socketServer.Subscriptions.data[connData.Name] == nil {
-					socketServer.Subscriptions.data[connData.Name] = make(map[*websocket.Conn]primitive.ObjectID)
-				}
-				socketServer.Subscriptions.data[connData.Name][connData.Conn] = connData.Uid
-				if countOk {
-					socketServer.ConnectionSubscriptionCount.data[connData.Conn]++
-				} else {
-					socketServer.ConnectionSubscriptionCount.data[connData.Conn] = 1
-				}
+			if socketServer.Subscriptions.data[connData.Name] == nil {
+				socketServer.Subscriptions.data[connData.Name] = make(map[*websocket.Conn]primitive.ObjectID)
+			}
+			socketServer.Subscriptions.data[connData.Name][connData.Conn] = connData.Uid
+			if countOk {
+				socketServer.ConnectionSubscriptionCount.data[connData.Conn]++
+			} else {
+				socketServer.ConnectionSubscriptionCount.data[connData.Conn] = 1
 			}
 			socketServer.Subscriptions.mutex.Unlock()
 			socketServer.ConnectionSubscriptionCount.mutex.Unlock()
@@ -353,7 +352,7 @@ func sendSubscriptionDataLoop(socketServer *SocketServer, colls *db.Collections)
 			go sendSubscriptionDataLoop(socketServer, colls)
 		}()
 		subsData := <-socketServer.SendDataToSubscription
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.Subscriptions.mutex.RLock()
 		for k, s := range socketServer.Subscriptions.data {
 			if k == subsData.Name {
 				for conn := range s {
@@ -365,7 +364,7 @@ func sendSubscriptionDataLoop(socketServer *SocketServer, colls *db.Collections)
 				break
 			}
 		}
-		socketServer.Subscriptions.mutex.Unlock()
+		socketServer.Subscriptions.mutex.RUnlock()
 	}
 }
 
@@ -379,7 +378,7 @@ func sendSubscriptionDataExclusiveLoop(socketServer *SocketServer, colls *db.Col
 			go sendSubscriptionDataExclusiveLoop(socketServer, colls)
 		}()
 		subsData := <-socketServer.SendDataToSubscriptionExclusive
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.Subscriptions.mutex.RLock()
 		for k, s := range socketServer.Subscriptions.data {
 			if k == subsData.Name {
 				for conn, oid := range s {
@@ -393,7 +392,7 @@ func sendSubscriptionDataExclusiveLoop(socketServer *SocketServer, colls *db.Col
 				break
 			}
 		}
-		socketServer.Subscriptions.mutex.Unlock()
+		socketServer.Subscriptions.mutex.RUnlock()
 	}
 }
 
@@ -407,7 +406,7 @@ func sendToMultipleSubscriptionsLoop(socketServer *SocketServer, colls *db.Colle
 			go sendToMultipleSubscriptionsLoop(socketServer, colls)
 		}()
 		subsData := <-socketServer.SendDataToSubscriptions
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.Subscriptions.mutex.RLock()
 		for _, v := range subsData.Names {
 			for k, s := range socketServer.Subscriptions.data {
 				if k == v {
@@ -421,7 +420,7 @@ func sendToMultipleSubscriptionsLoop(socketServer *SocketServer, colls *db.Colle
 				}
 			}
 		}
-		socketServer.Subscriptions.mutex.Unlock()
+		socketServer.Subscriptions.mutex.RUnlock()
 	}
 }
 
@@ -435,7 +434,7 @@ func sendToMultipleSubscriptionsExclusiveLoop(socketServer *SocketServer, colls 
 			go sendToMultipleSubscriptionsExclusiveLoop(socketServer, colls)
 		}()
 		subsData := <-socketServer.SendDataToSubscriptionsExclusive
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.Subscriptions.mutex.RLock()
 		for _, v := range subsData.Names {
 			for k, s := range socketServer.Subscriptions.data {
 				if k == v {
@@ -451,7 +450,7 @@ func sendToMultipleSubscriptionsExclusiveLoop(socketServer *SocketServer, colls 
 				}
 			}
 		}
-		socketServer.Subscriptions.mutex.Unlock()
+		socketServer.Subscriptions.mutex.RUnlock()
 	}
 }
 
@@ -465,13 +464,13 @@ func getSubscriptionUidsLoop(socketServer *SocketServer, colls *db.Collections) 
 			go getSubscriptionUidsLoop(socketServer, colls)
 		}()
 		subsData := <-socketServer.GetSubscriptionUids
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.Subscriptions.mutex.RLock()
 		uids := make(map[primitive.ObjectID]struct{})
 		for _, oi := range socketServer.Subscriptions.data[subsData.Name] {
 			uids[oi] = struct{}{}
 		}
+		socketServer.Subscriptions.mutex.RUnlock()
 		subsData.RecvChan <- uids
-		socketServer.Subscriptions.mutex.Unlock()
 	}
 }
 
@@ -485,7 +484,7 @@ func sendDataToUserLoop(socketServer *SocketServer, colls *db.Collections) {
 			go sendDataToUserLoop(socketServer, colls)
 		}()
 		data := <-socketServer.SendDataToUser
-		socketServer.Connections.mutex.Lock()
+		socketServer.Connections.mutex.RLock()
 		for conn, uid := range socketServer.Connections.data {
 			if data.Uid == uid {
 				var m map[string]interface{}
@@ -504,7 +503,7 @@ func sendDataToUserLoop(socketServer *SocketServer, colls *db.Collections) {
 				break
 			}
 		}
-		socketServer.Connections.mutex.Unlock()
+		socketServer.Connections.mutex.RUnlock()
 	}
 }
 
@@ -518,7 +517,7 @@ func sendDataToUsersLoop(socketServer *SocketServer, colls *db.Collections) {
 			go sendDataToUsersLoop(socketServer, colls)
 		}()
 		data := <-socketServer.SendDataToUsers
-		socketServer.Connections.mutex.Lock()
+		socketServer.Connections.mutex.RLock()
 		m := make(map[string]interface{})
 		outBytesNoTypeKey, err := json.Marshal(data.Data)
 		json.Unmarshal(outBytesNoTypeKey, &m)
@@ -537,7 +536,7 @@ func sendDataToUsersLoop(socketServer *SocketServer, colls *db.Collections) {
 				}
 			}
 		}
-		socketServer.Connections.mutex.Unlock()
+		socketServer.Connections.mutex.RUnlock()
 	}
 }
 
@@ -551,20 +550,18 @@ func removeUserFromSubscriptionLoop(socketServer *SocketServer, colls *db.Collec
 			go removeUserFromSubscriptionLoop(socketServer, colls)
 		}()
 		data := <-socketServer.RemoveUserFromSubscription
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.Subscriptions.mutex.RLock()
 		if subs, ok := socketServer.Subscriptions.data[data.Name]; ok {
 			for c, oi := range subs {
 				if oi == data.Uid {
-					defer func() {
-						socketServer.Subscriptions.mutex.Unlock()
-					}()
 					socketServer.Subscriptions.mutex.Lock()
 					delete(socketServer.Subscriptions.data[data.Name], c)
+					socketServer.Subscriptions.mutex.Unlock()
 					break
 				}
 			}
 		}
-		socketServer.Subscriptions.mutex.Unlock()
+		socketServer.Subscriptions.mutex.RUnlock()
 	}
 }
 
@@ -578,7 +575,7 @@ func destroySubscriptionLoop(socketServer *SocketServer, colls *db.Collections) 
 			go destroySubscriptionLoop(socketServer, colls)
 		}()
 		subsName := <-socketServer.DestroySubscription
-		socketServer.Subscriptions.mutex.Lock()
+		socketServer.Subscriptions.mutex.RLock()
 		socketServer.ConnectionSubscriptionCount.mutex.Lock()
 		for c := range socketServer.Subscriptions.data[subsName] {
 			if _, ok := socketServer.ConnectionSubscriptionCount.data[c]; ok {
@@ -586,7 +583,7 @@ func destroySubscriptionLoop(socketServer *SocketServer, colls *db.Collections) 
 			}
 		}
 		delete(socketServer.Subscriptions.data, subsName)
-		socketServer.Subscriptions.mutex.Unlock()
 		socketServer.ConnectionSubscriptionCount.mutex.Unlock()
+		socketServer.Subscriptions.mutex.RUnlock()
 	}
 }
