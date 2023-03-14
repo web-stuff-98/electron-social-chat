@@ -21,7 +21,10 @@ the application)
 
  - There shouldn't be one queue for all outbound socket messages.
    There should be a mutex protecting each connection so that
-   messages can be sent to different users simultaneously
+   messages can be sent to different users simultaneously... or
+   something similar... cannot have all messages queued in one
+   loop. Its slow and beats the point of even using go in the
+   first place.
 
 ----------------------------------------------------------------
 
