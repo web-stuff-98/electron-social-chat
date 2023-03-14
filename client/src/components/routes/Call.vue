@@ -132,7 +132,7 @@ async function makeAnswerPeer(
         event_type: "CALL_WEBRTC_ANSWER",
         signal: JSON.stringify(signal),
 
-        um_stream_id: userMediaID,
+        um_stream_id: userMediaStreamID.value,
         um_vid: mediaOptions.value.userMedia.video,
         dm_vid: mediaOptions.value.displayMedia.video,
       })

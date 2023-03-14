@@ -2,7 +2,6 @@ import {
   nextTick,
   onBeforeUnmount,
   onMounted,
-  reactive,
   ref,
   Ref,
   watch,
@@ -119,10 +118,10 @@ export const useChatMedia = (
         }
       } else {
         vidTrack.contentHint = "motion";
+        userMediaStreamID.value = userMediaStream.id;
       }
       if (sndTrack) {
         sndTrack.contentHint = "speech";
-        userMediaStreamID.value = userMediaStream.id;
       }
     } catch (e) {
       console.warn(e);

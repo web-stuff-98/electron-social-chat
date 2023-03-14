@@ -7,7 +7,7 @@ const props = defineProps<{
   displayMedia: MediaStream | undefined;
   isOwner: boolean;
   uid?: string;
-  userMediaStreamID:string;
+  userMediaStreamID: string;
   // This should only be used for the current users container, not other peers.
   // Used to enable/disable microphone and camera access
   mediaOptions?: {
@@ -23,9 +23,12 @@ const props = defineProps<{
   hasDisplayMediaVideo: boolean;
   hasUserMediaVideo: boolean;
 }>();
-const { userMedia, displayMedia, userMediaStreamID, uid, isOwner } = toRefs(props);
+const { userMedia, displayMedia, userMediaStreamID, uid, isOwner } =
+  toRefs(props);
 
 const user = useUser(uid?.value as string);
+
+const forceMute = ref(false);
 </script>
 
 <template>
@@ -53,7 +56,7 @@ const user = useUser(uid?.value as string);
       <video
         v-show="hasDisplayMediaVideo || hasUserMediaVideo"
         :srcObject="displayMedia || userMedia"
-        :muted="isOwner"
+        :muted="isOwner || forceMute"
         class="main-video"
         autoplay
       />
@@ -71,7 +74,6 @@ const user = useUser(uid?.value as string);
         <button class="mute-button">
           <v-icon
             :style="{
-              fill: 'white',
               filter: 'drop-shadow(0px, 2px, 2px black)',
             }"
             name="bi-mic-fill"
@@ -91,7 +93,6 @@ const user = useUser(uid?.value as string);
           <button class="mute-button">
             <v-icon
               :style="{
-                fill: 'white',
                 filter: 'drop-shadow(0px, 2px, 2px black)',
               }"
               name="bi-mic-fill"
