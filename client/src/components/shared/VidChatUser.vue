@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, toRefs, watch } from "vue";
+import { computed, ref, toRefs, watch } from "vue";
 import { userStore } from "../../store/UserStore";
 const props = defineProps<{
   userMedia: MediaStream | undefined;
@@ -24,6 +24,14 @@ const props = defineProps<{
   };
 }>();
 const { userMedia, displayMedia, streamIds } = toRefs(props);
+
+const hasUserMediaVideo = computed(() => {
+  let enabled = false;
+  userMedia.value?.getVideoTracks().forEach((track) => {
+    if (track.enabled) enabled = true;
+  });
+  return enabled;
+});
 </script>
 
 <template>
@@ -35,7 +43,7 @@ const { userMedia, displayMedia, streamIds } = toRefs(props);
       {{ userStore.getUser(uid as string)?.username }}
     </div>
     <video
-      v-show="streamIds.userMedia"
+      v-show="hasUserMediaVideo"
       :srcObject="userMedia"
       :muted="isOwner"
       class="main-video"

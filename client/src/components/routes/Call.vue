@@ -18,7 +18,7 @@ import {
   instanceOfCallWebRTCRecipientRequestedReInitialization,
   parseSocketEventData,
 } from "../../utils/determineSocketEvent";
-import VideoWindow from "../shared/VideoWindow.vue";
+import VidChatUser from "../shared/VidChatUser.vue";
 import Peer from "simple-peer";
 import { useChatMedia } from "../../composables/useChatMedia";
 
@@ -228,7 +228,7 @@ const showPeerVideoWindow = computed(() => {
       >
         <v-icon v-if="!authStore.user?.base64pfp" name="fa-user" />
       </div>
-      <VideoWindow
+      <VidChatUser
         :streamIds="streamIds"
         :uid="authStore.user?.ID"
         :userMedia="userStream"
@@ -251,7 +251,7 @@ const showPeerVideoWindow = computed(() => {
           name="fa-user"
         />
       </div>
-      <VideoWindow
+      <VidChatUser
         :userMedia="peerUserStream"
         :displayMedia="peerDisplayStream"
         :streamIds="peerStreamIds"
