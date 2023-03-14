@@ -3,7 +3,7 @@ Todos in order
 WebRTC todos (always takes a really long fucking time. its 99% of 
 the application)
 
- - Finish VideoWindow component. Use teleport for fullscreen.
+ - Finish VidChatUser component. Use teleport for fullscreen.
 
  - Create RoomVidServer file and start working on adding room
    video chat into there
@@ -12,6 +12,16 @@ the application)
 
  - Instead of restarting the connection when the user mutes their
    mic, just .enable = !track.enabled
+
+ - Clicking on VidChatUser component should open user dropdown
+
+----------------------------------------------------------------
+
+  Important performance improvement  
+
+ - There shouldn't be one queue for all outbound socket messages.
+   There should be a mutex protecting each connection so that
+   messages can be sent to different users simultaneously
 
 ----------------------------------------------------------------
 

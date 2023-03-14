@@ -21,6 +21,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+/*
+	Handles inbound socket events...
+	Probably need to go into socketmodels and label
+	which ones are inbound/outbound/both
+*/
+
 func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, cs *callserver.CallServer, colls *db.Collections) error {
 	switch eventType {
 	/* --------------- GENERAL EVENTS --------------- */

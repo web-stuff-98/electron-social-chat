@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, ref, toRefs, watch } from "vue";
+import { ref, toRefs } from "vue";
 import useUser from "../../composables/useUser";
 import { userStore } from "../../store/UserStore";
 const props = defineProps<{
@@ -28,7 +28,6 @@ const { userMedia, displayMedia, userMediaStreamID, uid, isOwner } =
 
 const user = useUser(uid?.value as string);
 const forceMute = ref(false);
-
 </script>
 
 <template>
@@ -130,6 +129,7 @@ const forceMute = ref(false);
     }
   }
   .vid-container {
+    position: relative;
     .buttons {
       display: flex;
       justify-content: flex-end;
