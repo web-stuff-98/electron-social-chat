@@ -7,10 +7,7 @@ const props = defineProps<{
   displayMedia: MediaStream | undefined;
   isOwner: boolean;
   uid?: string;
-  streamIds: {
-    userMedia: string;
-    displayMedia: string;
-  };
+  userMediaStreamID:string;
   // This should only be used for the current users container, not other peers.
   // Used to enable/disable microphone and camera access
   mediaOptions?: {
@@ -26,13 +23,13 @@ const props = defineProps<{
   hasDisplayMediaVideo: boolean;
   hasUserMediaVideo: boolean;
 }>();
-const { userMedia, displayMedia, streamIds, uid, isOwner } = toRefs(props);
+const { userMedia, displayMedia, userMediaStreamID, uid, isOwner } = toRefs(props);
 
 const user = useUser(uid?.value as string);
 </script>
 
 <template>
-  <div v-show="streamIds.userMedia || streamIds.displayMedia" class="container">
+  <div v-show="userMediaStreamID" class="container">
     <!-- Pfp container - For when there are no video streams present -->
     <div
       :style="{

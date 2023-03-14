@@ -192,7 +192,6 @@ export type CallWebRTCOfferFromInitiator = Omit<
   {
     signal: string;
     um_stream_id: string;
-    dm_stream_id: string;
     um_vid: boolean;
     dm_vid: boolean;
   },
@@ -203,7 +202,6 @@ export type CallWebRTCAnswerFromRecipient = Omit<
   {
     signal: string;
     um_stream_id: string;
-    dm_stream_id: string;
     um_vid: boolean;
     dm_vid: boolean;
   },

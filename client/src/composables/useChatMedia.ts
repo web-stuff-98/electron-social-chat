@@ -23,10 +23,7 @@ export const useChatMedia = (
 ) => {
   const userStream = ref<MediaStream | undefined>();
   const displayStream = ref<MediaStream | undefined>();
-  const streamIds = reactive({
-    userMedia: "",
-    displayMedia: "",
-  });
+  const userMediaStreamID = ref("");
 
   onMounted(async () => {
     let userMediaStream: MediaStream | undefined;
@@ -55,7 +52,7 @@ export const useChatMedia = (
       }
       if (sndTrack) {
         sndTrack.contentHint = "speech";
-        streamIds.userMedia = userMediaStream.id;
+        userMediaStreamID.value = userMediaStream.id;
       }
     } catch (e) {
       console.warn(e);
@@ -70,14 +67,11 @@ export const useChatMedia = (
         console.log("Display media retrieved in onMounted");
         const vidTrack = displayMediaStream.getVideoTracks()[0];
         if (vidTrack) {
-          streamIds.displayMedia = vidTrack.id;
           vidTrack.contentHint = "detail";
           const sndTrack = displayMediaStream.getAudioTracks()[0];
           if (sndTrack) {
             sndTrack.contentHint = "music";
           }
-        } else {
-          streamIds.displayMedia = "";
         }
       } catch (e) {
         console.warn(e);
@@ -128,7 +122,7 @@ export const useChatMedia = (
       }
       if (sndTrack) {
         sndTrack.contentHint = "speech";
-        streamIds.userMedia = userMediaStream.id;
+        userMediaStreamID.value = userMediaStream.id;
       }
     } catch (e) {
       console.warn(e);
@@ -143,10 +137,7 @@ export const useChatMedia = (
         console.log("Display media retrieved in watch");
         const vidTrack = displayMediaStream.getVideoTracks()[0];
         if (vidTrack) {
-          streamIds.displayMedia = vidTrack.id;
           vidTrack.contentHint = "detail";
-        } else {
-          streamIds.displayMedia = "";
         }
         const sndTrack = displayMediaStream.getAudioTracks()[0];
         if (sndTrack) {
@@ -166,6 +157,6 @@ export const useChatMedia = (
   return {
     userStream,
     displayStream,
-    streamIds,
+    userMediaStreamID,
   };
 };

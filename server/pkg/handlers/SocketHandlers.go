@@ -1758,10 +1758,9 @@ func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss 
 		Signal: data.Signal,
 		Caller: uid,
 
-		UserMediaStreamID:    data.UserMediaStreamID,
-		DisplayMediaStreamID: data.DisplayMediaStreamID,
-		UserMediaVid:         data.UserMediaVid,
-		DisplayMediaVid:      data.DisplayMediaVid,
+		UserMediaStreamID: data.UserMediaStreamID,
+		UserMediaVid:      data.UserMediaVid,
+		DisplayMediaVid:   data.DisplayMediaVid,
 	}
 
 	return nil
@@ -1777,10 +1776,9 @@ func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 		Signal: data.Signal,
 		Called: uid,
 
-		UserMediaStreamID:    data.UserMediaStreamID,
-		DisplayMediaStreamID: data.DisplayMediaStreamID,
-		UserMediaVid:         data.UserMediaVid,
-		DisplayMediaVid:      data.DisplayMediaVid,
+		UserMediaStreamID: data.UserMediaStreamID,
+		UserMediaVid:      data.UserMediaVid,
+		DisplayMediaVid:   data.DisplayMediaVid,
 	}
 
 	return nil

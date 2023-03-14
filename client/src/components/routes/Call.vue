@@ -51,19 +51,12 @@ const mediaOptions = ref({
     video: false,
   },
 });
-const { userStream, displayStream, streamIds } = useChatMedia(
+const { userStream, displayStream, userMediaStreamID } = useChatMedia(
   negotiateConnection,
   mediaOptions
 );
 
-type StreamIDs = {
-  um_stream_id: string;
-  dm_stream_id: string;
-};
-const peerStreamIds = ref({
-  userMedia: "",
-  displayMedia: "",
-});
+const peerUserMediaStreamID = ref("");
 
 function negotiateConnection(isOnMounted?: boolean) {
   gotAnswer.value = false;
@@ -116,8 +109,7 @@ function makePeer() {
           event_type: "CALL_WEBRTC_OFFER",
           signal: JSON.stringify(signal),
 
-          um_stream_id: streamIds.userMedia,
-          dm_stream_id: streamIds.displayMedia,
+          um_stream_id: userMediaStreamID.value,
           um_vid: mediaOptions.value.userMedia.video,
           dm_vid: mediaOptions.value.displayMedia.video,
         })
@@ -129,7 +121,7 @@ function makePeer() {
 // for recipient peer
 async function makeAnswerPeer(
   signal: Peer.SignalData,
-  pStreamIds: StreamIDs,
+  userMediaID: string,
   showUserVid: boolean,
   showDisplayVid: boolean
 ) {
@@ -140,17 +132,13 @@ async function makeAnswerPeer(
         event_type: "CALL_WEBRTC_ANSWER",
         signal: JSON.stringify(signal),
 
-        um_stream_id: streamIds.userMedia,
-        dm_stream_id: streamIds.displayMedia,
+        um_stream_id: userMediaID,
         um_vid: mediaOptions.value.userMedia.video,
         dm_vid: mediaOptions.value.displayMedia.video,
       })
     );
   });
-  peerStreamIds.value = {
-    userMedia: pStreamIds.um_stream_id,
-    displayMedia: pStreamIds.dm_stream_id,
-  };
+  peerUserMediaStreamID.value = userMediaID;
   peerUserStreamHasVideo.value = showUserVid;
   peerDisplayStreamHasVideo.value = showDisplayVid;
   await nextTick(() => {
@@ -161,15 +149,12 @@ async function makeAnswerPeer(
 
 async function signalAnswer(
   signal: Peer.SignalData,
-  pStreamIds: StreamIDs,
+  userMediaID: string,
   showUserVid: boolean,
   showDisplayVid: boolean
 ) {
   gotAnswer.value = true;
-  peerStreamIds.value = {
-    userMedia: pStreamIds.um_stream_id,
-    displayMedia: pStreamIds.dm_stream_id,
-  };
+  peerUserMediaStreamID.value = userMediaID;
   peerUserStreamHasVideo.value = showUserVid;
   peerDisplayStreamHasVideo.value = showDisplayVid;
   await nextTick(() => {
@@ -187,10 +172,7 @@ function watchForCallEvents(e: MessageEvent) {
   if (instanceOfCallWebRTCOfferFromInitiator(data)) {
     makeAnswerPeer(
       JSON.parse(data.signal) as Peer.SignalData,
-      {
-        um_stream_id: data.um_stream_id,
-        dm_stream_id: data.dm_stream_id,
-      },
+      data.um_stream_id,
       data.um_vid,
       data.dm_vid
     );
@@ -198,10 +180,7 @@ function watchForCallEvents(e: MessageEvent) {
   if (instanceOfCallWebRTCAnswerFromRecipient(data)) {
     signalAnswer(
       JSON.parse(data.signal) as Peer.SignalData,
-      {
-        um_stream_id: data.um_stream_id,
-        dm_stream_id: data.dm_stream_id,
-      },
+      data.um_stream_id,
       data.um_vid,
       data.dm_vid
     );
@@ -213,12 +192,9 @@ function watchForCallEvents(e: MessageEvent) {
 }
 
 function handleStream(stream: MediaStream) {
-  console.log("Received stream with ID: ", stream.id);
-  if (stream.id === peerStreamIds.value.userMedia) {
-    console.log("added user media");
+  if (stream.id === peerUserMediaStreamID.value) {
     peerUserStream.value = stream;
   } else {
-    console.log("added display media");
     peerDisplayStream.value = stream;
   }
 }
@@ -240,14 +216,14 @@ onBeforeUnmount(() => {
 <template>
   <div class="container">
     <div :style="{ fontSize: '0.666rem', letterSpacing: '-1px' }">
-      {{ streamIds }}
+      {{ userMediaStreamID }}
       <br />
-      {{ peerStreamIds }}
+      {{ peerUserMediaStreamID }}
     </div>
     <div class="vid-chat-users">
       <!-- Current user -->
       <VidChatUser
-        :streamIds="streamIds"
+        :userMediaStreamID="userMediaStreamID"
         :uid="authStore.user?.ID"
         :userMedia="userStream"
         :displayMedia="displayStream"
@@ -260,7 +236,7 @@ onBeforeUnmount(() => {
       <VidChatUser
         :userMedia="peerUserStream"
         :displayMedia="peerDisplayStream"
-        :streamIds="peerStreamIds"
+        :userMediaStreamID="peerUserMediaStreamID"
         :isOwner="false"
         :uid="String(otherUsersId)"
         :hasDisplayMediaVideo="peerDisplayStreamHasVideo"
