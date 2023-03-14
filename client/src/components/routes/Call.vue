@@ -33,7 +33,8 @@ const otherUsersId = toRef(route.params, "id");
 const initiator = computed(() => route.query.initiator !== undefined);
 
 const peerInstance = ref<Peer.Instance>();
-const peerStream = ref<MediaStream>();
+const peerUserStream = ref<MediaStream>();
+const peerDisplayStream = ref<MediaStream>();
 const gotAnswer = ref(false);
 
 const mediaOptions = ref({
@@ -46,20 +47,19 @@ const mediaOptions = ref({
     video: false,
   },
 });
-const { stream, trackIds } = useChatMedia(negotiateConnection, mediaOptions);
+const { userStream, displayStream, streamIds } = useChatMedia(
+  negotiateConnection,
+  mediaOptions
+);
 
-type TrackIDs = {
-  um_snd_track_id: string;
-  um_vid_track_id: string;
-  dm_snd_track_id: string;
-  dm_vid_track_id: string;
+type StreamIDs = {
+  um_stream_id: string;
+  dm_stream_id: string;
 };
 
-const peerTrackIds = ref({
-  userMediaAudio: "",
-  userMediaVideo: "",
-  displayMediaAudio: "",
-  displayMediaVideo: "",
+const peerStreamIds = ref({
+  userMedia: "",
+  displayMedia: "",
 });
 
 function negotiateConnection(isOnMounted?: boolean) {
@@ -69,7 +69,8 @@ function negotiateConnection(isOnMounted?: boolean) {
     if (peerInstance.value) {
       peerInstance.value.destroy();
     }
-    peerStream.value = undefined;
+    peerUserStream.value = undefined;
+    peerDisplayStream.value = undefined;
     makePeer();
   } else if (!isOnMounted) {
     console.log("Is requesting reinitialization");
@@ -89,7 +90,10 @@ function initPeer() {
   const peer = new Peer({
     initiator: initiator.value,
     trickle: false,
-    stream: stream.value,
+    streams: [
+      ...(userStream.value ? [userStream.value] : []),
+      ...(displayStream.value ? [displayStream.value] : []),
+    ],
     iceCompleteTimeout: 2000, // 5 seconds is too long
   });
   peer.on("stream", handleStream);
@@ -107,10 +111,8 @@ function makePeer() {
           event_type: "CALL_WEBRTC_OFFER",
           signal: JSON.stringify(signal),
 
-          um_snd_track_id: trackIds.userMediaAudio,
-          um_vid_track_id: trackIds.userMediaVideo,
-          dm_snd_track_id: trackIds.displayMediaAudio,
-          dm_vid_track_id: trackIds.displayMediaVideo,
+          um_stream_id: streamIds.userMedia,
+          dm_stream_id: streamIds.displayMedia,
         })
       );
     }
@@ -118,7 +120,7 @@ function makePeer() {
   peerInstance.value = peer;
 }
 // for recipient peer
-async function makeAnswerPeer(signal: Peer.SignalData, pTrackIds: TrackIDs) {
+async function makeAnswerPeer(signal: Peer.SignalData, pStreamIds: StreamIDs) {
   const peer = initPeer();
   peer.on("signal", (signal) => {
     socketStore.send(
@@ -126,18 +128,14 @@ async function makeAnswerPeer(signal: Peer.SignalData, pTrackIds: TrackIDs) {
         event_type: "CALL_WEBRTC_ANSWER",
         signal: JSON.stringify(signal),
 
-        um_snd_track_id: trackIds.userMediaAudio,
-        um_vid_track_id: trackIds.userMediaVideo,
-        dm_snd_track_id: trackIds.displayMediaAudio,
-        dm_vid_track_id: trackIds.displayMediaVideo,
+        um_stream_id: streamIds.userMedia,
+        dm_stream_id: streamIds.displayMedia,
       })
     );
   });
-  peerTrackIds.value = {
-    userMediaAudio: pTrackIds.um_snd_track_id,
-    userMediaVideo: pTrackIds.um_vid_track_id,
-    displayMediaAudio: pTrackIds.dm_snd_track_id,
-    displayMediaVideo: pTrackIds.dm_vid_track_id,
+  peerStreamIds.value = {
+    userMedia: pStreamIds.um_stream_id,
+    displayMedia: pStreamIds.dm_stream_id,
   };
   await nextTick(() => {
     peer.signal(signal);
@@ -145,13 +143,11 @@ async function makeAnswerPeer(signal: Peer.SignalData, pTrackIds: TrackIDs) {
   peerInstance.value = peer;
 }
 
-async function signalAnswer(signal: Peer.SignalData, pTrackIds: TrackIDs) {
+async function signalAnswer(signal: Peer.SignalData, pStreamIds: StreamIDs) {
   gotAnswer.value = true;
-  peerTrackIds.value = {
-    userMediaAudio: pTrackIds.um_snd_track_id,
-    userMediaVideo: pTrackIds.um_vid_track_id,
-    displayMediaAudio: pTrackIds.dm_snd_track_id,
-    displayMediaVideo: pTrackIds.dm_vid_track_id,
+  peerStreamIds.value = {
+    userMedia: pStreamIds.um_stream_id,
+    displayMedia: pStreamIds.dm_stream_id,
   };
   await nextTick(() => {
     peerInstance.value?.signal(signal);
@@ -167,18 +163,14 @@ function watchForCallEvents(e: MessageEvent) {
   }
   if (instanceOfCallWebRTCOfferFromInitiator(data)) {
     makeAnswerPeer(JSON.parse(data.signal) as Peer.SignalData, {
-      um_snd_track_id: data.um_snd_track_id,
-      um_vid_track_id: data.um_vid_track_id,
-      dm_snd_track_id: data.dm_snd_track_id,
-      dm_vid_track_id: data.dm_vid_track_id,
+      um_stream_id: data.um_stream_id,
+      dm_stream_id: data.dm_stream_id,
     });
   }
   if (instanceOfCallWebRTCAnswerFromRecipient(data)) {
     signalAnswer(JSON.parse(data.signal) as Peer.SignalData, {
-      um_snd_track_id: data.um_snd_track_id,
-      um_vid_track_id: data.um_vid_track_id,
-      dm_snd_track_id: data.dm_snd_track_id,
-      dm_vid_track_id: data.dm_vid_track_id,
+      um_stream_id: data.um_stream_id,
+      dm_stream_id: data.dm_stream_id,
     });
   }
   if (instanceOfCallWebRTCRecipientRequestedReInitialization(data)) {
@@ -188,7 +180,10 @@ function watchForCallEvents(e: MessageEvent) {
 }
 
 function handleStream(stream: MediaStream) {
-  peerStream.value = stream;
+  if (stream.id === peerStreamIds.value.userMedia)
+    peerUserStream.value = stream;
+  if (stream.id === peerStreamIds.value.displayMedia)
+    peerDisplayStream.value = stream;
 }
 
 onMounted(() => {
@@ -205,22 +200,20 @@ onBeforeUnmount(() => {
 });
 
 const showVideoWindow = computed(() => {
-  return trackIds.displayMediaVideo || trackIds.userMediaVideo;
+  return streamIds.displayMedia || streamIds.userMedia;
 });
 
 const showPeerVideoWindow = computed(() => {
-  return (
-    peerTrackIds.value.displayMediaVideo || peerTrackIds.value.userMediaVideo
-  );
+  return peerStreamIds.value.displayMedia || peerStreamIds.value.userMedia;
 });
 </script>
 
 <template>
   <div class="container">
     <div :style="{ fontSize: '0.7rem' }">
-      {{ trackIds }}
+      {{ streamIds }}
       <br />
-      {{ peerTrackIds }}
+      {{ peerStreamIds }}
     </div>
     <div class="pfps">
       <!-- Current users pfp / streams -->
@@ -236,9 +229,10 @@ const showPeerVideoWindow = computed(() => {
         <v-icon v-if="!authStore.user?.base64pfp" name="fa-user" />
       </div>
       <VideoWindow
-        :trackIds="trackIds"
+        :streamIds="streamIds"
         :uid="authStore.user?.ID"
-        :media="stream"
+        :userMedia="userStream"
+        :displayMedia="displayStream"
         :isOwner="true"
         :mediaOptions="mediaOptions"
       />
@@ -258,8 +252,9 @@ const showPeerVideoWindow = computed(() => {
         />
       </div>
       <VideoWindow
-        :media="peerStream"
-        :trackIds="peerTrackIds"
+        :userMedia="peerUserStream"
+        :displayMedia="peerDisplayStream"
+        :streamIds="peerStreamIds"
         :isOwner="false"
         :uid="String(otherUsersId)"
       />

@@ -191,10 +191,8 @@ export type CallLeftData = Omit<{}, "TYPE">;
 export type CallWebRTCOfferFromInitiator = Omit<
   {
     signal: string;
-    um_snd_track_id: string;
-    um_vid_track_id: string;
-    dm_snd_track_id: string;
-    dm_vid_track_id: string;
+    um_stream_id: string;
+    dm_stream_id: string;
   },
   "TYPE"
 >;
@@ -202,10 +200,8 @@ export type CallWebRTCOfferFromInitiator = Omit<
 export type CallWebRTCAnswerFromRecipient = Omit<
   {
     signal: string;
-    um_snd_track_id: string;
-    um_vid_track_id: string;
-    dm_snd_track_id: string;
-    dm_vid_track_id: string;
+    um_stream_id: string;
+    dm_stream_id: string;
   },
   "TYPE"
 >;

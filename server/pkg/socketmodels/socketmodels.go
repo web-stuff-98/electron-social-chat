@@ -293,30 +293,24 @@ type CallWebRTCOfferAnswer struct {
 	Type   string `json:"TYPE"`
 	Signal string `json:"signal"`
 
-	UserMediaAudioTrackID    string `json:"um_snd_track_id"`
-	UserMediaVideoTrackID    string `json:"um_vid_track_id"`
-	DisplayMediaAudioTrackID string `json:"dm_snd_track_id"`
-	DisplayMediaVideoTrackID string `json:"dm_vid_track_id"`
+	UserMediaStreamID    string `json:"um_stream_id"`
+	DisplayMediaStreamID string `json:"dm_stream_id"`
 }
 
 // TYPE: CALL_WEBRTC_OFFER_FROM_INITIATOR (no "TYPE" needed in model)
 type CallWebRTCOfferFromInitiator struct {
 	Signal string `json:"signal"`
 
-	UserMediaAudioTrackID    string `json:"um_snd_track_id"`
-	UserMediaVideoTrackID    string `json:"um_vid_track_id"`
-	DisplayMediaAudioTrackID string `json:"dm_snd_track_id"`
-	DisplayMediaVideoTrackID string `json:"dm_vid_track_id"`
+	UserMediaStreamID    string `json:"um_stream_id"`
+	DisplayMediaStreamID string `json:"dm_stream_id"`
 }
 
 // TYPE: CALL_WEBRTC_ANSWER_FROM_RECIPIENT (no "TYPE" needed in model)
 type CallWebRTCAnswerFromInitiator struct {
 	Signal string `json:"signal"`
 
-	UserMediaAudioTrackID    string `json:"um_snd_track_id"`
-	UserMediaVideoTrackID    string `json:"um_vid_track_id"`
-	DisplayMediaAudioTrackID string `json:"dm_snd_track_id"`
-	DisplayMediaVideoTrackID string `json:"dm_vid_track_id"`
+	UserMediaStreamID    string `json:"um_stream_id"`
+	DisplayMediaStreamID string `json:"dm_stream_id"`
 }
 
 // TYPE: CALL_WEBRTC_RECIPIENT_REQUEST_REINITIALIZATION

@@ -13,18 +13,18 @@ export const useChatMedia = (
     };
   }>
 ) => {
-  const stream = ref<MediaStream | undefined>();
-  const trackIds = reactive({
-    userMediaVideo: "",
-    userMediaAudio: "",
-    displayMediaVideo: "",
-    displayMediaAudio: "",
+  const userStream = ref<MediaStream | undefined>();
+  const displayStream = ref<MediaStream | undefined>();
+  const streamIds = reactive({
+    userMedia: "",
+    displayMedia: "",
   });
 
   onMounted(async () => {
     let userMediaStream: MediaStream | undefined;
     let displayMediaStream: MediaStream | undefined;
-    stream.value = new MediaStream();
+    userStream.value = new MediaStream();
+    displayStream.value = new MediaStream();
     try {
       userMediaStream = await navigator.mediaDevices.getUserMedia({
         audio: options.value.userMedia.audio,
@@ -34,84 +34,16 @@ export const useChatMedia = (
       const vidTrack = userMediaStream.getVideoTracks()[0];
       const sndTrack = userMediaStream.getAudioTracks()[0];
       if (!options.value.userMedia.video) {
-        trackIds.userMediaVideo = "";
         if (vidTrack !== undefined) {
           vidTrack.enabled = false;
         }
       } else {
-        trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
+        vidTrack.contentHint = "motion";
       }
-      trackIds.userMediaAudio = sndTrack ? sndTrack.id : "";
-    } catch (e) {
-      console.warn(e);
-    }
-    if (options.value.displayMedia.video) {
-      if (options.value.displayMedia.video) {
-        try {
-          displayMediaStream = await navigator.mediaDevices.getDisplayMedia({
-            audio: options.value.displayMedia.audio,
-            // has to be true or it throws an error.
-            video: true,
-          });
-          trackIds.displayMediaVideo =
-            displayMediaStream.getVideoTracks()[0].id || "";
-          trackIds.displayMediaAudio =
-            displayMediaStream.getAudioTracks()[0].id || "";
-        } catch (e) {
-          console.warn(e);
-        }
+      if (sndTrack) {
+        sndTrack.contentHint = "speech";
+        streamIds.userMedia = userMediaStream.id;
       }
-    } else {
-      trackIds.displayMediaVideo = "";
-      trackIds.displayMediaAudio = "";
-    }
-    userMediaStream?.getTracks().forEach((track) => {
-      if (track.kind === "video" && !options.value.userMedia.video) {
-        track.enabled = false;
-      }
-      stream.value?.addTrack(track);
-    });
-    displayMediaStream?.getTracks().forEach((track) => {
-      if (track.kind === "video" && !options.value.displayMedia.video) {
-        track.enabled = false;
-      }
-      stream.value?.addTrack(track);
-    });
-    negotiateConnection(true);
-  });
-
-  onBeforeUnmount(() => {
-    if (stream.value) {
-      stream.value.getTracks().forEach((track) => {
-        stream.value?.removeTrack(track);
-      });
-    }
-  });
-
-  watch(options.value, async () => {
-    let userMediaStream: MediaStream | undefined;
-    let displayMediaStream: MediaStream | undefined;
-    stream.value?.getTracks().forEach((track) => {
-      stream.value?.removeTrack(track);
-    });
-    stream.value = new MediaStream();
-    try {
-      userMediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: options.value.userMedia.audio,
-        // has to be true or it throws an error.
-        video: true,
-      });
-      const vidTrack = userMediaStream.getVideoTracks()[0];
-      const sndTrack = userMediaStream.getAudioTracks()[0];
-      if (!options.value.userMedia.video) {
-        trackIds.userMediaVideo = "";
-        if (vidTrack !== undefined) {
-          vidTrack.enabled = false;
-        }
-      } else {
-        trackIds.userMediaVideo = vidTrack ? vidTrack.id : "";
-      }
-      trackIds.userMediaAudio = sndTrack ? sndTrack.id : "";
     } catch (e) {
       console.warn(e);
     }
@@ -122,34 +54,106 @@ export const useChatMedia = (
           // has to be true or it throws an error.
           video: true,
         });
-        trackIds.displayMediaVideo =
-          displayMediaStream.getVideoTracks()[0].id || "";
-        trackIds.displayMediaAudio =
-          displayMediaStream.getAudioTracks()[0].id || "";
+        const vidTrack = displayMediaStream.getVideoTracks()[0];
+        if (vidTrack) {
+          streamIds.displayMedia = vidTrack.id;
+          vidTrack.contentHint = "detail";
+          const sndTrack = displayMediaStream.getAudioTracks()[0];
+          if (sndTrack) {
+            sndTrack.contentHint = "music";
+          }
+        } else {
+          streamIds.displayMedia = "";
+        }
       } catch (e) {
         console.warn(e);
       }
-    } else {
-      trackIds.displayMediaVideo = "";
-      trackIds.displayMediaAudio = "";
     }
-    userMediaStream?.getTracks().forEach((track) => {
-      if (track.kind === "video" && !options.value.userMedia.video) {
-        track.enabled = false;
+    userStream.value = userMediaStream;
+    displayStream.value = displayMediaStream;
+    negotiateConnection(true);
+  });
+
+  onBeforeUnmount(() => {
+    if (userStream.value) {
+      userStream.value.getTracks().forEach((track) => {
+        userStream.value?.removeTrack(track);
+      });
+    }
+    if (displayStream.value) {
+      displayStream.value.getTracks().forEach((track) => {
+        displayStream.value?.removeTrack(track);
+      });
+    }
+  });
+
+  watch(options.value, async () => {
+    let userMediaStream: MediaStream | undefined;
+    let displayMediaStream: MediaStream | undefined;
+    if (userStream.value) {
+      userStream.value?.getTracks().forEach((track) => {
+        userStream.value?.removeTrack(track);
+      });
+    }
+    if (displayStream.value) {
+      displayStream.value?.getTracks().forEach((track) => {
+        displayStream.value?.removeTrack(track);
+      });
+    }
+    userStream.value = new MediaStream();
+    displayStream.value = new MediaStream();
+    try {
+      userMediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: options.value.userMedia.audio,
+        // has to be true or it throws an error.
+        video: true,
+      });
+      const vidTrack = userMediaStream.getVideoTracks()[0];
+      const sndTrack = userMediaStream.getAudioTracks()[0];
+      if (!options.value.userMedia.video) {
+        if (vidTrack !== undefined) {
+          vidTrack.enabled = false;
+        }
+      } else {
+        vidTrack.contentHint = "motion";
       }
-      stream.value?.addTrack(track);
-    });
-    displayMediaStream?.getTracks().forEach((track) => {
-      if (track.kind === "video" && !options.value.displayMedia.video) {
-        track.enabled = false;
+      if (sndTrack) {
+        sndTrack.contentHint = "speech";
+        streamIds.userMedia = userMediaStream.id;
       }
-      stream.value?.addTrack(track);
-    });
+    } catch (e) {
+      console.warn(e);
+    }
+    if (options.value.displayMedia.video) {
+      try {
+        displayMediaStream = await navigator.mediaDevices.getDisplayMedia({
+          audio: options.value.displayMedia.audio,
+          // has to be true or it throws an error.
+          video: true,
+        });
+        const vidTrack = displayMediaStream.getVideoTracks()[0];
+        if (vidTrack) {
+          streamIds.displayMedia = vidTrack.id;
+          vidTrack.contentHint = "detail";
+        } else {
+          streamIds.displayMedia = "";
+        }
+        const sndTrack = displayMediaStream.getAudioTracks()[0];
+        if (sndTrack) {
+          sndTrack.contentHint = "music";
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    }
+    userStream.value = userMediaStream;
+    displayStream.value = displayMediaStream;
     negotiateConnection();
   });
 
   return {
-    stream,
-    trackIds,
+    userStream,
+    displayStream,
+    streamIds,
   };
 };

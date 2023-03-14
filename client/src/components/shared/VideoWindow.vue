@@ -2,14 +2,13 @@
 import { ref, toRefs, watch } from "vue";
 import { userStore } from "../../store/UserStore";
 const props = defineProps<{
-  media: MediaStream | undefined;
+  userMedia: MediaStream | undefined;
+  displayMedia: MediaStream | undefined;
   isOwner: boolean;
   uid?: string;
-  trackIds: {
-    userMediaVideo: string;
-    userMediaAudio: string;
-    displayMediaVideo: string;
-    displayMediaAudio: string;
+  streamIds: {
+    userMedia: string;
+    displayMedia: string;
   };
   // This should only be used for the current users window, not other peers.
   // Used to enable/disable microphone and camera access
@@ -24,26 +23,26 @@ const props = defineProps<{
     };
   };
 }>();
-const { media, trackIds } = toRefs(props);
+const { userMedia, displayMedia, streamIds } = toRefs(props);
 </script>
 
 <template>
   <div
-    v-show="trackIds.userMediaVideo || trackIds.displayMediaVideo"
+    v-show="streamIds.userMedia || streamIds.displayMedia"
     class="video-window"
   >
     <div class="name">
       {{ userStore.getUser(uid as string)?.username }}
     </div>
     <video
-      v-show="trackIds.userMediaVideo"
-      :srcObject="media"
+      v-show="streamIds.userMedia"
+      :srcObject="userMedia"
       :muted="isOwner"
       class="main-video"
       autoplay
     />
     <div
-      v-if="(!isOwner && trackIds.userMediaVideo) || trackIds.displayMediaVideo"
+      v-if="(!isOwner && streamIds.userMedia) || streamIds.displayMedia"
       :style="{
         width: 'fit-content',
         position: 'absolute',

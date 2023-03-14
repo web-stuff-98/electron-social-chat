@@ -156,19 +156,15 @@ type CallerSignal struct {
 	Caller primitive.ObjectID
 	Signal string
 
-	UserMediaAudioTrackID    string
-	UserMediaVideoTrackID    string
-	DisplayMediaAudioTrackID string
-	DisplayMediaVideoTrackID string
+	UserMediaStreamID    string
+	DisplayMediaStreamID string
 }
 type CalledSignal struct {
 	Called primitive.ObjectID
 	Signal string
 
-	UserMediaAudioTrackID    string
-	UserMediaVideoTrackID    string
-	DisplayMediaAudioTrackID string
-	DisplayMediaVideoTrackID string
+	UserMediaStreamID    string
+	DisplayMediaStreamID string
 }
 
 /* --------------- RECV CHAN STRUCTS --------------- */
@@ -927,10 +923,8 @@ func sendCallRecipientOfferLoop(socketServer *SocketServer, colls *db.Collection
 				Data: socketmodels.CallWebRTCOfferFromInitiator{
 					Signal: data.Signal,
 
-					UserMediaAudioTrackID:    data.UserMediaAudioTrackID,
-					UserMediaVideoTrackID:    data.UserMediaVideoTrackID,
-					DisplayMediaAudioTrackID: data.DisplayMediaAudioTrackID,
-					DisplayMediaVideoTrackID: data.DisplayMediaVideoTrackID,
+					UserMediaStreamID:    data.UserMediaStreamID,
+					DisplayMediaStreamID: data.DisplayMediaStreamID,
 				},
 			}
 		}
@@ -957,10 +951,8 @@ func sendCallerAnswerLoop(socketServer *SocketServer, colls *db.Collections) {
 					Data: socketmodels.CallWebRTCOfferAnswer{
 						Signal: data.Signal,
 
-						UserMediaAudioTrackID:    data.UserMediaAudioTrackID,
-						UserMediaVideoTrackID:    data.UserMediaVideoTrackID,
-						DisplayMediaAudioTrackID: data.DisplayMediaAudioTrackID,
-						DisplayMediaVideoTrackID: data.DisplayMediaVideoTrackID,
+						UserMediaStreamID:    data.UserMediaStreamID,
+						DisplayMediaStreamID: data.DisplayMediaStreamID,
 					},
 				}
 				break
