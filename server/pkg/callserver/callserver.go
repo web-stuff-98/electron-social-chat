@@ -20,7 +20,6 @@ type CallServer struct {
 	CallsPendingChan chan InCall
 	// Channel for responding to pending calls
 	ResponseToCallChan chan InCallResponse
-
 	// Mutex protected map for active calls
 	CallsActive CallsActive
 	// Channel for closing active calls
@@ -29,7 +28,7 @@ type CallServer struct {
 	SendCallRecipientOffer chan CallerSignal
 	// Channel for sending answer from called back to caller
 	SendCalledAnswer chan CalledSignal
-	// Channel for recipient requesting WebRTC re-initialization (necessary for changing media devices)
+	// Channel for recipient requesting WebRTC re-initialization (necessary for changing/adding media devices)
 	CallRecipientRequestedReInitialization chan primitive.ObjectID
 }
 
@@ -73,8 +72,8 @@ type InCallResponse struct {
 	Accept bool
 }
 
-func Init(ss *socketserver.SocketServer) *CallServer {
-	callServer := &CallServer{
+func Init(ss *socketserver.SocketServer, dc chan primitive.ObjectID) *CallServer {
+	cs := &CallServer{
 		CallsPending: CallsPending{
 			data: make(map[primitive.ObjectID]primitive.ObjectID),
 		},
@@ -88,11 +87,11 @@ func Init(ss *socketserver.SocketServer) *CallServer {
 		SendCalledAnswer:                       make(chan CalledSignal),
 		CallRecipientRequestedReInitialization: make(chan primitive.ObjectID),
 	}
-	runServer(ss, callServer)
-	return callServer
+	runServer(ss, cs, dc)
+	return cs
 }
 
-func runServer(ss *socketserver.SocketServer, cs *CallServer) {
+func runServer(ss *socketserver.SocketServer, cs *CallServer, dc chan primitive.ObjectID) {
 	/* ----- Call pending loop ----- */
 	go callPendingChanLoop(ss, cs)
 	/* ----- Call response loop ----- */
@@ -105,6 +104,8 @@ func runServer(ss *socketserver.SocketServer, cs *CallServer) {
 	go sendCallerAnswerLoop(ss, cs)
 	/* ----- Call recipient request webRTC reinitialization loop ----- */
 	go callRecipientRequestReInitializationLoop(ss, cs)
+	/* ----- Socket disconnect registration loop ----- */
+	go socketDisconnectRegistrationLoop(ss, cs, dc)
 }
 
 func callPendingChanLoop(ss *socketserver.SocketServer, cs *CallServer) {
@@ -368,6 +369,70 @@ func callRecipientRequestReInitializationLoop(ss *socketserver.SocketServer, cs 
 					Data: socketmodels.CallWebRTCRequestedReInitialization{},
 				}
 				break
+			}
+		}
+		cs.CallsActive.mutex.Unlock()
+	}
+}
+
+func socketDisconnectRegistrationLoop(ss *socketserver.SocketServer, cs *CallServer, dc chan primitive.ObjectID) {
+	for {
+		defer func() {
+			r := recover()
+			if r != nil {
+				log.Println("Recovered from panic in caller socket disconnect registration loop :", r)
+			}
+			go socketDisconnectRegistrationLoop(ss, cs, dc)
+		}()
+		uid := <-dc
+		cs.CallsPending.mutex.Lock()
+		if callPending, ok := cs.CallsPending.data[uid]; ok {
+			ss.SendDataToUser <- socketserver.UserDataMessage{
+				Uid:  callPending,
+				Type: "CALL_USER_RESPONSE",
+				Data: socketmodels.CallResponse{
+					Caller: uid.Hex(),
+					Called: callPending.Hex(),
+					Accept: false,
+				},
+			}
+			delete(cs.CallsActive.data, uid)
+		}
+		for caller, called := range cs.CallsPending.data {
+			if called == uid {
+				ss.SendDataToUser <- socketserver.UserDataMessage{
+					Uid:  caller,
+					Type: "CALL_USER_RESPONSE",
+					Data: socketmodels.CallResponse{
+						Caller: caller.Hex(),
+						Called: uid.Hex(),
+						Accept: false,
+					},
+				}
+				delete(cs.CallsPending.data, caller)
+			}
+		}
+		cs.CallsPending.mutex.Unlock()
+
+		cs.CallsActive.mutex.Lock()
+		if called, ok := cs.CallsActive.data[uid]; ok {
+			ss.SendDataToUser <- socketserver.UserDataMessage{
+				Uid:  called,
+				Type: "CALL_LEFT",
+				Data: socketmodels.CallLeft{},
+			}
+			delete(cs.CallsActive.data, uid)
+		} else {
+			for caller, called := range cs.CallsActive.data {
+				if called == uid {
+					ss.SendDataToUser <- socketserver.UserDataMessage{
+						Type: "CALL_LEFT",
+						Uid:  caller,
+						Data: socketmodels.CallLeft{},
+					}
+					delete(cs.CallsActive.data, caller)
+					break
+				}
 			}
 		}
 		cs.CallsActive.mutex.Unlock()

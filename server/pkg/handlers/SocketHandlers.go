@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/web-stuff-98/electron-social-chat/pkg/attachmentserver"
+	"github.com/web-stuff-98/electron-social-chat/pkg/callserver"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db"
 	"github.com/web-stuff-98/electron-social-chat/pkg/db/models"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketmodels"
@@ -20,7 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, colls *db.Collections) error {
+func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, as *attachmentserver.AttachmentServer, cs *callserver.CallServer, colls *db.Collections) error {
 	switch eventType {
 	/* --------------- GENERAL EVENTS --------------- */
 	case "WATCH_USER":
@@ -92,22 +93,22 @@ func HandleSocketEvent(eventType string, data []byte, conn *websocket.Conn, uid 
 
 	/* --------------- CALL SERVER EVENTS --------------- */
 	case "CALL_USER":
-		err := callUser(data, conn, uid, ss, colls)
+		err := callUser(data, conn, uid, cs, colls)
 		return err
 	case "CALL_USER_RESPONSE":
-		err := callUserResponse(data, conn, uid, ss)
+		err := callUserResponse(data, conn, uid, cs)
 		return err
 	case "CALL_LEAVE":
-		err := callLeave(data, conn, uid, ss)
+		err := callLeave(data, conn, uid, cs)
 		return err
 	case "CALL_WEBRTC_OFFER":
-		err := callWebRTCOffer(data, conn, uid, ss)
+		err := callWebRTCOffer(data, conn, uid, cs)
 		return err
 	case "CALL_WEBRTC_ANSWER":
-		err := callWebRTCAnswer(data, conn, uid, ss)
+		err := callWebRTCAnswer(data, conn, uid, cs)
 		return err
 	case "CALL_WEBRTC_RECIPIENT_REQUEST_REINITIALIZATION":
-		err := callRecipientRequestReInitialization(data, conn, uid, ss)
+		err := callRecipientRequestReInitialization(data, conn, uid, cs)
 		return err
 	}
 
@@ -1671,7 +1672,7 @@ func unbanUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socke
 	return nil
 }
 
-func callUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer, colls *db.Collections) error {
+func callUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, cs *callserver.CallServer, colls *db.Collections) error {
 	var data socketmodels.CallUser
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -1706,7 +1707,7 @@ func callUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socket
 		return fmt.Errorf("You can only call users you are friends with")
 	}
 
-	ss.CallsPendingChan <- socketserver.InCall{
+	cs.CallsPendingChan <- callserver.InCall{
 		Caller: uid,
 		Called: callUid,
 	}
@@ -1714,7 +1715,7 @@ func callUser(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socket
 	return nil
 }
 
-func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
+func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, cs *callserver.CallServer) error {
 	var data socketmodels.CallResponse
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -1732,7 +1733,7 @@ func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 		return fmt.Errorf("You cannot accept a call to a another user on your own behalf")
 	}
 
-	ss.ResponseToCallChan <- socketserver.InCallResponse{
+	cs.ResponseToCallChan <- callserver.InCallResponse{
 		Caller: callerUid,
 		Called: calledUid,
 		Accept: data.Accept,
@@ -1741,24 +1742,24 @@ func callUserResponse(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 	return nil
 }
 
-func callLeave(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
+func callLeave(b []byte, conn *websocket.Conn, uid primitive.ObjectID, cs *callserver.CallServer) error {
 	var data socketmodels.CallLeave
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
 
-	ss.LeaveCallChan <- uid
+	cs.LeaveCallChan <- uid
 
 	return nil
 }
 
-func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
+func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, cs *callserver.CallServer) error {
 	var data socketmodels.CallWebRTCOfferAnswer
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
 
-	ss.SendCallRecipientOffer <- socketserver.CallerSignal{
+	cs.SendCallRecipientOffer <- callserver.CallerSignal{
 		Signal: data.Signal,
 		Caller: uid,
 
@@ -1770,13 +1771,13 @@ func callWebRTCOffer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss 
 	return nil
 }
 
-func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
+func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, cs *callserver.CallServer) error {
 	var data socketmodels.CallWebRTCOfferAnswer
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
 	}
 
-	ss.SendCalledAnswer <- socketserver.CalledSignal{
+	cs.SendCalledAnswer <- callserver.CalledSignal{
 		Signal: data.Signal,
 		Called: uid,
 
@@ -1788,7 +1789,7 @@ func callWebRTCAnswer(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss
 	return nil
 }
 
-func callRecipientRequestReInitialization(b []byte, conn *websocket.Conn, uid primitive.ObjectID, ss *socketserver.SocketServer) error {
+func callRecipientRequestReInitialization(b []byte, conn *websocket.Conn, uid primitive.ObjectID, cs *callserver.CallServer) error {
 	var data socketmodels.CallWebRTCRequestReInitialization
 	if err := json.Unmarshal(b, &data); err != nil {
 		return err
@@ -1796,7 +1797,7 @@ func callRecipientRequestReInitialization(b []byte, conn *websocket.Conn, uid pr
 
 	log.Println(uid, "requested reinitialization")
 
-	ss.CallRecipientRequestedReInitialization <- uid
+	cs.CallRecipientRequestedReInitialization <- uid
 
 	return nil
 }

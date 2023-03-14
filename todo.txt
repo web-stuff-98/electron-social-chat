@@ -5,8 +5,6 @@ the application)
 
  - Finish VideoWindow component. Use teleport for fullscreen.
 
- - Create CallVidServer file and move Call events into there
-
  - Create RoomVidServer file and start working on adding room
    video chat into there
 

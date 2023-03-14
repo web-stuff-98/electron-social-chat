@@ -16,6 +16,7 @@ import (
 	"github.com/web-stuff-98/electron-social-chat/pkg/handlers"
 	rdb "github.com/web-stuff-98/electron-social-chat/pkg/redis"
 	"github.com/web-stuff-98/electron-social-chat/pkg/socketserver"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func main() {
@@ -28,12 +29,13 @@ func main() {
 	DB, colls := db.Init()
 	redis := rdb.Init()
 
-	socketServer, err := socketserver.Init(colls)
+	disconnectCallChan := make(chan primitive.ObjectID)
+	socketServer, err := socketserver.Init(colls, disconnectCallChan)
 	if err != nil {
 		log.Fatal("Error setting up socket server: ", err)
 	}
 
-	callServer := callserver.Init(socketServer)
+	callServer := callserver.Init(socketServer, disconnectCallChan)
 	attachmentServer := attachmentserver.Init(socketServer, colls)
 
 	h := handlers.New(DB, colls, redis, socketServer, attachmentServer, callServer)
